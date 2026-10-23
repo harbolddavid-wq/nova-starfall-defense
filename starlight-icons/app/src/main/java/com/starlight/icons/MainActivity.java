@@ -53,35 +53,69 @@ public class MainActivity extends Activity {
       View.OnClickListener click=v->{selected=r;selectedName=name;menu();};item.setOnClickListener(click);
       item.setOnLongClickListener(v->{click.onClick(v);return true;});
     }}
-  void menu(){new AlertDialog.Builder(this).setTitle("Customize "+selectedName).setItems(new String[]{"✦ Change icon — 60 styles","✎ Create your own","▶ Open original app"},(d,n)->{
-     if(n==0)gallery();if(n==1)editor();if(n==2){try{startActivity(launchIntent());}catch(Exception e){toast("Could not launch app");}}}).show();}
+  void menu(){new AlertDialog.Builder(this).setTitle("Customize "+selectedName)
+    .setItems(new String[]{"✦ Change icon — 60 styles","✎ Create your own","▶ Open original app"},(d,n)->{
+      try{
+        if(n==0)galleryPage(0);
+        else if(n==1)editor();
+        else if(n==2)startActivity(launchIntent());
+      }catch(Exception e){
+        new AlertDialog.Builder(this).setTitle("Could not open icon picker")
+          .setMessage(e.toString()).setPositiveButton("OK",null).show();
+      }
+    }).show();}
   Intent launchIntent(){Intent i=new Intent(Intent.ACTION_MAIN);i.addCategory(Intent.CATEGORY_LAUNCHER);
     i.setComponent(new ComponentName(selected.activityInfo.packageName,selected.activityInfo.name));
     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);return i;}
-  void gallery(){screen("CHOOSE AN ICON","Select a design for "+selectedName+". Android will offer to add it to Home.");
-    add(body,button("← Back to installed apps",this::home));
-    GridLayout g=new GridLayout(this);g.setColumnCount(4);add(body,g);
-    int width=(getResources().getDisplayMetrics().widthPixels-dp(40))/4;
-    for(int n=0;n<60;n++){int which=n;Bitmap b=makeIcon(n);
-      LinearLayout tile=vertical();tile.setPadding(dp(3),dp(6),dp(3),dp(4));tile.setBackgroundColor(PANEL);
-      ImageView image=new ImageView(this);image.setImageBitmap(b);
-      LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(64),dp(64));p.gravity=Gravity.CENTER;tile.addView(image,p);
-      TextView cap=label(SHAPES[n%10]+" "+(n/10+1),10);cap.setGravity(Gravity.CENTER);add(tile,cap);
-      GridLayout.LayoutParams gp=new GridLayout.LayoutParams();gp.width=width;gp.height=dp(105);gp.setMargins(dp(2),dp(2),dp(2),dp(2));g.addView(tile,gp);
+  void gallery(){galleryPage(0);}
+  // Render twelve icons per page rather than sixty full-size bitmaps at once.
+  void galleryPage(int page){
+    screen("CHOOSE YOUR ICON","For "+selectedName+" — tap a design below.");
+    add(body,label("PAGE "+(page+1)+" OF 5 — 60 DESIGNS",16));
+    add(body,button("← Back to apps",this::home));
+    LinearLayout pager=new LinearLayout(this);add(body,pager);
+    Button prev=button("◀ Previous",()->galleryPage(Math.max(0,page-1)));
+    Button next=button("Next ▶",()->galleryPage(Math.min(4,page+1)));
+    prev.setEnabled(page>0);next.setEnabled(page<4);
+    pager.addView(prev,new LinearLayout.LayoutParams(0,dp(48),1));
+    pager.addView(next,new LinearLayout.LayoutParams(0,dp(48),1));
+    GridLayout g=new GridLayout(this);g.setColumnCount(3);add(body,g);
+    int width=(getResources().getDisplayMetrics().widthPixels-dp(40))/3;
+    for(int n=page*12;n<Math.min(60,(page+1)*12);n++){
+      int which=n;
+      LinearLayout tile=vertical();tile.setPadding(dp(4),dp(8),dp(4),dp(8));tile.setBackgroundColor(PANEL);
+      ImageView image=new ImageView(this);image.setImageBitmap(makeIcon(n));
+      LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(74),dp(74));ip.gravity=Gravity.CENTER;tile.addView(image,ip);
+      TextView cap=label(SHAPES[n%10]+" "+(n/10+1),12);cap.setGravity(Gravity.CENTER);add(tile,cap);
+      GridLayout.LayoutParams gp=new GridLayout.LayoutParams();gp.width=width;gp.height=dp(120);
+      gp.setMargins(dp(3),dp(3),dp(3),dp(3));g.addView(tile,gp);
       tile.setOnClickListener(v->{icon=makeIcon(which);confirm();});
-    }}
+    }
+    add(body,button("✎ Or CREATE YOUR OWN",this::editor));
+    add(body,label("Choose an icon, then tap Add to Home and approve Samsung's prompt.",13));
+  }
   void confirm(){new AlertDialog.Builder(this).setTitle("Add custom icon for "+selectedName+"?")
-    .setMessage("This requests a new shortcut on your Samsung home screen; it cannot replace the original icon inside the app drawer.")
+    .setMessage("Tap Add to Home, then approve Samsung's shortcut confirmation. This creates a NEW shortcut; the original app icon stays unchanged.")
     .setPositiveButton("Add to Home",(d,w)->pin()).setNeutralButton("Save PNG",(d,w)->export()).setNegativeButton("Back",null).show();}
   String id(){return "starlight_"+Integer.toHexString((selected.activityInfo.packageName+"/"+selected.activityInfo.name).hashCode());}
+  Intent shortcutLaunchIntent(){
+    Intent i=new Intent(this,ShortcutLaunchActivity.class);
+    i.setAction(Intent.ACTION_VIEW);
+    i.putExtra("target_package",selected.activityInfo.packageName);
+    i.putExtra("target_activity",selected.activityInfo.name);
+    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    return i;
+  }
   void pin(){try{ShortcutManager m=getSystemService(ShortcutManager.class);
     if(m==null||!m.isRequestPinShortcutSupported()){toast("This launcher does not accept pinned shortcuts.");return;}
     String shortName=selectedName.length()>30?selectedName.substring(0,30):selectedName;
     ShortcutInfo s=new ShortcutInfo.Builder(this,id()).setShortLabel(shortName)
       .setIcon(Icon.createWithBitmap(Bitmap.createScaledBitmap(icon,192,192,true)))
-      .setIntent(launchIntent()).build();
+      .setIntent(shortcutLaunchIntent()).build();
     boolean ok=m.requestPinShortcut(s,null);
-    toast(ok?"Confirm Add on your Home screen if prompted.":"Launcher declined the shortcut request.");
+    new AlertDialog.Builder(this).setTitle(ok?"Shortcut request sent":"Shortcut request declined")
+      .setMessage(ok?"Look for Samsung's Add to Home confirmation. Approve it to create the new shortcut.":"The launcher declined this shortcut request.")
+      .setPositiveButton("OK",null).show();
   }catch(Exception ex){toast("Could not add shortcut: "+ex.getMessage());}}
   void export(){if(icon==null){toast("Pick or draw an icon first.");return;}
     Intent it=new Intent(Intent.ACTION_CREATE_DOCUMENT);it.addCategory(Intent.CATEGORY_OPENABLE);
