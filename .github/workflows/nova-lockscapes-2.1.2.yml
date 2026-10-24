@@ -43,6 +43,29 @@ jobs:
           cp repair-v212/MainActivity.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/MainActivity.java
           sed -i "s/versionCode 3/versionCode 5/;s/versionName '2.1-beta'/versionName '2.1.2-beta'/" nova-lockscapes-2.1/source/app/build.gradle
           sed -i "s/'versionCode3':'versionCode 3'/'versionCode3':'versionCode 5'/" nova-lockscapes-2.1/source/tests/check_v21_source.py
+      - name: Update video engine tests for the new implementation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('nova-lockscapes-2.1/source/tests/check_v21_source.py')
+          s=p.read_text()
+          old={
+            "'player.setLooping(true)' in s":"'p.setLooping(true)' in s",
+            "'player.setVolume(0f,0f)' in s":"'p.setVolume(0f,0f)' in s",
+            "'videoPlayer.pause()' in s":"'player.pause()' in s",
+          }
+          for a,b in old.items():
+            assert a in s,a
+            s=s.replace(a,b)
+          p.write_text(s)
+          m=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/MainActivity.java').read_text()
+          e=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java').read_text()
+          assert 'TextureView' in m and 'try(java.io.FileInputStream input=' in m
+          assert 'MEDIA_INFO_VIDEO_RENDERING_START' in m and 'videoStatus' in m
+          assert 'new FileInputStream(source)' in e and 'main.postDelayed(timeout,7000)' in e
+          assert 'livePlaybackStatus' in e
+          print('PASS texture preview, descriptor, rendering-watchdog and diagnostics checks')
+          PY
       - name: Validate offline imports and video
         run: python3 nova-lockscapes-2.1/source/tests/check_v21_source.py
       - name: Compile unsigned Android update
