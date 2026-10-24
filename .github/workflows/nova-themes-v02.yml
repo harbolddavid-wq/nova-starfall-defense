@@ -1,0 +1,57 @@
+name: Nova Themes Two-Page Launcher
+on:
+  push:
+    branches: [nova-themes-v02]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch source
+        uses: actions/checkout@v4
+      - name: Restore full original launcher and artwork
+        run: |
+          cat nova-payload/chunk-*.txt | tr -d '\n\r' | base64 -d > nova-themes-v02.zip
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile("nova-themes-v02.zip") as archive:
+              assert archive.testzip() is None
+              archive.extractall(".")
+          PY
+          test -f nova-themes/android/src/com/novasky/themes/MainActivity.java
+          test -f nova-themes/assets/themes/inferno/wallpaper.webp
+          python3 nova-themes/tests/test_two_pages.py
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK platform and tools
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"; fi
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile, sign and verify Nova Themes 0.2.0
+        working-directory: nova-themes
+        env:
+          NOVA_ANDROID_SDK: ${{ env.ANDROID_HOME }}
+          NOVA_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/35.0.0
+          NOVA_SIGNING_DIR: ${{ github.workspace }}/private-signing
+          NOVA_OUTPUT: ${{ github.workspace }}/output
+        run: |
+          mkdir -p "$NOVA_SIGNING_DIR"
+          PASS=$(openssl rand -hex 20)
+          printf %s "$PASS" > "$NOVA_SIGNING_DIR/password"
+          keytool -genkeypair -noprompt -alias companion -keyalg RSA -keysize 3072 \
+            -validity 3650 -storetype PKCS12 -keystore "$NOVA_SIGNING_DIR/release.p12" \
+            -storepass "$PASS" -keypass "$PASS" -dname "CN=Nova Themes Test Release,O=Nova"
+          python3 scripts/build-android.py
+          test -s "$NOVA_OUTPUT/Nova_Themes_0.2.0.apk"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Themes-Two-Pages-APK
+          path: output/Nova_Themes_0.2.0.apk
+          if-no-files-found: error
