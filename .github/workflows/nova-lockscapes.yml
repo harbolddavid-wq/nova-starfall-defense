@@ -47,10 +47,3 @@ jobs:
           name: Nova-Lockscapes-Unsigned-and-Signer
           path: export/*
           if-no-files-found: error
-      - name: Upload signing key (keep private for upgrades)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Nova-Lockscapes-Personal-Key
-          path: key-backup/lockscapes.keystore
-          if-no-files-found: error
-          retention-days: 60
