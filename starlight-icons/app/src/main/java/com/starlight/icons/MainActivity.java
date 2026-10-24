@@ -12,9 +12,9 @@ import java.io.*;
 import java.util.*;
 
 public class MainActivity extends Activity {
-  static final int BG=0xff141020, PANEL=0xff29203c, INK=0xfff9edff, PURPLE=0xffbf99fa;
+  static final int BG=0xff110e1a, PANEL=0xff2c2039, INK=0xfffff2fa, PURPLE=0xffffa368;
   static final String[] SHAPES={"Star","Moon","Crystal","Moth","Heart","Flower","Cat","Flame","Planet","Sparkle"};
-  static final int[] COLORS={0xffb99aff,0xffff96c8,0xff75d8eb,0xffffcf84,0xff90e6c1,0xffff9b8c};
+  static final int[] COLORS={0xffff934f,0xffb98fff,0xffff6e8a,0xffffcb71,0xff72d7c2,0xff8f9eff};
   final ArrayList<ResolveInfo> apps=new ArrayList<>();
   ResolveInfo selected; Bitmap icon; String selectedName;
   LinearLayout root,body; DrawPad painter;
@@ -36,9 +36,9 @@ public class MainActivity extends Activity {
     PackageManager pm=getPackageManager();for(ResolveInfo r:pm.queryIntentActivities(launch,0)){
       if(r.activityInfo!=null&&!r.activityInfo.packageName.equals(getPackageName()))apps.add(r);}
     Collections.sort(apps,(a,b)->a.loadLabel(pm).toString().compareToIgnoreCase(b.loadLabel(pm).toString()));}
-  void home(){screen("STARLIGHT ICONS","Long-press an app below to give it a magical home-screen shortcut.");
-    add(body,label("60 designs • Create your own • No ads • No extra apps",14));
-    add(body,label("Note: Android creates a new Home shortcut. Your original app icon stays unchanged.",12));
+  void home(){screen("NOVA ICONS","Press and hold any app below to forge its new home-screen icon.");
+    add(body,label("60 ready-made designs • Draw your own • No ads",14));
+    add(body,label("Creates a new Home shortcut with your icon. The original app and its app-drawer icon are not changed.",12));
     add(body,button("↻ Refresh installed apps",()->{loadApps();home();}));
     GridLayout g=new GridLayout(this);g.setColumnCount(4);add(body,g);
     if(apps.isEmpty())add(body,label("No apps found. Tap Refresh.",16));
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
   void confirm(){new AlertDialog.Builder(this).setTitle("Add custom icon for "+selectedName+"?")
     .setMessage("Tap Add to Home, then approve Samsung's shortcut confirmation. This creates a NEW shortcut; the original app icon stays unchanged.")
     .setPositiveButton("Add to Home",(d,w)->pin()).setNeutralButton("Save PNG",(d,w)->export()).setNegativeButton("Back",null).show();}
-  String id(){return "starlight_"+Integer.toHexString((selected.activityInfo.packageName+"/"+selected.activityInfo.name).hashCode());}
+  String id(){return "nova_"+Integer.toHexString((selected.activityInfo.packageName+"/"+selected.activityInfo.name).hashCode());}
   Intent shortcutLaunchIntent(){
     Intent i=new Intent(this,ShortcutLaunchActivity.class);
     i.setAction(Intent.ACTION_VIEW);
@@ -119,7 +119,7 @@ public class MainActivity extends Activity {
   }catch(Exception ex){toast("Could not add shortcut: "+ex.getMessage());}}
   void export(){if(icon==null){toast("Pick or draw an icon first.");return;}
     Intent it=new Intent(Intent.ACTION_CREATE_DOCUMENT);it.addCategory(Intent.CATEGORY_OPENABLE);
-    it.setType("image/png");it.putExtra(Intent.EXTRA_TITLE,"starlight-icon.png");lastRequest=2;startActivityForResult(it,2);}
+    it.setType("image/png");it.putExtra(Intent.EXTRA_TITLE,"nova-icon.png");lastRequest=2;startActivityForResult(it,2);}
   void editor(){screen("CREATE YOUR OWN","Draw, erase, undo, import a photo, then make a home-screen shortcut.");
     painter=new DrawPad(this);add(body,painter);painter.getLayoutParams().height=dp(305);
     add(body,label("Brush colors",14));
@@ -146,13 +146,13 @@ public class MainActivity extends Activity {
     }catch(Exception ex){toast("Image error: "+ex.getMessage());}}
   Bitmap makeIcon(int n){Bitmap bitmap=Bitmap.createBitmap(256,256,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(bitmap);
     Paint p=new Paint(3);int tone=COLORS[n/10],shape=n%10;
-    p.setShader(new LinearGradient(0,0,256,256,0xff282038,Color.rgb(Color.red(tone)/3,Color.green(tone)/3,Color.blue(tone)/3),Shader.TileMode.CLAMP));
+    p.setShader(new LinearGradient(0,0,256,256,0xff1f172b,Color.rgb(Color.red(tone)/3,Color.green(tone)/3,Color.blue(tone)/3),Shader.TileMode.CLAMP));
     c.drawRoundRect(4,4,252,252,55,55,p);p.setShader(null);p.setColor(0x66ffffff);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(4);c.drawRoundRect(12,12,244,244,49,49,p);p.setStyle(Paint.Style.FILL);p.setColor(tone);
     switch(shape){
       case 0:star(c,p,128,128,85,38,5);break;
       case 1:c.drawCircle(120,127,73,p);p.setColor(0xff282038);c.drawCircle(156,97,70,p);break;
       case 2:{Path d=new Path();d.moveTo(128,35);d.lineTo(205,120);d.lineTo(128,218);d.lineTo(51,120);d.close();c.drawPath(d,p);break;}
-      case 3:{c.drawOval(28,70,125,175,p);c.drawOval(131,70,228,175,p);c.drawOval(75,144,129,219,p);c.drawOval(127,144,181,219,p);p.setColor(0xff2b1b38);c.drawOval(117,93,139,193,p);break;}
+      case 3:{c.drawOval(28,70,125,175,p);c.drawOval(131,70,228,175,p);c.drawOval(75,144,129,219,p);c.drawOval(127,144,181,219,p);p.setColor(0xff221627);c.drawOval(117,93,139,193,p);break;}
       case 4:{Path h=new Path();h.moveTo(128,211);h.cubicTo(74,165,35,131,35,92);h.cubicTo(35,42,104,37,128,79);h.cubicTo(157,37,221,42,221,92);h.cubicTo(221,131,185,165,128,211);c.drawPath(h,p);break;}
       case 5:for(int t=0;t<8;t++){double a=t*Math.PI/4;c.drawCircle(128+(float)Math.cos(a)*49,128+(float)Math.sin(a)*49,35,p);}p.setColor(0xffffe2a2);c.drawCircle(128,128,37,p);break;
       case 6:{Path cat=new Path();cat.moveTo(60,105);cat.lineTo(58,53);cat.lineTo(104,77);cat.quadTo(128,66,151,77);cat.lineTo(198,53);cat.lineTo(196,105);cat.cubicTo(228,205,157,219,128,219);cat.cubicTo(98,219,27,205,60,105);cat.close();c.drawPath(cat,p);break;}
