@@ -1,0 +1,31 @@
+name: Build Starlight Dream 0.3.1
+on:
+  push:
+    branches: [starlights-dream-031-fix]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Unpack release source
+        run: unzip -q dream-031/source.zip -d dream-031/work
+      - name: Build Android release and instrumentation tests
+        working-directory: dream-031/work/StarlightsDream
+        run: bash tools/build_unsigned.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Starlights-Dream-0.3.1-unsigned-APK-and-tests
+          path: dream-031/work/StarlightsDream/dist/*
+          if-no-files-found: error
+          retention-days: 7
