@@ -36,11 +36,11 @@ jobs:
       - name: Compile, sign and verify Nova Themes 0.2.0
         working-directory: nova-themes
         env:
-          NOVA_ANDROID_SDK: ${{ env.ANDROID_HOME }}
-          NOVA_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/35.0.0
           NOVA_SIGNING_DIR: ${{ github.workspace }}/private-signing
           NOVA_OUTPUT: ${{ github.workspace }}/output
         run: |
+          export NOVA_ANDROID_SDK="$ANDROID_HOME"
+          export NOVA_BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
           mkdir -p "$NOVA_SIGNING_DIR"
           PASS=$(openssl rand -hex 20)
           printf %s "$PASS" > "$NOVA_SIGNING_DIR/password"
