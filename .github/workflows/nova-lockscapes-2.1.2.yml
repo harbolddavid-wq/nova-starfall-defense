@@ -1,0 +1,61 @@
+name: Build Nova Lockscapes 2.1.2 video rendering repair
+on:
+  push:
+    branches: [nova-lockscapes-v212-video-fix]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Reconstruct source
+        run: |
+          cat nova-lockscapes-2.1/part-* > nova-lockscapes-2.1-source.zip
+          echo "2172704554c27dab2c034bbef82d9f05ad930975060b0fc0eacb717e00f61854  nova-lockscapes-2.1-source.zip" | sha256sum -c -
+          unzip -q nova-lockscapes-2.1-source.zip -d nova-lockscapes-2.1
+      - name: Apply Android SDK compiler compatibility correction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/Worlds.java')
+          s=p.read_text()
+          before='}catch(Exception ignored){return null;}finally{retriever.release();}'
+          after='}catch(Exception ignored){return null;}finally{try{retriever.release();}catch(Exception ignored){}}'
+          assert before in s
+          p.write_text(s.replace(before,after))
+          PY
+      - name: Patch live wallpaper lifecycle and version
+        run: |
+          cp repair-v212/LockscapeWallpaperService.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java
+          cp repair-v212/MainActivity.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/MainActivity.java
+          sed -i "s/versionCode 3/versionCode 5/;s/versionName '2.1-beta'/versionName '2.1.2-beta'/" nova-lockscapes-2.1/source/app/build.gradle
+          sed -i "s/'versionCode3':'versionCode 3'/'versionCode3':'versionCode 5'/" nova-lockscapes-2.1/source/tests/check_v21_source.py
+      - name: Validate offline imports and video
+        run: python3 nova-lockscapes-2.1/source/tests/check_v21_source.py
+      - name: Compile unsigned Android update
+        working-directory: nova-lockscapes-2.1/source
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Align APK and preserve signing utility
+        run: |
+          mkdir -p nova-lockscapes-2.1/output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 nova-lockscapes-2.1/source/app/build/outputs/apk/release/app-release-unsigned.apk nova-lockscapes-2.1/output/Nova-Lockscapes-2.1.2-aligned-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" nova-lockscapes-2.1/output/apksigner.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Lockscapes-2.1.2-Unsigned-Release
+          path: nova-lockscapes-2.1/output/*
+          if-no-files-found: error
+          retention-days: 7
