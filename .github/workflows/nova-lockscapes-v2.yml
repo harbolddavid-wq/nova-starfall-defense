@@ -1,0 +1,41 @@
+name: Build Nova Lockscapes 2.0
+on:
+  push:
+    branches: [nova-lockscapes-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Extract Lockscapes source
+        run: unzip -q nova-lockscapes/source.zip -d nova-lockscapes/project
+      - name: Verify source changes
+        run: python3 nova-lockscapes/project/source/tests/check_v2_source.py
+      - name: Build unsigned release
+        working-directory: nova-lockscapes/project/source
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Align release and bundle Android signing utility
+        run: |
+          mkdir -p nova-lockscapes/output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 nova-lockscapes/project/source/app/build/outputs/apk/release/app-release-unsigned.apk nova-lockscapes/output/Nova-Lockscapes-2.0-aligned-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" nova-lockscapes/output/apksigner.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Lockscapes-2.0-unsigned-and-signing-tool
+          path: nova-lockscapes/output/*
+          if-no-files-found: error
+          retention-days: 7
