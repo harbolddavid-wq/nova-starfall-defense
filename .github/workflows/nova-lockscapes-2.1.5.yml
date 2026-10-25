@@ -94,7 +94,7 @@ jobs:
           live=(root/'app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java').read_text()
           manifest=(root/'app/src/main/AndroidManifest.xml').read_text()
           gradle=(root/'app/build.gradle').read_text()
-          assert 'versionCode 7' in gradle and "2.1.5-beta" in gradle
+          assert 'versionCode 7' in gradle and "2.1.4-beta" in gradle
           assert '<queries>' in manifest and 'android.service.wallpaper.WallpaperService' in manifest
           assert 'getWallpaperInfo(which)' in main and 'isOurLiveHome(manager)' in main
           assert 'clear(WallpaperManager.FLAG_LOCK)' in main
