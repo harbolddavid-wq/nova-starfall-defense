@@ -1,0 +1,144 @@
+name: Build Nova Lockscapes 2.1.5 video rendering repair
+on:
+  push:
+    branches: [nova-lockscapes-v215-engine-fix]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Reconstruct source
+        run: |
+          cat nova-lockscapes-2.1/part-* > nova-lockscapes-2.1-source.zip
+          echo "2172704554c27dab2c034bbef82d9f05ad930975060b0fc0eacb717e00f61854  nova-lockscapes-2.1-source.zip" | sha256sum -c -
+          unzip -q nova-lockscapes-2.1-source.zip -d nova-lockscapes-2.1
+      - name: Apply Android SDK compiler compatibility correction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/Worlds.java')
+          s=p.read_text()
+          before='}catch(Exception ignored){return null;}finally{retriever.release();}'
+          after='}catch(Exception ignored){return null;}finally{try{retriever.release();}catch(Exception ignored){}}'
+          assert before in s
+          p.write_text(s.replace(before,after))
+          PY
+      - name: Patch live wallpaper lifecycle and version
+        run: |
+          cp repair-v213/LockscapeWallpaperService.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java
+          cp repair-v212/MainActivity.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/MainActivity.java
+          sed -i "s/versionCode 3/versionCode 6/;s/versionName '2.1-beta'/versionName '2.1.5-beta'/" nova-lockscapes-2.1/source/app/build.gradle
+          sed -i "s/'versionCode3':'versionCode 3'/'versionCode3':'versionCode 6'/" nova-lockscapes-2.1/source/tests/check_v21_source.py
+      - name: Update video engine tests for the new implementation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('nova-lockscapes-2.1/source/tests/check_v21_source.py')
+          s=p.read_text()
+          old={
+            "'player.setLooping(true)' in s":"'p.setLooping(true)' in s",
+            "'player.setVolume(0f,0f)' in s":"'p.setVolume(0f,0f)' in s",
+            "'videoPlayer.pause()' in s":"'player.pause()' in s",
+          }
+          for a,b in old.items():
+            assert a in s,a
+            s=s.replace(a,b)
+          p.write_text(s)
+          m=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/MainActivity.java').read_text()
+          e=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java').read_text()
+          assert 'TextureView' in m and 'try(java.io.FileInputStream input=' in m
+          assert 'MEDIA_INFO_VIDEO_RENDERING_START' in m and 'videoStatus' in m
+          assert 'new FileInputStream(source)' in e and 'main.postDelayed(timeout,7000)' in e
+          assert 'livePlaybackStatus' in e
+          print('PASS texture preview, descriptor, rendering-watchdog and diagnostics checks')
+          PY
+      - name: Validate offline imports and video
+        run: python3 nova-lockscapes-2.1/source/tests/check_v21_source.py
+      - name: Verify wallpaper surface fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java')
+          s=p.read_text()
+          assert 'p.setSurface(holder.getSurface());' in s
+          assert 'setDisplay(holder)' not in '\n'.join(line for line in s.splitlines() if not line.strip().startswith('//'))
+          assert 'p.setLooping(true)' in s and 'p.setVolume(0f,0f)' in s
+          print('PASS MediaPlayer uses wallpaper Surface directly; screen-awake request removed')
+          PY
+      - name: Patch 2.1.5 lock wallpaper settings and engine diagnostics
+        run: |
+          unzip -q repair-v214/patch.zip -d repair-v214/files
+          cp repair-v214/files/patch/app/src/main/java/com/nova/lockscapes/{MainActivity.java,LockscapeWallpaperService.java} nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/
+          cp repair-v214/files/patch/app/src/main/AndroidManifest.xml nova-lockscapes-2.1/source/app/src/main/AndroidManifest.xml
+          cp repair-v214/files/patch/app/build.gradle nova-lockscapes-2.1/source/app/build.gradle
+      - name: Check safe lock-screen placement controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('nova-lockscapes-2.1/source')
+          main=(root/'app/src/main/java/com/nova/lockscapes/MainActivity.java').read_text()
+          live=(root/'app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java').read_text()
+          manifest=(root/'app/src/main/AndroidManifest.xml').read_text()
+          gradle=(root/'app/build.gradle').read_text()
+          assert 'versionCode 7' in gradle and "2.1.5-beta" in gradle
+          assert '<queries>' in manifest and 'android.service.wallpaper.WallpaperService' in manifest
+          assert 'getWallpaperInfo(which)' in main and 'isOurLiveHome(manager)' in main
+          assert 'clear(WallpaperManager.FLAG_LOCK)' in main
+          assert 'setPositiveButton("Replace separate lock wallpaper"' in main
+          assert 'getWallpaperFlags()' in live and 'lastLockEngineSeen' in live
+          assert 'setSurface(holder.getSurface())' in live and 'setDisplay(holder)' not in '\n'.join(x for x in live.splitlines() if not x.lstrip().startswith('//'))
+          assert 'VIDEO_SCALING_MODE_SCALE_TO_FIT' in live
+          print('PASS opt-in lock-screen sharing, diagnostics, playback, and version checks')
+          PY
+      - name: Fix MediaPlayer setup order for live lock wallpaper
+        run: |
+          cp repair-v215/LockscapeWallpaperService.java nova-lockscapes-2.1/source/app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java
+          sed -i "s/versionCode 7/versionCode 8/;s/versionName '2.1.4-beta'/versionName '2.1.5-beta'/" nova-lockscapes-2.1/source/app/build.gradle
+      - name: Regression test MediaPlayer lifecycle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('nova-lockscapes-2.1/source')
+          s=(root/'app/src/main/java/com/nova/lockscapes/LockscapeWallpaperService.java').read_text()
+          gradle=(root/'app/build.gradle').read_text()
+          assert 'versionCode 8' in gradle and "2.1.5-beta" in gradle
+          assert 'p.setSurface(holder.getSurface());' in s
+          assert 'p.setDisplay(holder)' not in '\n'.join(line for line in s.splitlines() if not line.lstrip().startswith('//'))
+          assert 'p.setVideoScalingMode(' not in s
+          assert 'p.prepareAsync();' in s
+          assert s.index('mp.setLooping(true);') > s.index('p.setOnPreparedListener(mp->')
+          assert s.index('mp.setVolume(0f,0f);') > s.index('p.setOnPreparedListener(mp->')
+          assert 'Video setup at '+ '"+setupStage' in s
+          assert 'playbackFailed=false;poster();if(visible)beginVideo()' in s
+          assert 'getWallpaperFlags()' in s and 'lastLockEngineSeen' in s
+          assert 'armFrameTimeout()' in s
+          print('PASS preserved lock-screen controls, post-prepare settings, lifecycle retries, per-step diagnostics')
+          PY
+      - name: Compile unsigned Android update
+        working-directory: nova-lockscapes-2.1/source
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Align APK and preserve signing utility
+        run: |
+          mkdir -p nova-lockscapes-2.1/output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 nova-lockscapes-2.1/source/app/build/outputs/apk/release/app-release-unsigned.apk nova-lockscapes-2.1/output/Nova-Lockscapes-2.1.5-aligned-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" nova-lockscapes-2.1/output/apksigner.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Lockscapes-2.1.5-Unsigned-Release
+          path: nova-lockscapes-2.1/output/*
+          if-no-files-found: error
+          retention-days: 7
