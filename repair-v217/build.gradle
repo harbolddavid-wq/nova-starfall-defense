@@ -1,0 +1,35 @@
+plugins { id 'com.android.application' }
+
+def upgradeKeystore = System.getenv('NOVA_LOCKSCAPES_KEYSTORE')
+def upgradePassword = System.getenv('NOVA_LOCKSCAPES_KEYPASS')
+def upgradeAlias = System.getenv('NOVA_LOCKSCAPES_KEY_ALIAS')
+def upgradeKeyPassword = System.getenv('NOVA_LOCKSCAPES_KEY_PASSWORD') ?: upgradePassword
+
+android {
+  namespace 'com.nova.lockscapes'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'com.nova.lockscapes'
+    minSdk 26
+    targetSdk 35
+    versionCode 10
+    versionName '2.1.7-beta'
+  }
+  signingConfigs {
+    if(upgradeKeystore && upgradePassword && upgradeAlias) {
+      upgrade {
+        storeFile file(upgradeKeystore)
+        storePassword upgradePassword
+        keyAlias upgradeAlias
+        keyPassword upgradeKeyPassword
+      }
+    }
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      if(upgradeKeystore && upgradePassword && upgradeAlias) signingConfig signingConfigs.upgrade
+    }
+  }
+  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
