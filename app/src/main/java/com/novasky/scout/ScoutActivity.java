@@ -53,6 +53,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipEntry;
+import android.net.Uri;
 import java.io.OutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -65,9 +71,9 @@ import java.util.TimeZone;
 
 public class ScoutActivity extends Activity {
     static final int BG=0xFF100B19, PANEL=0xFF20172B, PURPLE=0xFFBD78EF, WHITE=0xFFFBF6FF, MUTED=0xFFC6BDD0;
-    static final int SAVE_REQUEST=44;
+    static final int SAVE_REQUEST=44, EXPORT_BOOT_REQUEST=45;
     private TextView reportView, statusView, summaryView;
-    private Button scanButton, sendButton, saveButton, copyButton;
+    private Button scanButton, sendButton, saveButton, copyButton, exportBootButton;
     private String currentReport="";
     private JSONObject lastReport;
     private boolean busy=false;
@@ -99,6 +105,12 @@ public class ScoutActivity extends Activity {
         sendButton=button("SHARE REPORT",true);saveButton=button("SAVE JSON",false);copyButton=button("COPY",false);
         addWeighted(row,sendButton);addWeighted(row,saveButton);addWeighted(row,copyButton);root.addView(row);
         sendButton.setOnClickListener(v->share());saveButton.setOnClickListener(v->save());copyButton.setOnClickListener(v->copy());
+        space(root,14);
+        TextView bootTitle=label("BOOT ANIMATION · SAFE EXPORT",12,PURPLE,true);root.addView(bootTitle);
+        TextView bootExplainer=label("Copies the existing system bootanimation.zip to a folder you choose. It never changes, roots, unlocks or writes to the phone's system partitions. Some devices block reading their originals.",12,MUTED,false);root.addView(bootExplainer);
+        space(root,6);
+        exportBootButton=button("EXPORT ORIGINAL BOOT ANIMATION",true);root.addView(exportBootButton);
+        exportBootButton.setOnClickListener(v->exportBoot());
         space(root,12);
         statusView=label("Nothing scanned yet.",13,MUTED,false);root.addView(statusView);
         space(root,6);
@@ -118,7 +130,7 @@ public class ScoutActivity extends Activity {
     private Button button(String text,boolean primary){Button b=new Button(this);b.setText(text);b.setTextSize(TypedValue.COMPLEX_UNIT_SP,11);b.setAllCaps(false);b.setTextColor(primary?Color.BLACK:WHITE);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(primary?PURPLE:0xFF44324F));b.setPadding(0,0,0,0);b.setMinHeight(dp(52));return b;}
     private void addWeighted(LinearLayout p,Button b){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(52),1);lp.setMargins(dp(1),dp(4),dp(1),dp(4));p.addView(b,lp);}
     private void space(LinearLayout l,int h){TextView z=new TextView(this);l.addView(z,new LinearLayout.LayoutParams(1,dp(h)));}
-    private void updateButtons(){boolean has=!currentReport.isEmpty();scanButton.setEnabled(!busy);sendButton.setEnabled(has&&!busy);saveButton.setEnabled(has&&!busy);copyButton.setEnabled(has&&!busy);}
+    private void updateButtons(){boolean has=!currentReport.isEmpty();scanButton.setEnabled(!busy);sendButton.setEnabled(has&&!busy);saveButton.setEnabled(has&&!busy);copyButton.setEnabled(has&&!busy);if(exportBootButton!=null)exportBootButton.setEnabled(!busy);}
     private void scan(){if(busy)return;busy=true;statusView.setText("Examining device capabilities…");scanButton.setText("SCANNING…");updateButtons();new Thread(()->{
         JSONObject result;try{result=collect();}catch(Exception e){result=new JSONObject();put(result,"scan_error",e.toString());}
         final JSONObject ready=result;
@@ -129,13 +141,74 @@ public class ScoutActivity extends Activity {
     private void share(){if(currentReport.isEmpty())return;Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,"Nova Device Scout report");i.putExtra(Intent.EXTRA_TEXT,currentReport);startActivity(Intent.createChooser(i,"Share device report"));}
     private void copy(){if(currentReport.isEmpty())return;((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Nova Device Scout JSON",currentReport));Toast.makeText(this,"Report copied",Toast.LENGTH_SHORT).show();}
     private void save(){if(currentReport.isEmpty())return;Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");i.putExtra(Intent.EXTRA_TITLE,"nova-device-scout-"+new SimpleDateFormat("yyyyMMdd-HHmm",Locale.US).format(new Date())+".json");startActivityForResult(i,SAVE_REQUEST);}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==SAVE_REQUEST&&result==RESULT_OK&&data!=null&&data.getData()!=null){try(OutputStream o=getContentResolver().openOutputStream(data.getData())){if(o==null)throw new Exception("No output stream");o.write(currentReport.getBytes(java.nio.charset.StandardCharsets.UTF_8));Toast.makeText(this,"JSON saved",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Save failed: "+e.getMessage(),Toast.LENGTH_LONG).show();}}}
+    @Override protected void onActivityResult(int request,int result,Intent data){
+        super.onActivityResult(request,result,data);
+        if(result!=RESULT_OK||data==null||data.getData()==null)return;
+        if(request==EXPORT_BOOT_REQUEST){copyBootAnimation(data.getData());return;}
+        if(request==SAVE_REQUEST){try(OutputStream o=getContentResolver().openOutputStream(data.getData())){if(o==null)throw new Exception("No output stream");o.write(currentReport.getBytes(java.nio.charset.StandardCharsets.UTF_8));Toast.makeText(this,"JSON saved",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Save failed: "+e.getMessage(),Toast.LENGTH_LONG).show();}}
+    }
+    private static final String[] BOOT_PATHS={"/system/media/bootanimation.zip","/product/media/bootanimation.zip","/system/product/media/bootanimation.zip","/vendor/media/bootanimation.zip","/oem/media/bootanimation.zip","/data/local/bootanimation.zip"};
+    private File readableBootZip(){for(String path:BOOT_PATHS){File f=new File(path);if(f.isFile()&&f.canRead())return f;}return null;}
+    private void exportBoot(){
+        if(busy)return;
+        File source=readableBootZip();
+        if(source==null){statusView.setText("Cannot read a boot animation from the standard locations on this device. No system changes were attempted.");Toast.makeText(this,"No readable boot animation found",Toast.LENGTH_LONG).show();return;}
+        if(source.length()<4||source.length()>512L*1024L*1024L){statusView.setText("Boot-animation file size is outside the safe export range; no export attempted.");return;}
+        Intent picker=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        picker.addCategory(Intent.CATEGORY_OPENABLE);
+        picker.setType("application/zip");
+        picker.putExtra(Intent.EXTRA_TITLE,"bootanimation-original-"+Build.MODEL.replaceAll("[^A-Za-z0-9_-]","_")+"-"+new SimpleDateFormat("yyyyMMdd-HHmm",Locale.US).format(new Date())+".zip");
+        try{startActivityForResult(picker,EXPORT_BOOT_REQUEST);}catch(Exception e){statusView.setText("Couldn't open the file-save picker: "+e.getMessage());}
+    }
+    private void copyBootAnimation(Uri destination){
+        if(busy)return;
+        busy=true;statusView.setText("Copying original boot animation. The system source is read-only…");updateButtons();
+        new Thread(()->{
+            String msg;
+            try{
+                File source=readableBootZip();
+                if(source==null)throw new Exception("Source no longer readable");
+                MessageDigest digest=MessageDigest.getInstance("SHA-256");
+                long copied=0;
+                try(InputStream in=new FileInputStream(source);OutputStream out=getContentResolver().openOutputStream(destination,"w")){
+                    if(out==null)throw new Exception("Selected destination is unavailable");
+                    byte[] buf=new byte[65536];int read;
+                    while((read=in.read(buf))!=-1){out.write(buf,0,read);digest.update(buf,0,read);copied+=read;}
+                    out.flush();
+                }
+                if(copied!=source.length())throw new Exception("Incomplete copy: "+copied+" / "+source.length()+" bytes");
+                StringBuilder hash=new StringBuilder();for(byte x:digest.digest())hash.append(String.format(Locale.US,"%02x",x&255));
+                // Verify provider's saved bytes when the document provider allows reading them back.
+                String verified="Save complete; read-back unsupported by provider";
+                try(InputStream check=getContentResolver().openInputStream(destination)){
+                    if(check!=null){MessageDigest checkDigest=MessageDigest.getInstance("SHA-256");long counted=0;byte[] buf=new byte[65536];int n;while((n=check.read(buf))!=-1){checkDigest.update(buf,0,n);counted+=n;}
+                        if(counted!=copied||!MessageDigest.isEqual(digestFromHex(hash.toString()),checkDigest.digest()))throw new Exception("Saved-file verification mismatch");
+                        verified="Saved bytes verified with SHA-256";}
+                }catch(java.io.IOException unavailable){verified="Saved; provider does not support read-back verification";}
+                msg="EXPORT SUCCESS: "+source.getAbsolutePath()+" copied ("+copied+" bytes). "+verified+". SHA-256: "+hash+". The system file was not changed.";
+            }catch(Exception e){msg="EXPORT FAILED: "+e.getClass().getSimpleName()+" — "+e.getMessage()+". Your original system file is unchanged; a partial destination file may need deletion.";}
+            final String done=msg;
+            runOnUiThread(()->{busy=false;statusView.setText(done);updateButtons();Toast.makeText(this,done.startsWith("EXPORT SUCCESS")?"Boot animation exported":"Boot export failed — read details",Toast.LENGTH_LONG).show();});
+        }).start();
+    }
+    private byte[] digestFromHex(String hex){byte[] data=new byte[hex.length()/2];for(int i=0;i<data.length;i++)data[i]=(byte)Integer.parseInt(hex.substring(i*2,i*2+2),16);return data;}
+
     private void put(JSONObject j,String k,Object v){try{j.put(k,v==null?JSONObject.NULL:v);}catch(Exception ignored){}}
     private void runSection(JSONObject root,String name,Collector c){try{JSONObject section=new JSONObject();c.run(section);put(root,name,section);}catch(Throwable ex){JSONObject failed=new JSONObject();put(failed,"unavailable_reason",ex.getClass().getSimpleName()+": "+ex.getMessage());put(root,name,failed);}}
     interface Collector{void run(JSONObject dst)throws Exception;}
     private JSONObject collect(){JSONObject r=new JSONObject();put(r,"schema","nova_device_scout_v1");put(r,"generated_at",new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ",Locale.US).format(new Date()));put(r,"data_policy","Read-only local scan. No device identifiers, personal content, network addresses, accounts, app lists or installed package inventory. Manually shared only.");
         runSection(r,"device",j->{put(j,"manufacturer",Build.MANUFACTURER);put(j,"brand",Build.BRAND);put(j,"model",Build.MODEL);put(j,"device",Build.DEVICE);put(j,"product",Build.PRODUCT);put(j,"board",Build.BOARD);put(j,"hardware",Build.HARDWARE);put(j,"bootloader_version",Build.BOOTLOADER);put(j,"android_release",Build.VERSION.RELEASE);put(j,"sdk_int",Build.VERSION.SDK_INT);put(j,"security_patch",Build.VERSION.SECURITY_PATCH);put(j,"build_id",Build.ID);put(j,"build_display",Build.DISPLAY);put(j,"build_type",Build.TYPE);put(j,"build_tags",Build.TAGS);put(j,"build_fingerprint",Build.FINGERPRINT);put(j,"supported_abis",arr(Build.SUPPORTED_ABIS));put(j,"supported_32_bit_abis",arr(Build.SUPPORTED_32_BIT_ABIS));put(j,"supported_64_bit_abis",arr(Build.SUPPORTED_64_BIT_ABIS));put(j,"is_64_bit_runtime",android.os.Process.is64Bit());if(Build.VERSION.SDK_INT>=31){put(j,"soc_manufacturer",Build.SOC_MANUFACTURER);put(j,"soc_model",Build.SOC_MODEL);}put(j,"available_processors",Runtime.getRuntime().availableProcessors());put(j,"java_vm",System.getProperty("java.vm.version"));put(j,"timezone",TimeZone.getDefault().getID());put(j,"locale",Locale.getDefault().toLanguageTag());});
         runSection(r,"boot_research",j->{String[] props={"ro.boot.verifiedbootstate","ro.boot.flash.locked","ro.boot.vbmeta.device_state","ro.boot.veritymode","ro.boot.dynamic_partitions","ro.boot.slot_suffix","ro.build.ab_update","ro.virtual_ab.enabled","ro.virtual_ab.compression.enabled","ro.product.first_api_level","ro.boot.bootreason","ro.boot.mode","ro.boot.hardware","init.svc.bootanim","ro.build.version.sdk"};JSONObject p=new JSONObject();for(String k:props){String v=prop(k);put(p,k,v.isEmpty()?"unavailable_or_not_set":v);}put(j,"read_only_system_properties",p);String locked=prop("ro.boot.flash.locked"),state=prop("ro.boot.vbmeta.device_state");put(j,"status_interpretation",locked.equals("1")||state.equalsIgnoreCase("locked")?"Reported locked (not independently verified)":locked.equals("0")||state.equalsIgnoreCase("unlocked")?"Reported unlocked (not independently verified)":"Not determined by accessible Android properties");String[] paths={"/system/media/bootanimation.zip","/product/media/bootanimation.zip","/system/product/media/bootanimation.zip","/vendor/media/bootanimation.zip","/oem/media/bootanimation.zip","/data/local/bootanimation.zip"};JSONArray files=new JSONArray();for(String path:paths){JSONObject o=new JSONObject();put(o,"path",path);File f=new File(path);put(o,"app_can_see_file",f.exists());put(o,"app_can_read_file",f.canRead());put(o,"warning","False may mean hidden by sandbox, not absent");files.put(o);}put(j,"candidate_bootanimation_paths",files);put(j,"su_binary_at_common_paths",new File("/system/bin/su").exists()||new File("/system/xbin/su").exists());put(j,"notes","Stock apps cannot write protected boot partitions. ADB alone normally cannot bypass read-only verified partitions. No root/unlock/writes attempted.");});
+        runSection(r,"boot_archive",j->{File original=readableBootZip();put(j,"found_readable_boot_zip",original!=null);
+            if(original!=null){put(j,"path",original.getAbsolutePath());put(j,"bytes",original.length());
+                try(ZipFile archive=new ZipFile(original)){
+                    put(j,"zip_entries",archive.size());ZipEntry desc=archive.getEntry("desc.txt");put(j,"desc_txt_present",desc!=null);
+                    if(desc!=null){try(InputStream stream=archive.getInputStream(desc)){
+                        byte[] chunk=new byte[2048];int count=stream.read(chunk);if(count>0)put(j,"desc_txt_excerpt",new String(chunk,0,count,java.nio.charset.StandardCharsets.UTF_8));}}
+                }catch(Exception issue){put(j,"zip_inspection_error",issue.getClass().getSimpleName()+": "+issue.getMessage());}
+            }
+            put(j,"safe_export_note","Use the app's EXPORT ORIGINAL BOOT ANIMATION button. The system copy is read-only; saving requires explicit user-selected destination.");
+        });
         runSection(r,"screen",j->{DisplayMetrics m=new DisplayMetrics();getWindowManager().getDefaultDisplay().getRealMetrics(m);Display dis=getWindowManager().getDefaultDisplay();put(j,"real_width_px",m.widthPixels);put(j,"real_height_px",m.heightPixels);put(j,"density_dpi",m.densityDpi);put(j,"density_scale",m.density);put(j,"scaled_density",m.scaledDensity);put(j,"current_refresh_hz",dis.getRefreshRate());put(j,"rotation",dis.getRotation());JSONArray modes=new JSONArray();for(Display.Mode mode:dis.getSupportedModes()){JSONObject x=new JSONObject();put(x,"width",mode.getPhysicalWidth());put(x,"height",mode.getPhysicalHeight());put(x,"refresh_hz",mode.getRefreshRate());modes.put(x);}put(j,"supported_modes",modes);Configuration c=getResources().getConfiguration();put(j,"screen_layout",c.screenLayout);put(j,"orientation",c.orientation);put(j,"smallest_width_dp",c.smallestScreenWidthDp);put(j,"ui_mode",c.uiMode);if(Build.VERSION.SDK_INT>=26){Display.HdrCapabilities hdr=dis.getHdrCapabilities();put(j,"hdr_types",arr(hdr.getSupportedHdrTypes()));put(j,"wide_color_gamut",dis.isWideColorGamut());}if(Build.VERSION.SDK_INT>=28){WindowInsets wi=getWindow().getDecorView().getRootWindowInsets();if(wi!=null&&wi.getDisplayCutout()!=null)put(j,"display_cutout_present",true);else put(j,"display_cutout_present","unknown_or_none");}});
         runSection(r,"memory_storage",j->{ActivityManager a=(ActivityManager)getSystemService(ACTIVITY_SERVICE);ActivityManager.MemoryInfo info=new ActivityManager.MemoryInfo();a.getMemoryInfo(info);put(j,"ram_total_bytes",info.totalMem);put(j,"ram_available_bytes",info.availMem);put(j,"ram_low_memory",info.lowMemory);put(j,"memory_class_mb",a.getMemoryClass());put(j,"large_memory_class_mb",a.getLargeMemoryClass());StatFs s=new StatFs(Environment.getDataDirectory().getAbsolutePath());put(j,"internal_storage_total_bytes",s.getTotalBytes());put(j,"internal_storage_available_bytes",s.getAvailableBytes());put(j,"external_storage_state",Environment.getExternalStorageState());put(j,"app_storage_directory_bytes",getFilesDir().getFreeSpace());put(j,"uptime_minutes",SystemClock.elapsedRealtime()/60000);});
         runSection(r,"battery_power",j->{Intent b=registerReceiver(null,new IntentFilter(Intent.ACTION_BATTERY_CHANGED));if(b!=null){int level=b.getIntExtra(BatteryManager.EXTRA_LEVEL,-1),scale=b.getIntExtra(BatteryManager.EXTRA_SCALE,-1);if(scale>0)put(j,"battery_percent",level*100.0/scale);put(j,"battery_status_code",b.getIntExtra(BatteryManager.EXTRA_STATUS,-1));put(j,"battery_health_code",b.getIntExtra(BatteryManager.EXTRA_HEALTH,-1));put(j,"plugged_code",b.getIntExtra(BatteryManager.EXTRA_PLUGGED,-1));put(j,"battery_temp_tenths_celsius",b.getIntExtra(BatteryManager.EXTRA_TEMPERATURE,-1));put(j,"voltage_mv",b.getIntExtra(BatteryManager.EXTRA_VOLTAGE,-1));put(j,"technology",b.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY));}PowerManager p=(PowerManager)getSystemService(POWER_SERVICE);put(j,"power_save_mode",p.isPowerSaveMode());put(j,"interactive",p.isInteractive());put(j,"is_device_idle_mode",p.isDeviceIdleMode());BatteryManager manager=(BatteryManager)getSystemService(BATTERY_SERVICE);put(j,"estimated_charge_counter_microamp_hours",manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));});
@@ -145,7 +218,7 @@ public class ScoutActivity extends Activity {
         runSection(r,"graphics",j->{JSONObject egl=probeGl();for(java.util.Iterator<String>it=egl.keys();it.hasNext();){String k=it.next();put(j,k,egl.opt(k));}});
         runSection(r,"android_features",j->{PackageManager pm=getPackageManager();FeatureInfo[] f=pm.getSystemAvailableFeatures();JSONArray arr=new JSONArray();if(f!=null){Arrays.sort(f,(a,b)->String.valueOf(a.name).compareTo(String.valueOf(b.name)));for(FeatureInfo x:f)if(x.name!=null)arr.put(x.name);}put(j,"declared_system_features",arr);put(j,"camera",pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));put(j,"nfc",pm.hasSystemFeature(PackageManager.FEATURE_NFC));put(j,"bluetooth_le",pm.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE));put(j,"wifi_direct",pm.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT));put(j,"live_wallpaper",pm.hasSystemFeature(PackageManager.FEATURE_LIVE_WALLPAPER));put(j,"fingerprint",pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT));put(j,"telephony",pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));put(j,"touchscreen_multitouch",pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN_MULTITOUCH));});
         runSection(r,"system_services",j->{AudioManager a=(AudioManager)getSystemService(AUDIO_SERVICE);put(j,"audio_output_sample_rate",a.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));put(j,"audio_frames_per_buffer",a.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));KeyguardManager km=(KeyguardManager)getSystemService(KEYGUARD_SERVICE);put(j,"device_secure",km.isDeviceSecure());put(j,"keyguard_locked_during_scan",km.isKeyguardLocked());put(j,"default_font_scale",getResources().getConfiguration().fontScale);put(j,"notification_listener_permission_granted","not requested");put(j,"accessibility_permission_granted","not requested");put(j,"overlay_permission_granted",Settings.canDrawOverlays(this));put(j,"write_system_settings_granted",Settings.System.canWrite(this));});
-        runSection(r,"app",j->{put(j,"name","Nova Device Scout");put(j,"version","1.0.0");put(j,"package_name",getPackageName());put(j,"app_target_sdk",getApplicationInfo().targetSdkVersion);put(j,"required_runtime_permissions","none");put(j,"internet_permission","not declared");put(j,"data_collected_from_user_apps","none");put(j,"operates_as_root",false);});
+        runSection(r,"app",j->{put(j,"name","Nova Device Scout");put(j,"version","1.1.0");put(j,"package_name",getPackageName());put(j,"app_target_sdk",getApplicationInfo().targetSdkVersion);put(j,"required_runtime_permissions","none");put(j,"internet_permission","not declared");put(j,"data_collected_from_user_apps","none");put(j,"operates_as_root",false);});
         return r;}
     private JSONArray arr(String[] a){JSONArray r=new JSONArray();for(String x:a)r.put(x);return r;}
     private JSONArray arr(int[] a){JSONArray r=new JSONArray();for(int x:a)r.put(x);return r;}
