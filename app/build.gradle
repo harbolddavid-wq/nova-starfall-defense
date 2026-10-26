@@ -3,7 +3,7 @@ android {
     namespace 'com.novasky.arcade'
     compileSdk 36
     defaultConfig {
-        applicationId 'com.novasky.arcade'
+        applicationId 'com.novasky.velvetfling'
         minSdk 26
         targetSdk 35
         versionCode 1
