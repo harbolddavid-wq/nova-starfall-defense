@@ -15,7 +15,17 @@ function wing(x,y,s=1,color="#1b0d25"){c.save();c.translate(x,y);c.scale(s,s);c.
 const stars=Array.from({length:128},()=>({x:rnd(0,W),y:rnd(0,320),r:rnd(.3,1.7),ph:rnd(0,TAU)}));
 const embers=Array.from({length:45},()=>({x:rnd(0,W),y:rnd(0,460),s:rnd(.2,1),p:rnd(0,TAU)}));
 function turret(x,foot,h){fill(x,foot-h,49,h,"#140c21");for(let i=0;i<4;i++)fill(x-6+i*15,foot-h-11,12,17,"#160c21");c.beginPath();c.moveTo(x-12,foot-h);c.lineTo(x+24,foot-h-40);c.lineTo(x+60,foot-h);c.fillStyle="#150b22";c.fill();box(x+19,foot-h+38,13,23,7,"#ae58a2","#7c3b75");glow(x+25,foot-h+49,28,"#ee74d2",.15)}
+const terraceArt=new Image();
+terraceArt.src="art/terrace-after-hours.webp";
 function scenery(){
+ if(terraceArt.complete && terraceArt.naturalWidth){
+  const ratio=Math.max(W/terraceArt.naturalWidth,H/terraceArt.naturalHeight);
+  const iw=terraceArt.naturalWidth*ratio,ih=terraceArt.naturalHeight*ratio;
+  c.drawImage(terraceArt,(W-iw)/2,(H-ih)/2,iw,ih);
+  // Lanterns breathe very slightly; static art remains the principal scene.
+  for(const [i,x] of [20,98,297,528,758,942].entries())glow(x,289,20,"#ffb36e",.025+.015*(1+Math.sin(frame*.035+i*1.7)));
+  return;
+ }
  let sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#0b0820");sky.addColorStop(.44,"#3c174b");sky.addColorStop(.8,"#853957");sky.addColorStop(1,"#2c152d");fill(0,0,W,H,sky);
  glow(749,117,230,"#b65dda",.33);glow(753,115,125,"#f7d9ef",.16);
  let moon=c.createRadialGradient(747,112,5,753,115,82);moon.addColorStop(0,"#fff8dd");moon.addColorStop(.73,"#f4d8ee");moon.addColorStop(1,"#ab87bc");dot(752,114,81,moon);c.globalAlpha=.09;dot(718,94,18,"#422445");dot(779,143,15,"#422445");c.globalAlpha=1;
@@ -27,11 +37,14 @@ function scenery(){
  for(const e of embers){let y=(e.y-frame*.12*e.s+5000)%466;dot(e.x+Math.sin(frame*.02+e.p)*17,y,1.1,"#ffa8d2")}
 }
 function floorArt(){
+ if(terraceArt.complete && terraceArt.naturalWidth){
+  const shade=c.createLinearGradient(0,G,0,H);shade.addColorStop(0,"rgba(20,7,25,0)");shade.addColorStop(1,"rgba(20,7,25,.30)");fill(0,G,W,H-G,shade);return;
+ }
  let g=c.createLinearGradient(0,G,0,H);g.addColorStop(0,"#6a3b50");g.addColorStop(.15,"#382339");g.addColorStop(1,"#180d20");fill(0,G,W,H-G,g);stroke([[0,G],[W,G]],"#ffc58d",3);stroke([[0,G+5],[W,G+5]],"#a75986",2);
  for(let y=468;y<H;y+=25){stroke([[0,y],[W,y]],"#744560",1);for(let x=((y/25|0)%2)*36-32;x<W;x+=72)stroke([[x,y],[x,y+25]],"#744560",1)}
  for(let i=0;i<18;i++){let x=i*56;glow(x+13,453,24,"#ef61a0",.15)}
 }
-function curtains(){c.save();let g=c.createLinearGradient(0,0,118,0);g.addColorStop(0,"#0e071b");g.addColorStop(.45,"#752148");g.addColorStop(.78,"#4a1338");g.addColorStop(1,"#17081e");c.beginPath();c.moveTo(0,0);c.lineTo(104,0);c.bezierCurveTo(92,80,40,105,0,131);c.fillStyle=g;c.fill();c.beginPath();c.moveTo(W,0);c.lineTo(W-104,0);c.bezierCurveTo(W-92,80,W-40,105,W,131);c.fill();stroke([[0,138],[48,112],[89,38]],"#e0a272",3);stroke([[W,138],[W-48,112],[W-89,38]],"#e0a272",3);c.restore();}
+function curtains(){if(terraceArt.complete && terraceArt.naturalWidth)return;c.save();let g=c.createLinearGradient(0,0,118,0);g.addColorStop(0,"#0e071b");g.addColorStop(.45,"#752148");g.addColorStop(.78,"#4a1338");g.addColorStop(1,"#17081e");c.beginPath();c.moveTo(0,0);c.lineTo(104,0);c.bezierCurveTo(92,80,40,105,0,131);c.fillStyle=g;c.fill();c.beginPath();c.moveTo(W,0);c.lineTo(W-104,0);c.bezierCurveTo(W-92,80,W-40,105,W,131);c.fill();stroke([[0,138],[48,112],[89,38]],"#e0a272",3);stroke([[W,138],[W-48,112],[W-89,38]],"#e0a272",3);c.restore();}
 // Original After Hours character artwork is used in both the menu and playfield.
 // The same artwork participates in the small idle movement, so the game never
 // promises a character on the title screen that disappears during play.
@@ -98,5 +111,5 @@ function darkOverlay(){fill(0,0,W,H,"rgba(12,4,21,.80)");glow(488,236,265,"#e055
 function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275,"#f660a6",.16);box(235,100,539,208,23,"rgba(32,11,41,.86)","#edb08b",3);box(248,112,513,184,16,null,"#b37c98",1.3);words("VELVET FLING",503,165,55,"#ffe1b3");words("AFTER HOURS",503,227,48,"#ff7abb");words("A mischievous night of impossible shots",502,278,17,"#ffe3d4","center","400");drawButton("PLAY THE NIGHT",363,360,288,65,()=>start(1),true);drawButton("HOW TO PLAY",403,441,206,46,()=>phase="help");words("EARLY PLAYABLE WORK IN PROGRESS",504,520,15,"#f5cbd8","center","400")}
 function helpScreen(){scenery();floorArt();vesper();darkOverlay();words("THE ART OF THE FLING",480,150,39,"#ffe0b5");words("Pull the heart back, then release to launch.",480,218,20,"#ffe9df");words("Classic is precise. Bloom bursts on impact.",480,263,20,"#ffe9df");words("Choose Split, then tap during flight to divide it.",480,308,20,"#ffe9df");words("Aim at targets and structures to find a path.",480,353,19,"#ffe9df");drawButton("LET'S PLAY",345,398,268,52,()=>start(1),true)}
 function pauseScreen(){gameplay();darkOverlay();words("A MOMENT, DARLING",480,133,37,"#ffe3c0");drawButton("CONTINUE",346,171,268,47,()=>{phase="play";AfterHoursAudio.setPaused(false)},true);drawButton("RESTART",346,227,268,43,()=>start(stage));drawButton("MUSIC "+(AfterHoursAudio.isMusicOn()?"ON":"OFF"),268,285,135,43,()=>AfterHoursAudio.toggleMusic());drawButton("SFX "+(AfterHoursAudio.isSfxOn()?"ON":"OFF"),413,285,135,43,()=>AfterHoursAudio.toggleSfx());drawButton("HAPTIC "+(hapticsOn?"ON":"OFF"),558,285,135,43,()=>toggleHaptics());drawButton("MAIN MENU",346,368,268,47,()=>{phase="menu";AfterHoursAudio.setPaused(false)})}
-function endScreen(win){gameplay();darkOverlay();words(win?"SCANDALOUS SUCCESS!":"THE NIGHT ISN'T OVER",480,153,win?40:38,"#ffe2bb");words(win?"Those gargoyles are absolutely smitten.":"Even immortal charm takes practice.",480,210,18,"#ffd5e9","center","400");words("YOUR SCORE",480,258,18,"#ffc2da");words(score.toLocaleString(),480,298,47,"#ffe6ab");if(win){for(let i=0;i<(shots>=3?3:shots>=1?2:1);i++)words("★",431+i*50,363,43,"#ffe3a0")}drawButton(win?"REPLAY":"TRY AGAIN",286,402,188,47,()=>start(stage));drawButton(win?(stage<5?"NEXT LEVEL":"PLAY AGAIN"):"MAIN MENU",492,402,188,47,()=>win?start(stage<5?stage+1:1):phase="menu",true)}
+function endScreen(win){gameplay();darkOverlay();words(win?"SCANDALOUS SUCCESS!":"THE NIGHT ISN'T OVER",480,153,win?40:38,"#ffe2bb");words(win?"That is one way to close the curtain.":"Even immortal charm takes practice.",480,210,18,"#ffd5e9","center","400");words("YOUR SCORE",480,258,18,"#ffc2da");words(score.toLocaleString(),480,298,47,"#ffe6ab");if(win){for(let i=0;i<(shots>=3?3:shots>=1?2:1);i++)words("★",431+i*50,363,43,"#ffe3a0")}drawButton(win?"REPLAY":"TRY AGAIN",286,402,188,47,()=>start(1));drawButton("MAIN MENU",492,402,188,47,()=>phase="menu",true)}
 function paint(){c.setTransform(1,0,0,1,0,0);fill(0,0,cv.width,cv.height,"#100718");c.save();c.translate(ox,oy);c.scale(sc,sc);if(shake>1)c.translate(rnd(-shake,shake),rnd(-shake,shake));buttons=[];if(phase==="menu")titleScreen();else if(phase==="play")gameplay();else if(phase==="help")helpScreen();else if(phase==="pause")pauseScreen();else if(phase==="win")endScreen(true);else if(phase==="lose")endScreen(false);c.restore()}

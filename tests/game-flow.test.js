@@ -7,7 +7,7 @@ const canvasContext=new Proxy({createLinearGradient:()=>gradient,createRadialGra
 const canvas={width:960,height:540,getContext:()=>canvasContext,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener:(n,fn)=>events[n]=fn,setPointerCapture:(id)=>{captured=id}};
 const local={};
 class FakeAudio {constructor(src){this.src=src;this.paused=true;this.ended=false;this.currentTime=0;this.volume=1}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
-const c={console,Math,Date,Audio:FakeAudio,setTimeout:()=>0,clearTimeout:()=>{},requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate:()=>{}},localStorage:{getItem:k=>local[k]||null,setItem:(k,v)=>local[k]=v},Image:class{constructor(){this.complete=true;this.naturalWidth=512}},document:{getElementById:()=>canvas,addEventListener:()=>{},hidden:false}};
+const c={console,Math,Date,Audio:FakeAudio,setTimeout:()=>0,clearTimeout:()=>{},requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate:()=>{}},localStorage:{getItem:k=>local[k]||null,setItem:(k,v)=>local[k]=v},Image:class{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=768}},document:{getElementById:()=>canvas,addEventListener:()=>{},hidden:false}};
 c.window=c;c.addEventListener=()=>{};vm.createContext(c);
 for(const f of ['velvet-art.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),c,{filename:f});
 const run=(x)=>vm.runInContext(x,c);
@@ -30,6 +30,19 @@ run('start(1);paint()');event('pointerdown',158,368,3);event('pointermove',88,40
 assert.strictEqual(run('shots'),5,'cancel must not fire');
 assert.strictEqual(run('aiming'),false);
 console.log('Game flow: pointer release/cancel, split and bounded bloom passed with mocked rendering.');
-const reachable=run(`(()=>{const found=[false,false];for(let dx=-108;dx<=-55;dx+=5){for(let dy=-15;dy<=80;dy+=5){start(1);shotMode='direct';drag=Physics.pull(launcher,dx,dy);shot();for(let i=0;i<650&&ball;i++)sim(1/120);for(let j=0;j<2;j++)if(enemies[j].dead)found[j]=true;if(found.every(Boolean))return found}}return found})()`);
+const reachable=run(`(()=>{const found=[false,false,false];for(let dx=-108;dx<=-55;dx+=5){for(let dy=-15;dy<=80;dy+=5){start(1);shotMode='direct';drag=Physics.pull(launcher,dx,dy);shot();for(let i=0;i<650&&ball;i++)sim(1/120);for(let j=0;j<3;j++)if(enemies[j].dead)found[j]=true;if(found.every(Boolean))return found}}return found})()`);
 assert(reachable.every(Boolean),'each initial target needs at least one reachable trajectory');
-console.log('Game flow: both initial targets are reachable by a simulated direct shot.');
+console.log('Game flow: all three opening targets are individually reachable by a simulated direct shot.');
+const solution=run(`(()=>{
+ function play(sequence){start(1);shotMode='direct';for(const [dx,dy] of sequence){if(phase!=='play'||shots<=0)break;drag=Physics.pull(launcher,dx,dy);shot();for(let k=0;k<720&&ball;k++)sim(1/120)}return enemies.map(t=>t.dead)}
+ const chosen=[];
+ for(let target=0;target<3;target++){
+  if(play(chosen)[target])continue;
+  let found=null;
+  for(let dx=-108;dx<=-55&&!found;dx+=5)for(let dy=-15;dy<=80;dy+=5){const tryShot=[dx,dy];if(play([...chosen,tryShot])[target]){found=tryShot;break}}
+  if(!found)return null;chosen.push(found)
+ }
+ return play(chosen).every(Boolean)&&chosen.length<=5?chosen:null;
+})()`);
+assert(solution,'opening level must have a simulated path to clear every target within the shot budget');
+console.log('Game flow: simulated opening clear found in '+solution.length+' shots; difficulty and feel remain unverified.');

@@ -18,10 +18,19 @@ function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
 function addCrate(x,y,w,h,type="wood"){crates.push({id:crates.length,x,y,w,h,type,hp:type==="crystal"?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
 function addEnemy(x,y,kind){enemies.push({x,y,kind,seed:rnd(0,TAU),dead:false,r:25})}
 function start(l){
- stage=clamp(l,1,5);phase="play";score=0;shots=5;balls=[];ball=null;drag=null;aiming=false;activePointer=null;crates=[];enemies=[];particles=[];popups=[];finishClock=0;shake=0;simTime=0;
- const rows=[[[666,354],[803,358]],[[649,362],[755,320],[859,362]],[[648,326],[752,375],[863,313]],[[632,360],[725,308],[819,360],[890,320]],[[620,342],[705,295],[789,363],[873,300],[924,363]]];
- rows[stage-1].forEach(([x,y],i)=>{addCrate(x,y+43,75,17,i%2?"crystal":"wood");addCrate(x-32,y+62,18,46,"wood");addCrate(x+32,y+62,18,46,"wood");if(stage>2)addCrate(x,y-48,55,14,"crystal");addEnemy(x,y,stage+i)});
- if(stage>=4){addCrate(558,418,29,48,"wood");addCrate(578,381,45,16,"crystal")}
+ // One authored opening arena is the current quality target. The old five
+ // prototype stages remain safe on the original branch, not sold as a campaign.
+ stage=1;phase="play";score=0;shots=5;balls=[];ball=null;drag=null;aiming=false;activePointer=null;crates=[];enemies=[];particles=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
+ // Low cover, an elevated crystal shelf and a more distant target create
+ // different choices for precision, an impact burst, and an airborne split.
+ addCrate(520,420,24,60,"wood");
+ addEnemy(577,395,1);
+ addCrate(695,414,18,72,"wood");
+ addCrate(779,414,18,72,"wood");
+ addCrate(737,372,100,16,"crystal");
+ addEnemy(737,338,2);
+ addCrate(835,423,18,54,"wood");
+ addEnemy(884,412,3);
  AfterHoursAudio.setPaused(false);
 }
 function charm(t){if(t.dead)return;t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
@@ -52,7 +61,7 @@ function splitShot(){
 }
 function finished(win){
  if(phase!=="play")return;phase=win?"win":"lose";aiming=false;drag=null;
- if(win){unlocked=Math.max(unlocked,Math.min(5,stage+1));best=Math.max(best,score);try{localStorage.setItem("velvet_ah_unlocked",unlocked);localStorage.setItem("velvet_ah_best",best)}catch(e){}burst(474,241,"#ffd599",45);haptic(18);sfx("win")}else sfx("switch",.65)
+ if(win){unlocked=1;best=Math.max(best,score);try{localStorage.setItem("velvet_ah_unlocked",unlocked);localStorage.setItem("velvet_ah_best",best)}catch(e){}burst(474,241,"#ffd599",45);haptic(18);sfx("win")}else sfx("switch",.65)
 }
 function moveCrates(dt){
  for(const b of crates){if(b.dead||!b.moving)continue;b.vy+=780*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.rot+=b.spin*dt;b.vx*=Math.pow(.45,dt);
