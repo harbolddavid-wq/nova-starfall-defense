@@ -6,9 +6,10 @@ const gradient={addColorStop(){}};
 const canvasContext=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,measureText:()=>({width:10})},{get(o,k){return k in o?o[k]:()=>{}},set(o,k,v){o[k]=v;return true}});
 const canvas={width:960,height:540,getContext:()=>canvasContext,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener:(n,fn)=>events[n]=fn,setPointerCapture:(id)=>{captured=id}};
 const local={};
-const c={console,Math,Date,setTimeout:()=>0,clearTimeout:()=>{},requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate:()=>{}},localStorage:{getItem:k=>local[k]||null,setItem:(k,v)=>local[k]=v},Image:class{constructor(){this.complete=true;this.naturalWidth=512}},document:{getElementById:()=>canvas,addEventListener:()=>{},hidden:false}};
+class FakeAudio {constructor(src){this.src=src;this.paused=true;this.ended=false;this.currentTime=0;this.volume=1}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
+const c={console,Math,Date,Audio:FakeAudio,setTimeout:()=>0,clearTimeout:()=>{},requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate:()=>{}},localStorage:{getItem:k=>local[k]||null,setItem:(k,v)=>local[k]=v},Image:class{constructor(){this.complete=true;this.naturalWidth=512}},document:{getElementById:()=>canvas,addEventListener:()=>{},hidden:false}};
 c.window=c;c.addEventListener=()=>{};vm.createContext(c);
-for(const f of ['velvet-art.js','after-hours-physics.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),c,{filename:f});
+for(const f of ['velvet-art.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),c,{filename:f});
 const run=(x)=>vm.runInContext(x,c);
 function event(type,x,y,id=1){events[type]({clientX:x,clientY:y,pointerId:id,preventDefault(){}})}
 run('start(1);paint()');

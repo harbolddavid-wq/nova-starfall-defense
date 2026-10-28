@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/velvet-fling-2026
+      - work/velvet-after-hours-2026-10-28
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,11 +23,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Check gameplay geometry and control flows
+        run: |
+          node tests/physics.test.js
+          node tests/game-flow.test.js
+          node tests/audio-lifecycle.test.js
       - name: Compile Android debug APK
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Velvet-Fling-APK
+          name: Velvet-After-Hours-Dev-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7

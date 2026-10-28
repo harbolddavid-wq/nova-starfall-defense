@@ -1,0 +1,50 @@
+[
+  {
+    "local_file": "harp_bb3.wav",
+    "repository": "sgossner/VCSL",
+    "path": "Chordophones/Composite Chordophones/Folk Harp/EWHarp_Normal_A#3_v2_RR1.wav",
+    "git_blob_sha1": "fedcdbbd780dd9aa1e7b75f54301495b30453573"
+  },
+  {
+    "local_file": "harp_d5.wav",
+    "repository": "sgossner/VCSL",
+    "path": "Chordophones/Composite Chordophones/Folk Harp/EWHarp_Normal_D5_v2_RR1.wav",
+    "git_blob_sha1": "eafa57ed115d029e114bf87cbacf71d017882e39"
+  },
+  {
+    "local_file": "strum_fs2.wav",
+    "repository": "sgossner/VCSL",
+    "path": "Chordophones/Composite Chordophones/Strumstick/Finger/Strumstick_Finger_Str1_Main_F#2_vl1_rr1.wav",
+    "git_blob_sha1": "ad9bc5f22b1fc6931b6bee1ec4ff9c4e37f65420"
+  },
+  {
+    "local_file": "strum_e4.wav",
+    "repository": "sgossner/VCSL",
+    "path": "Chordophones/Composite Chordophones/Strumstick/Finger/Strumstick_Finger_Str3_Main_E4_vl1_rr1.wav",
+    "git_blob_sha1": "574a535bc5a0c70fa55d450521bfd879109c1af0"
+  },
+  {
+    "local_file": "susvib_B1_v1_1.wav",
+    "repository": "lidge-ai/music2-gen",
+    "path": "instruments/strings/samples/susvib_B1_v1_1.wav",
+    "git_blob_sha1": "6b3581dda6f581646bfe3747620319b082c8052f"
+  },
+  {
+    "local_file": "susvib_D2_v1_1.wav",
+    "repository": "lidge-ai/music2-gen",
+    "path": "instruments/strings/samples/susvib_D2_v1_1.wav",
+    "git_blob_sha1": "b78a3b51ff90173e70a2190f8098f4bdf5e1c44f"
+  },
+  {
+    "local_file": "VlnEns_susVib_D3_v1.wav",
+    "repository": "lidge-ai/music2-gen",
+    "path": "instruments/strings/samples/VlnEns_susVib_D3_v1.wav",
+    "git_blob_sha1": "ade4e7a2628420b1b39586e2d516acc11c16f4d6"
+  },
+  {
+    "local_file": "VlnEns_susVib_A3_v1.wav",
+    "repository": "lidge-ai/music2-gen",
+    "path": "instruments/strings/samples/VlnEns_susVib_A3_v1.wav",
+    "git_blob_sha1": "b23c5f981f550e0f4536c6fdd72dc4dc7173fad2"
+  }
+]

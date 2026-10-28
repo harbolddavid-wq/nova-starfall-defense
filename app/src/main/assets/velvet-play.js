@@ -4,13 +4,15 @@ const Physics=AfterHoursPhysics;
 let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5;
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
 let crates=[],enemies=[],particles=[],popups=[],buttons=[],finishClock=0,shake=0;
-let soundOn=true,hapticsOn=true,ctxAudio=null,shotMode="direct",simTime=0;
+let hapticsOn=true,shotMode="direct",simTime=0;
+try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
+function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try { unlocked=clamp(parseInt(localStorage.getItem("velvet_ah_unlocked")||"1",10)||1,1,5); best=parseInt(localStorage.getItem("velvet_ah_best")||"0",10)||0; } catch(e) {}
-function haptic(ms=10){if(hapticsOn && navigator.vibrate) try{navigator.vibrate(ms)}catch(e){}}
-function noise(freq=360,dur=.12,type="triangle",vol=.05){
- if(!soundOn)return;
- try{ctxAudio=ctxAudio||new(window.AudioContext||window.webkitAudioContext)();if(ctxAudio.state==="suspended")ctxAudio.resume();let o=ctxAudio.createOscillator(),g=ctxAudio.createGain();o.type=type;o.frequency.setValueAtTime(freq,ctxAudio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(90,freq*.68),ctxAudio.currentTime+dur);g.gain.setValueAtTime(vol,ctxAudio.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctxAudio.currentTime+dur);o.connect(g);g.connect(ctxAudio.destination);o.start();o.stop(ctxAudio.currentTime+dur)}catch(e){}
+function haptic(){
+ if(!hapticsOn)return;
+ try{if(window.NativeBridge)window.NativeBridge.haptic();else if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
 }
+function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
 function addCrate(x,y,w,h,type="wood"){crates.push({id:crates.length,x,y,w,h,type,hp:type==="crystal"?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
@@ -20,17 +22,18 @@ function start(l){
  const rows=[[[666,354],[803,358]],[[649,362],[755,320],[859,362]],[[648,326],[752,375],[863,313]],[[632,360],[725,308],[819,360],[890,320]],[[620,342],[705,295],[789,363],[873,300],[924,363]]];
  rows[stage-1].forEach(([x,y],i)=>{addCrate(x,y+43,75,17,i%2?"crystal":"wood");addCrate(x-32,y+62,18,46,"wood");addCrate(x+32,y+62,18,46,"wood");if(stage>2)addCrate(x,y-48,55,14,"crystal");addEnemy(x,y,stage+i)});
  if(stage>=4){addCrate(558,418,29,48,"wood");addCrate(578,381,45,16,"crystal")}
+ AfterHoursAudio.setPaused(false);
 }
-function charm(t){if(t.dead)return;t.dead=true;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");noise(690,.20,"triangle",.055);haptic(8)}
+function charm(t){if(t.dead)return;t.dead=true;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
- score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,b.type==="crystal"?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);noise(b.type==="crystal"?510:170,.15,"triangle",.045);
+ score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,b.type==="crystal"?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx(b.type==="crystal"?"glass":"wood");
  if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10)}
 }
 function bloom(p){
  if(p.bloomed || p.mode!=="bloom")return;p.bloomed=true;
- burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);noise(430,.24,"triangle",.055);haptic(12);
+ burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);sfx("power");haptic(12);
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
  for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t);
@@ -41,15 +44,15 @@ function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life
 function shot(){
  if(!drag)return;const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
  if(d<16){drag=null;return}
- const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y)];ball=balls[0];shots--;drag=null;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);noise(250,.18,"triangle",.055);haptic(12)
+ const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y)];ball=balls[0];shots--;drag=null;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
 }
 function splitShot(){
  if(balls.length!==1)return false;const p=balls[0];if(p.mode!=="split" || p.splitUsed || p.life<.08)return false;
- const speed=Math.hypot(p.vx,p.vy),angle=Math.atan2(p.vy,p.vx);balls=[-.24,0,.24].map(a=>{let q=newBall(p.x,p.y,Math.cos(angle+a)*speed*.88,Math.sin(angle+a)*speed*.88,"fragment",10);q.splitUsed=true;return q});ball=balls[0];burst(p.x,p.y,"#ffd2ed",12);noise(750,.18,"triangle",.045);haptic(8);return true;
+ const speed=Math.hypot(p.vx,p.vy),angle=Math.atan2(p.vy,p.vx);balls=[-.24,0,.24].map(a=>{let q=newBall(p.x,p.y,Math.cos(angle+a)*speed*.88,Math.sin(angle+a)*speed*.88,"fragment",10);q.splitUsed=true;return q});ball=balls[0];burst(p.x,p.y,"#ffd2ed",12);sfx("power");haptic(8);return true;
 }
 function finished(win){
  if(phase!=="play")return;phase=win?"win":"lose";aiming=false;drag=null;
- if(win){unlocked=Math.max(unlocked,Math.min(5,stage+1));best=Math.max(best,score);try{localStorage.setItem("velvet_ah_unlocked",unlocked);localStorage.setItem("velvet_ah_best",best)}catch(e){}burst(474,241,"#ffd599",45);haptic(18);noise(720,.3,"triangle",.045)}else noise(160,.3,"sawtooth",.035)
+ if(win){unlocked=Math.max(unlocked,Math.min(5,stage+1));best=Math.max(best,score);try{localStorage.setItem("velvet_ah_unlocked",unlocked);localStorage.setItem("velvet_ah_best",best)}catch(e){}burst(474,241,"#ffd599",45);haptic(18);sfx("win")}else sfx("switch",.65)
 }
 function moveCrates(dt){
  for(const b of crates){if(b.dead||!b.moving)continue;b.vy+=780*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.rot+=b.spin*dt;b.vx*=Math.pow(.45,dt);
@@ -69,7 +72,7 @@ function moveBall(p,dt){
   if(hit.target){charm(hit.target);p.vx*=.74;p.vy*=.82;bloom(p)}
   else{p.cooldowns[hit.block.id]=simTime+.12;damageBlock(hit.block,p,p.mode==="fragment"?.65:1);let v=Physics.reflect(p.vx,p.vy,hit.nx,hit.ny,.42);p.vx=v.x*.82;p.vy=v.y*.82;p.x+=hit.nx*.3;p.y+=hit.ny*.3;bloom(p)}
  }
- if(p.y+p.r>G){p.y=G-p.r;if(p.vy>0){p.vy*=-.4;p.vx*=.72;p.bounces++;noise(200,.08,"sine",.025);bloom(p)}}
+ if(p.y+p.r>G){p.y=G-p.r;if(p.vy>0){p.vy*=-.4;p.vx*=.72;p.bounces++;sfx("wood",.42);bloom(p)}}
  if(p.trail.length===0 || Math.hypot(p.x-p.trail[p.trail.length-1].x,p.y-p.trail[p.trail.length-1].y)>9)p.trail.push({x:p.x,y:p.y});if(p.trail.length>14)p.trail.shift();
 }
 function sim(dt){
@@ -86,17 +89,21 @@ function screenPoint(e){const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*
 function findButton(p){for(let i=buttons.length-1;i>=0;i--){const b=buttons[i];if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return b}return null}
 function aimMove(p){if(!aiming)return;drag=Physics.pull(launcher,p.x-dragOrigin.x,p.y-dragOrigin.y)}
 cv.addEventListener("pointerdown",e=>{
- if(activePointer!==null)return;e.preventDefault();let p=screenPoint(e),b=findButton(p);if(b){noise(440,.07);b.run();return}
+ if(activePointer!==null)return;e.preventDefault();AfterHoursAudio.gesture();let p=screenPoint(e),b=findButton(p);if(b){sfx("click",.65);b.run();return}
  if(phase!=="play")return;
  if(ball){splitShot();return}
- if(shots>0 && Math.hypot(p.x-launcher.x,p.y-launcher.y)<78){activePointer=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(x){}aiming=true;dragOrigin=p;drag={...launcher};noise(340,.07)}
+ if(shots>0 && Math.hypot(p.x-launcher.x,p.y-launcher.y)<78){activePointer=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(x){}aiming=true;dragOrigin=p;drag={...launcher};sfx("tap",.5)}
 });
 cv.addEventListener("pointermove",e=>{if(aiming&&e.pointerId===activePointer){e.preventDefault();aimMove(screenPoint(e))}});
 cv.addEventListener("pointerup",e=>{if(aiming&&e.pointerId===activePointer){e.preventDefault();aimMove(screenPoint(e));aiming=false;activePointer=null;shot()}});
 function cancelAim(e){if(e && activePointer!==null && e.pointerId!==activePointer)return;aiming=false;activePointer=null;drag=null}
 cv.addEventListener("pointercancel",cancelAim);cv.addEventListener("lostpointercapture",cancelAim);
-document.addEventListener("visibilitychange",()=>{if(document.hidden){cancelAim();if(phase==="play")phase="pause";if(ctxAudio && ctxAudio.state==="running")ctxAudio.suspend()}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){cancelAim();if(phase==="play")phase="pause";AfterHoursAudio.setPaused(true)}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"||e.key==="Backspace"){cancelAim();if(phase==="play")phase="pause";else if(phase==="pause")phase="play";else phase="menu"}});
 let last=0,lag=0,renderAlpha=0;
-function tick(now){let dt=last?Math.min(.05,Math.max(0,(now-last)/1000)):0;last=now;lag+=dt;let k=0;const step=1/120;while(lag>=step&&k<6){sim(step);lag-=step;k++}if(k===6 && lag>=step)lag=0;renderAlpha=lag/step;paint();requestAnimationFrame(tick)}
+function tick(now){let dt=last?Math.min(.05,Math.max(0,(now-last)/1000)):0;last=now;lag+=dt;let k=0;const step=1/120;while(lag>=step&&k<6){sim(step);lag-=step;k++}if(k===6 && lag>=step)lag=0;renderAlpha=lag/step;AfterHoursAudio.setPaused(phase==="pause"||document.hidden);paint();requestAnimationFrame(tick)}
 requestAnimationFrame(tick);
+
+// Called only by the local Android wrapper on audio focus or activity lifecycle.
+window.onNativeAudioFocus=function(ok){AfterHoursAudio.setFocus(ok);if(!ok&&phase==="play")phase="pause"};
+window.onNativePause=function(){cancelAim();if(phase==="play")phase="pause";AfterHoursAudio.setPaused(true);AfterHoursAudio.setFocus(false)};
