@@ -4,7 +4,7 @@ const Physics=AfterHoursPhysics;
 let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5;
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
 let crates=[],enemies=[],particles=[],popups=[],buttons=[],finishClock=0,shake=0;
-let hapticsOn=true,shotMode="direct",simTime=0;
+let hapticsOn=true,shotMode="direct",simTime=0,actorReact=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try { unlocked=clamp(parseInt(localStorage.getItem("velvet_ah_unlocked")||"1",10)||1,1,5); best=parseInt(localStorage.getItem("velvet_ah_best")||"0",10)||0; } catch(e) {}
@@ -24,7 +24,7 @@ function start(l){
  if(stage>=4){addCrate(558,418,29,48,"wood");addCrate(578,381,45,16,"crystal")}
  AfterHoursAudio.setPaused(false);
 }
-function charm(t){if(t.dead)return;t.dead=true;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
+function charm(t){if(t.dead)return;t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
@@ -44,7 +44,7 @@ function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life
 function shot(){
  if(!drag)return;const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
  if(d<16){drag=null;return}
- const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y)];ball=balls[0];shots--;drag=null;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
+ const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y)];ball=balls[0];shots--;drag=null;actorReact=1;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
 }
 function splitShot(){
  if(balls.length!==1)return false;const p=balls[0];if(p.mode!=="split" || p.splitUsed || p.life<.08)return false;
@@ -76,7 +76,8 @@ function moveBall(p,dt){
  if(p.trail.length===0 || Math.hypot(p.x-p.trail[p.trail.length-1].x,p.y-p.trail[p.trail.length-1].y)>9)p.trail.push({x:p.x,y:p.y});if(p.trail.length>14)p.trail.shift();
 }
 function sim(dt){
- frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);
+ frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
+ for(const t of enemies)if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}
  if(phase!=="play")return;moveCrates(dt);

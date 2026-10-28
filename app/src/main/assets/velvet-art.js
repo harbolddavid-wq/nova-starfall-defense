@@ -42,7 +42,9 @@ function vesper(){
  c.save();
  c.translate(86, 445 + Math.sin(frame * .027) * 1.3);
  const breathe = 1 + Math.sin(frame * .027) * .005;
- c.scale(1 / breathe, breathe);
+ const tension=drag ? Math.min(1,Math.hypot(drag.x-launcher.x,drag.y-launcher.y)/108) : 0;
+ c.rotate(-.035*tension + .045*actorReact);
+ c.scale((1 / breathe)*(1-.02*actorReact), breathe*(1+.025*actorReact));
  c.drawImage(vesperArt, -81, -243, 162, 243);
  c.restore();
 }
@@ -52,12 +54,19 @@ function slingshot(){
  if(tip){stroke([[126,335],[tip.x,tip.y]],"#ffbddd",3);stroke([[173,333],[tip.x,tip.y]],"#ffbddd",3)}
  if(!ball&&phase==="play"){let q=drag||launcher;glow(q.x,q.y,52,"#f94b9f",.29);heart(q.x,q.y,1.42,"#fa65b1",frame*.02);}
 }
-function gargoyle(t){if(t.dead)return;c.save();c.translate(t.x,t.y+Math.sin(frame*.044+t.seed)*2);wing(0,5,.9,"#211026");
- let g=c.createLinearGradient(-23,-25,23,25);g.addColorStop(0,t.kind%2?"#f3a9bc":"#d1baf0");g.addColorStop(1,t.kind%2?"#a84983":"#6c4b96");
- c.beginPath();c.ellipse(0,0,24,25,0,0,TAU);c.fillStyle=g;c.shadowColor="#ed78cd";c.shadowBlur=13;c.fill();c.shadowBlur=0;
- c.beginPath();c.moveTo(-19,-15);c.lineTo(-20,-43);c.lineTo(-3,-26);c.lineTo(11,-26);c.lineTo(21,-43);c.lineTo(19,-14);c.fillStyle="#422044";c.fill();
- dot(-9,-4,6,"#fff5ee");dot(10,-4,6,"#fff5ee");dot(-7,-3,3,"#1a1022");dot(12,-3,3,"#1a1022");stroke([[-11,12],[1,17],[13,11]],"#4b1b3c",2.6);
- dot(-16,7,3.6,"#ff859f");dot(16,7,3.6,"#ff859f");heart(0,-33,.59,"#ff6d9e");c.restore();}
+const gargoyleArt=new Image();
+gargoyleArt.src="art/gargoyle-after-hours.webp";
+function gargoyle(t){
+ if(t.dead && !(t.vanish>0))return;
+ if(!gargoyleArt.complete||!gargoyleArt.naturalWidth)return;
+ const exit=t.dead ? 1-t.vanish/.55 : 0;
+ c.save();c.translate(t.x,t.y+Math.sin(frame*.035+t.seed)*1.2-exit*10);
+ c.globalAlpha=t.dead ? Math.max(0,1-exit) : 1;
+ c.rotate(t.dead ? exit*.17 : Math.sin(frame*.017+t.seed)*.012);
+ const squash=t.dead ? 1+.12*Math.sin(exit*Math.PI) : 1+.008*Math.sin(frame*.03+t.seed);
+ c.scale(1/squash,squash);
+ c.drawImage(gargoyleArt,-32,-48,64,96);c.restore();
+}
 function drawCrate(b){if(b.dead)return;c.save();c.translate(b.x,b.y);c.rotate(b.rot);let x=-b.w/2,y=-b.h/2,gl=c.createLinearGradient(x,y,x+b.w,y+b.h);
  if(b.type==="crystal"){gl.addColorStop(0,"#f3eeff");gl.addColorStop(.29,"#80e0ee");gl.addColorStop(.68,"#aa68dd");gl.addColorStop(1,"#5a356f")}
  else{gl.addColorStop(0,"#9c5979");gl.addColorStop(.45,"#4a2548");gl.addColorStop(1,"#25132f")}
