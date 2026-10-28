@@ -1,0 +1,13 @@
+# Velvet Fling: After Hours — development checkpoint
+
+**Status:** early development, not a demo or a release. David commissioned a deeper rebuild and asked for frequent durable checkpoints. The original working game and its branch remain untouched.
+
+**Baseline:** `harbolddavid-wq/nova-starfall-defense`, branch `feature/velvet-fling-2026`, commit `647d98700f23e0149300c40ca5932b654a7c1506`. All 19 source blobs were recovered from GitHub and verified against their Git blob hashes. Work is on `work/velvet-after-hours-2026-10-28`.
+
+**Player feedback to address:** the original felt jerky, had effectively one attack, had crude in-game art, and lasted about two minutes. Build and judge one enjoyable playable level before expanding. Aim for ~15 minutes of meaningful demo play and several hours in the complete game; timings require actual playthroughs, not estimates from level count. No ads or unnecessary network permissions; keep the cheeky gothic tone, all characters adult and nonexplicit.
+
+**Checkpoint 1 — art foundation:** Created an original Vesper sprite with the built-in image generation tool, exported as a transparent optimized WebP, and connected that actual sprite to both menu and gameplay rendering. The animation is currently only a small transform; this does not yet constitute expressive character animation. No other art, game feel, audio or content issues are solved at this checkpoint. Sprite generation prompt: adult vampire cabaret magician, confident and mischievous, fully clothed in deep wine and black with muted gold accents, full body facing right, polished hand-painted 2D style, transparent background, no text or UI.
+
+**Next:** replace the prototype gesture/physics chain with stable responsive controls and meaningful material interactions; add at least two genuinely different shot abilities; make an original dark-cabaret score and event cues with documented sample provenance; improve the targets and environment in the same visual language; introduce restrained haptics and independent controls; verify through actual interactive play, timing and listening. Do not call code-only checks a fun or completed game.
+
+**Build/device:** original v1 package is `com.novasky.velvetfling`. Its original CI generated an ephemeral debug signing key; installed-signature match is unverified. Use a separate test package for early side-by-side work so v1 and its data are not overwritten. Do not expose private keys. Local Android SDK/emulator availability was not established at this checkpoint. Test on David's BLU ViewPro 5G (Android 16) when possible and disclose unverified behavior.

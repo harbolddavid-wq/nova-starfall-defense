@@ -32,28 +32,20 @@ function floorArt(){
  for(let i=0;i<18;i++){let x=i*56;glow(x+13,453,24,"#ef61a0",.15)}
 }
 function curtains(){c.save();let g=c.createLinearGradient(0,0,118,0);g.addColorStop(0,"#0e071b");g.addColorStop(.45,"#752148");g.addColorStop(.78,"#4a1338");g.addColorStop(1,"#17081e");c.beginPath();c.moveTo(0,0);c.lineTo(104,0);c.bezierCurveTo(92,80,40,105,0,131);c.fillStyle=g;c.fill();c.beginPath();c.moveTo(W,0);c.lineTo(W-104,0);c.bezierCurveTo(W-92,80,W-40,105,W,131);c.fill();stroke([[0,138],[48,112],[89,38]],"#e0a272",3);stroke([[W,138],[W-48,112],[W-89,38]],"#e0a272",3);c.restore();}
+// Original After Hours character artwork is used in both the menu and playfield.
+// The same artwork participates in the small idle movement, so the game never
+// promises a character on the title screen that disappears during play.
+const vesperArt = new Image();
+vesperArt.src = "art/vesper-after-hours.webp";
 function vesper(){
- c.save();c.translate(85,348+Math.sin(frame*.028)*1.4);
- // fluttering crimson cape
- c.beginPath();c.moveTo(-15,-18);c.bezierCurveTo(-55,-47,-61,48,-75,88);c.bezierCurveTo(-12,66,22,69,51,95);c.bezierCurveTo(43,41,29,5,9,-18);c.fillStyle="#2b0d2e";c.fill();c.lineWidth=2;c.strokeStyle="#99526e";c.stroke();
- wing(-17,-50,1.06,"#4b173a");
- // heeled boots
- stroke([[-11,55],[-19,91]],"#211024",15);stroke([[12,55],[25,91]],"#211024",15);
- // skirt
- c.beginPath();c.moveTo(-21,-3);c.lineTo(19,-5);c.quadraticCurveTo(42,46,38,79);c.quadraticCurveTo(0,95,-41,78);c.closePath();let d=c.createLinearGradient(-40,-5,40,79);d.addColorStop(0,"#f54e90");d.addColorStop(.44,"#8a285f");d.addColorStop(1,"#230d35");c.fillStyle=d;c.fill();c.lineWidth=2;c.strokeStyle="#e7a875";c.stroke();
- // shoulders and arms
- c.beginPath();c.ellipse(0,-29,22,29,.12,0,TAU);c.fillStyle="#dfa296";c.fill();stroke([[10,-27],[35,-8],[51,-9]],"#d58d87",10);
- // corset dress
- c.beginPath();c.moveTo(-20,-29);c.lineTo(19,-29);c.lineTo(15,17);c.lineTo(-13,17);c.closePath();let top=c.createLinearGradient(0,-29,0,17);top.addColorStop(0,"#d52b76");top.addColorStop(1,"#3b113e");c.fillStyle=top;c.fill();c.strokeStyle="#f5bf88";c.lineWidth=1.5;c.stroke();heart(1,-5,.48,"#ff82bd");
- stroke([[0,-51],[0,-40]],"#dfa296",12);
- // head and curled raven hair
- c.beginPath();c.ellipse(1,-75,25,31,0,0,TAU);c.fillStyle="#edafa1";c.fill();
- c.beginPath();c.moveTo(-24,-82);c.bezierCurveTo(-36,-114,27,-119,30,-90);c.lineTo(15,-96);c.bezierCurveTo(-7,-78,-20,-87,-24,-82);c.fillStyle="#3d102e";c.fill();
- c.beginPath();c.moveTo(-24,-83);c.bezierCurveTo(-39,-70,-38,-21,-50,31);c.bezierCurveTo(-22,18,-26,-41,-17,-72);c.fillStyle="#3d102e";c.fill();
- // little velvet horns, eyeliner and smile
- c.fillStyle="#261025";c.beginPath();c.moveTo(-19,-99);c.lineTo(-31,-118);c.lineTo(-9,-101);c.lineTo(20,-101);c.lineTo(32,-119);c.lineTo(27,-92);c.fill();
- stroke([[-14,-79],[-3,-77]],"#381628",2.7);stroke([[8,-78],[19,-81]],"#381628",2.7);dot(-8,-77,2.8,"#4e3150");dot(13,-80,2.8,"#4e3150");stroke([[-8,-60],[0,-58],[9,-61]],"#af4671",2.6);dot(20,-66,3.5,"#f18a9c");dot(24,-64,3.3,"#ffdb99");
- c.restore();}
+ if (!vesperArt.complete || !vesperArt.naturalWidth) return;
+ c.save();
+ c.translate(86, 445 + Math.sin(frame * .027) * 1.3);
+ const breathe = 1 + Math.sin(frame * .027) * .005;
+ c.scale(1 / breathe, breathe);
+ c.drawImage(vesperArt, -81, -243, 162, 243);
+ c.restore();
+}
 function slingshot(){
  stroke([[145,446],[145,362]],"#511b39",14);stroke([[145,362],[126,335]],"#9d5c63",13);stroke([[145,362],[173,333]],"#9d5c63",13);stroke([[145,443],[145,365]],"#f3b48c",2);
  let tip=drag||(!ball&&phase==="play"?launcher:null);
