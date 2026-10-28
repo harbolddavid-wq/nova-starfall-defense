@@ -114,6 +114,5 @@ let last=0,lag=0,renderAlpha=0;
 function tick(now){let dt=last?Math.min(.05,Math.max(0,(now-last)/1000)):0;last=now;lag+=dt;let k=0;const step=1/120;while(lag>=step&&k<6){sim(step);lag-=step;k++}if(k===6 && lag>=step)lag=0;renderAlpha=lag/step;AfterHoursAudio.setPaused(phase==="pause"||document.hidden);paint();requestAnimationFrame(tick)}
 requestAnimationFrame(tick);
 
-// Called only by the local Android wrapper on audio focus or activity lifecycle.
-window.onNativeAudioFocus=function(ok){AfterHoursAudio.setFocus(ok);if(!ok&&phase==="play")phase="pause"};
-window.onNativePause=function(){cancelAim();if(phase==="play")phase="pause";AfterHoursAudio.setPaused(true);AfterHoursAudio.setFocus(false)};
+// A real activity pause (not a change in audio focus) pauses gameplay and audio.
+window.onNativePause=function(){cancelAim();if(phase==="play")phase="pause";AfterHoursAudio.setPaused(true)};

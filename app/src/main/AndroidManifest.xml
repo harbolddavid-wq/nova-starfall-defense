@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application android:allowBackup="false" android:usesCleartextTraffic="false"
-    android:label="Velvet Fling: After Hours (Dev)" android:theme="@style/ArcadeTheme"
+    android:label="Velvet Fling: After Hours Test" android:theme="@style/ArcadeTheme"
     android:icon="@drawable/velvet_icon" android:roundIcon="@drawable/velvet_icon"
     android:supportsRtl="true">
     <activity android:name="com.novasky.arcade.VelvetActivity"
