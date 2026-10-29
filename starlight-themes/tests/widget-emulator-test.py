@@ -36,12 +36,30 @@ def wait_for(text,partial=False,timeout=30):
         time.sleep(1)
     raise AssertionError("Timed out waiting for "+repr(text))
 
-def tap(text,partial=False):
-    node=wait_for(text,partial)
+def tap_node(node):
     bounds=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",node.attrib["bounds"])
-    if not bounds: raise AssertionError("No bounds for "+text)
+    if not bounds: raise AssertionError("No bounds for target")
     left,top,right,bottom=map(int,bounds.groups())
     adb("shell","input","tap",(left+right)//2,(top+bottom)//2)
+
+def tap(text,partial=False):
+    tap_node(wait_for(text,partial))
+
+def tap_scrolling(text):
+    for _ in range(10):
+        tree=hierarchy()
+        for node in tree.iter():
+            if match(node,text):
+                tap_node(node)
+                return
+        lists=[node for node in tree.iter() if node.attrib.get("scrollable")=="true"]
+        if not lists: break
+        bounds=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",lists[0].attrib["bounds"])
+        left,top,right,bottom=map(int,bounds.groups())
+        middle=(left+right)//2
+        adb("shell","input","swipe",middle,bottom-100,middle,top+100,450)
+        time.sleep(1)
+    raise AssertionError("Could not find "+repr(text)+" in the scrollable widget list")
 
 def menu():
     tap("Home options")
@@ -50,7 +68,7 @@ def menu():
 def choose_fixture():
     menu()
     tap("Add a widget")
-    tap("Starlight QA Widget")
+    tap_scrolling("Starlight QA Widget")
     end=time.monotonic()+30
     while time.monotonic()<end:
         tree=hierarchy()

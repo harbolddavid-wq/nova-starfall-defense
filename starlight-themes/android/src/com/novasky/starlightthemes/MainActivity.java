@@ -590,7 +590,7 @@ public final class MainActivity extends Activity {
     private void chooseWidgetSpot(WorkspaceModel.Pos origin,int page) {
         WorkspaceModel.Item widget=model.get(origin);if(widget==null || !widget.isWidget())return;
         LinearLayout grid=col();grid.setPadding(dp(12),dp(4),dp(12),dp(4));
-        TextView instructions=new TextView(this);instructions.setText("Choose the widget's top-left position.\n◆ current  ·  ○ available  ·  × occupied");instructions.setTextColor(0xff30283c);instructions.setTextSize(14);add(grid,instructions,0);
+        TextView instructions=new TextView(this);instructions.setText("Choose the widget's top-left position.\n◆ current  ·  ○ available  ·  × doesn't fit");instructions.setTextColor(0xff30283c);instructions.setTextSize(14);add(grid,instructions,0);
         final AlertDialog[] dialog=new AlertDialog[1];
         for(int y=0;y<WorkspaceModel.ROWS;y++){
             LinearLayout line=row();
