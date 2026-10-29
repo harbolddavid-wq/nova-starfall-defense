@@ -27,6 +27,7 @@ import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.LruCache;
 import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -36,7 +37,10 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.AbsListView;
+import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
+import android.widget.GridView;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -63,6 +67,7 @@ public final class MainActivity extends Activity {
     private final ArrayList<App> apps = new ArrayList<>();
     private final HashMap<String, App> byKey = new HashMap<>();
     private final HashMap<String, Bitmap> walls = new HashMap<>();
+    private final LruCache<String,Bitmap> iconArt = new LruCache<>(24);
     private SharedPreferences prefs;
     private WorkspaceModel model;
     private boolean loading, destroyed, dragging, resumed;
@@ -72,7 +77,8 @@ public final class MainActivity extends Activity {
     private LinearLayout content;
     private PageScroll workspace;
     private TextView dropRemove, pageDots;
-    private LinearLayout drawerGrid;
+    private GridView drawerGrid;
+    private TextView drawerEmpty;
     private EditText search;
     private float downX, downY;
     private Runnable edgeTask;
@@ -230,13 +236,14 @@ public final class MainActivity extends Activity {
         for(String candidate:ICON_KEYS)if(candidate.equals(choice))valid=true;
         if(!valid || choice.equals("original"))return null;
         String palette=themeId.equals("moonflower")?"petal":"midnight";
+        String cacheKey=palette+"_"+choice; Bitmap cached=iconArt.get(cacheKey);if(cached!=null)return cached;
         try(InputStream in=getAssets().open("icons/"+palette+"_"+choice+".png")){
-            BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;return BitmapFactory.decodeStream(in,null,opts);
+            BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;Bitmap image=BitmapFactory.decodeStream(in,null,opts);if(image!=null)iconArt.put(cacheKey,image);return image;
         }catch(Exception ignored){return null;}
     }
     private void base(String which,ThemeSpec t,boolean dim) {
         stopAmbient(); ambient=null;
-        screen=which; workspace=null; dropRemove=null; pageDots=null; drawerGrid=null; search=null;
+        screen=which; workspace=null; dropRemove=null; pageDots=null; drawerGrid=null; drawerEmpty=null; search=null;
         root=new FrameLayout(this); root.setBackgroundColor(t.tint);
         Bitmap w=wall(t.id);
         if(w!=null) { ImageView iv=new ImageView(this); iv.setScaleType(ImageView.ScaleType.CENTER_CROP); iv.setImageBitmap(w); root.addView(iv,new FrameLayout.LayoutParams(-1,-1)); }
@@ -415,19 +422,30 @@ public final class MainActivity extends Activity {
         base("drawer",theme(themeId),true);header("All apps");
         search=new EditText(this); search.setSingleLine(true); search.setTextColor(Color.WHITE); search.setHintTextColor(0xffc5bdcf); search.setHint("Search apps"); search.setPadding(dp(16),0,dp(16),0); search.setBackground(rounded(0xdd282439,0x778e809d,18)); add(content,search,12);
         TextView tip=text("Touch and hold an app to add it to Home",12);tip.setTextColor(0xffe2d8e8);add(content,tip,10);
-        ScrollView scroll=new ScrollView(this);drawerGrid=col();scroll.addView(drawerGrid);content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        FrameLayout drawerBody=new FrameLayout(this);drawerGrid=new GridView(this);drawerGrid.setNumColumns(4);drawerGrid.setVerticalSpacing(dp(3));drawerGrid.setClipToPadding(false);
+        drawerBody.addView(drawerGrid,new FrameLayout.LayoutParams(-1,-1));drawerEmpty=text("No matching apps",16);drawerEmpty.setGravity(Gravity.CENTER);
+        drawerBody.addView(drawerEmpty,new FrameLayout.LayoutParams(-1,-1));drawerGrid.setEmptyView(drawerEmpty);
+        content.addView(drawerBody,new LinearLayout.LayoutParams(-1,0,1));
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int before,int count){refreshDrawer(s.toString());}public void afterTextChanged(Editable e){}});
         content.setFocusableInTouchMode(true);content.requestFocus();refreshDrawer("");
     }
     private void refreshDrawer(String filter) {
-        if(drawerGrid==null)return;drawerGrid.removeAllViews();ArrayList<App> matching=new ArrayList<>();String f=filter.toLowerCase(Locale.ROOT);
+        if(drawerGrid==null)return;ArrayList<App> matching=new ArrayList<>();String f=filter.toLowerCase(Locale.ROOT);
         for(App a:apps)if(a.label.toLowerCase(Locale.ROOT).contains(f))matching.add(a);
-        if(matching.isEmpty()){add(drawerGrid,text(loading?"Finding apps…":"No matching apps",16),18);return;}
-        for(int start=0;start<matching.size();start+=4){LinearLayout line=row();for(int k=0;k<4;k++){int i=start+k;if(i>=matching.size()){line.addView(new View(this),new LinearLayout.LayoutParams(0,dp(96),1));continue;}App a=matching.get(i);WorkspaceModel.Item item=WorkspaceModel.Item.app(a.key);View tile=drawerTile(item,a);line.addView(tile,new LinearLayout.LayoutParams(0,dp(96),1));}drawerGrid.addView(line);}
+        if(drawerEmpty!=null)drawerEmpty.setText(loading?"Finding apps…":"No matching apps");
+        drawerGrid.setAdapter(new BaseAdapter(){
+            public int getCount(){return matching.size();}
+            public Object getItem(int pos){return matching.get(pos);}
+            public long getItemId(int pos){return pos;}
+            public View getView(int pos,View recycled,ViewGroup parent){App a=matching.get(pos);return drawerTile(WorkspaceModel.Item.app(a.key),a,recycled);}
+        });
     }
-    private View drawerTile(WorkspaceModel.Item item,App app) {
-        LinearLayout tile=col();tile.setGravity(Gravity.CENTER);ImageView icon=new ImageView(this);icon.setImageDrawable(app.info.loadIcon(getPackageManager()));tile.addView(icon,new LinearLayout.LayoutParams(dp(48),dp(48)));
-        TextView label=text(app.label,11);label.setGravity(Gravity.CENTER);label.setMaxLines(1);label.setEllipsize(TextUtils.TruncateAt.END);tile.addView(label,new LinearLayout.LayoutParams(-1,-2));tile.setFocusable(true);tile.setContentDescription(app.label);tile.setOnClickListener(v->launch(app.key));
+    private View drawerTile(WorkspaceModel.Item item,App app,View recycled) {
+        LinearLayout tile; ImageView icon; TextView label;
+        if(recycled instanceof LinearLayout && ((LinearLayout)recycled).getChildCount()==2){tile=(LinearLayout)recycled;icon=(ImageView)tile.getChildAt(0);label=(TextView)tile.getChildAt(1);}
+        else {tile=col();tile.setGravity(Gravity.CENTER);tile.setLayoutParams(new AbsListView.LayoutParams(-1,dp(96)));icon=new ImageView(this);tile.addView(icon,new LinearLayout.LayoutParams(dp(48),dp(48)));
+            label=text("",11);label.setGravity(Gravity.CENTER);label.setMaxLines(1);label.setEllipsize(TextUtils.TruncateAt.END);tile.addView(label,new LinearLayout.LayoutParams(-1,-2));tile.setFocusable(true);}
+        Bitmap custom=chosenIcon(app.key);if(custom!=null)icon.setImageBitmap(custom);else icon.setImageDrawable(app.info.loadIcon(getPackageManager()));label.setText(app.label);tile.setContentDescription(app.label);tile.setOnClickListener(v->launch(app.key));
         tile.setOnLongClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);new AlertDialog.Builder(this).setTitle(app.label).setItems(new String[]{"Add to Home","Add to dock","Customize icon","App info"},(d,n)->{
             if(n==0){if(model.addToPage(app.key,currentPage)){saveLayout();hideKeyboard();showHome();}else toast("No free space on this page");}
             else if(n==1){int i=0;while(i<model.dock.length && model.dock[i]!=null)i++;if(i==model.dock.length){toast("The dock is full");return;}model.dock[i]=item;saveLayout();hideKeyboard();showHome();}
@@ -439,7 +457,7 @@ public final class MainActivity extends Activity {
         String old=prefs.getString("icon:"+app.key,"original");int selected=0;
         for(int i=0;i<ICON_KEYS.length;i++)if(ICON_KEYS[i].equals(old))selected=i;
         new AlertDialog.Builder(this).setTitle("Icon for "+app.label).setSingleChoiceItems(ICON_LABELS,selected,(d,which)->{
-            prefs.edit().putString("icon:"+app.key,ICON_KEYS[which]).apply();d.dismiss();toast("Icon saved for "+app.label);
+            prefs.edit().putString("icon:"+app.key,ICON_KEYS[which]).apply();d.dismiss();if(screen.equals("drawer") && search!=null)refreshDrawer(search.getText().toString());toast("Icon saved for "+app.label);
         }).setNegativeButton("Cancel",null).show();
     }
     private void themeFlourish() {
