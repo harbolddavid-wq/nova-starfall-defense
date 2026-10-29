@@ -50,7 +50,7 @@ grep -q 'package:' "$OUT/package-path.txt"
 adb logcat -c
 adb shell am force-stop "$PKG"
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 | tee "$OUT/launch.txt"
-sleep 8
+sleep 13
 adb exec-out screencap -p > "$OUT/01-launched.png"
 test -s "$OUT/01-launched.png"
 
@@ -58,13 +58,35 @@ if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then
   echo "App process not running after launch"; exit 1
 fi
 
-# A small interaction rehearsal; not a substitute for gameplay QA or Bloom testing.
-adb shell input tap 360 1150
+# Android can rotate the 720x1600 AVD into 1600x720 landscape for games.
+# Use ACTUAL screenshot coordinates; the first run's portrait y=1150 tap was offscreen.
+read -r SCREEN_W SCREEN_H < <(python3 -c 'import sys,struct; f=open(sys.argv[1],"rb"); f.read(16); print(*struct.unpack(">II",f.read(8)))' "$OUT/01-launched.png")
+echo "Visible screenshot resolution: ${SCREEN_W}x${SCREEN_H}" | tee -a "$OUT/README.txt"
+
+if [ "$SCREEN_W" -gt "$SCREEN_H" ]; then
+  # Velvet Fling landscape main menu: Play Theater button in right central panel.
+  TAP_X=$(( SCREEN_W * 70 / 100 ))
+  TAP_Y=$(( SCREEN_H * 40 / 100 ))
+  SWIPE_X1=$(( SCREEN_W * 21 / 100 ))
+  SWIPE_Y1=$(( SCREEN_H * 62 / 100 ))
+  SWIPE_X2=$(( SCREEN_W * 32 / 100 ))
+  SWIPE_Y2=$(( SCREEN_H * 52 / 100 ))
+else
+  TAP_X=$(( SCREEN_W / 2 ))
+  TAP_Y=$(( SCREEN_H * 40 / 100 ))
+  SWIPE_X1=$(( SCREEN_W * 20 / 100 ))
+  SWIPE_Y1=$(( SCREEN_H * 68 / 100 ))
+  SWIPE_X2=$(( SCREEN_W * 42 / 100 ))
+  SWIPE_Y2=$(( SCREEN_H * 55 / 100 ))
+fi
+
+echo "Tapping screen at $TAP_X,$TAP_Y and swiping onscreen" | tee "$OUT/inputs.txt"
+adb shell input tap "$TAP_X" "$TAP_Y"
+sleep 5
+adb exec-out screencap -p > "$OUT/02-after-play-tap.png"
+adb shell input swipe "$SWIPE_X1" "$SWIPE_Y1" "$SWIPE_X2" "$SWIPE_Y2" 600
 sleep 3
-adb exec-out screencap -p > "$OUT/02-after-tap.png"
-adb shell input swipe 260 1020 405 900 600
-sleep 2
-adb exec-out screencap -p > "$OUT/03-after-swipe.png"
+adb exec-out screencap -p > "$OUT/03-after-game-swipe.png"
 
 if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then
   echo "App process exited during smoke interactions"; exit 1
@@ -75,4 +97,4 @@ adb logcat -d -v time | grep -A 15 -E 'FATAL EXCEPTION|AndroidRuntime' > "$OUT/f
 if grep -q "Process: $PKG" "$OUT/fatals-candidate.txt"; then
   echo "Detected app-scoped fatal exception"; exit 1
 fi
-echo "Smoke interactions completed; real touch smoothness/Bloom explosion remain phone-playtest questions."
+echo "On-screen smoke interactions completed; real touch smoothness/Bloom explosion remain phone-playtest questions."
