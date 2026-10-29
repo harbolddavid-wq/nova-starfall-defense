@@ -5,7 +5,7 @@ let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5,shotBudget=5;
 let stageStars={},stageScores={};
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
 let crates=[],enemies=[],particles=[],bloomWaves=[],roseCharges=[],popups=[],buttons=[],finishClock=0,shake=0;
-let hapticsOn=true,shotMode="direct",simTime=0,actorReact=0;
+let hapticsOn=true,shotMode="direct",powerCharges={bloom:0,split:0},simTime=0,actorReact=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try {
@@ -33,6 +33,7 @@ function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&
 function start(l){
  stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
  const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
+ powerCharges={bloom:level.powers.bloom,split:level.powers.split};shotMode="direct";
  crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
  for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
  level.targets.forEach(([x,y,ward],i)=>addEnemy(x,y,i+1,ward||null));
@@ -81,10 +82,18 @@ function updateRoseCharges(dt){
 }
 
 function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{},targetCooldowns:{}}}
+function selectShot(mode){
+ if(phase!=="play"||ball||aiming)return false;
+ if(mode!=="direct" && (mode!=="bloom"&&mode!=="split" || powerCharges[mode]<=0))return false;
+ shotMode=mode;return true;
+}
 function shot(){
- if(!drag)return;const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
+ if(!drag||phase!=="play"||ball||shots<=0){drag=null;return}const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
  if(d<16){drag=null;return}
- const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y)];ball=balls[0];shots--;drag=null;actorReact=1;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
+ const mode=shotMode==="direct"||powerCharges[shotMode]>0?shotMode:"direct";
+ const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y,mode)];ball=balls[0];shots--;
+ if(mode!=="direct"){powerCharges[mode]--;if(powerCharges[mode]===0)shotMode="direct"}
+ drag=null;actorReact=1;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
 }
 function splitShot(){
  if(balls.length!==1)return false;const p=balls[0];if(p.mode!=="split" || p.splitUsed || p.life<.08)return false;

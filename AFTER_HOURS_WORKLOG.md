@@ -74,3 +74,8 @@
 
 - David played the 0.2.0 set and reported it took about four minutes. He noticed that the special power could be selected indefinitely. This is direct player feedback: the duration is well below the roughly 15-minute demo goal, and unlimited Bloom/Split selection makes the choice less strategic. Do not claim the demo duration is complete or infer it from automation.
 - Investigate and correct finite, clearly communicated special-shot availability while keeping Classic usable and first-level physics, sound, artwork and saved progress intact. Improve the puzzles thoughtfully rather than using delays or repetitive filler. Any new balance and duration must be verified by real play; Sloth Mode remains requested future work.
+
+## Checkpoint 11 — finite special-shot allocation
+
+- Each night now has a deliberately limited supply of Bloom and Split shots, displayed on their controls. A charge is spent only when a shot actually launches; a short pull or cancellation spends nothing. Exhausted choices are disabled, with an automatic return to Classic. Each restart and each new night restores its own allocation, and Classic is still available while hearts remain.
+- An interaction test covers touch selection, canceled pulls, exhaustion, stale state, Split activation and retry. The 48-shot comparison still matches the approved opening-level shot outcomes, but allocation has intentionally changed. No sound, music, aim physics or opening geometry changed. This addresses unlimited specials, not proof that four-minute content has become a fifteen-minute demo.
