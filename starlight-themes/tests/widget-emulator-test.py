@@ -46,6 +46,7 @@ def tap(text,partial=False):
     tap_node(wait_for(text,partial))
 
 def tap_scrolling(text):
+    previous=None
     for _ in range(10):
         tree=hierarchy()
         for node in tree.iter():
@@ -54,6 +55,9 @@ def tap_scrolling(text):
                 return
         lists=[node for node in tree.iter() if node.attrib.get("scrollable")=="true"]
         if not lists: break
+        visible=tuple(node.attrib.get("text","") for node in lists[0].iter() if node.attrib.get("text"))
+        if visible==previous: break
+        previous=visible
         bounds=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",lists[0].attrib["bounds"])
         left,top,right,bottom=map(int,bounds.groups())
         middle=(left+right)//2
@@ -100,6 +104,7 @@ try:
     adb("logcat","-c")
     adb("install","-r",build/"fixture.apk")
     adb("install","-r",build/"launcher.apk")
+    (evidence/"providers.txt").write_text(adb("shell","dumpsys","appwidget"))
     adb("shell","am","start","-n","com.novasky.starlightthemes/.MainActivity")
     wait_for("Home options")
 
