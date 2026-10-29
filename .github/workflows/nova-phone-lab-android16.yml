@@ -54,6 +54,8 @@ jobs:
           node tests/audio-lifecycle.test.js
           node tests/pause-regression.test.js
           node tests/bloom-impact.test.js
+          node tests/campaign.test.js
+          node tools/find_campaign_solutions.js
 
       - name: Build isolated Velvet Fling test APK
         run: gradle --no-daemon :app:assembleDebug

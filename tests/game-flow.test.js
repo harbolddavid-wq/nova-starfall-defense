@@ -9,7 +9,7 @@ const local={};
 class FakeAudio {constructor(src){this.src=src;this.paused=true;this.ended=false;this.currentTime=0;this.volume=1}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
 const c={console,Math,Date,Audio:FakeAudio,setTimeout:()=>0,clearTimeout:()=>{},requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate:()=>{}},localStorage:{getItem:k=>local[k]||null,setItem:(k,v)=>local[k]=v},Image:class{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=768}},document:{getElementById:()=>canvas,addEventListener:()=>{},hidden:false}};
 c.window=c;c.addEventListener=()=>{};vm.createContext(c);
-for(const f of ['velvet-art.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),c,{filename:f});
+for(const f of ['velvet-art.js','after-hours-levels.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),c,{filename:f});
 const run=(x)=>vm.runInContext(x,c);
 function event(type,x,y,id=1){events[type]({clientX:x,clientY:y,pointerId:id,preventDefault(){}})}
 run('start(1);paint()');

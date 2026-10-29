@@ -1,13 +1,25 @@
 "use strict";
 // After Hours work-in-progress: original branch remains untouched.
-const Physics=AfterHoursPhysics;
-let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5;
+const Physics=AfterHoursPhysics,LEVELS=AFTER_HOURS_LEVELS;
+let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5,shotBudget=5;
+let stageStars={},stageScores={};
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
-let crates=[],enemies=[],particles=[],bloomWaves=[],popups=[],buttons=[],finishClock=0,shake=0;
+let crates=[],enemies=[],particles=[],bloomWaves=[],roseCharges=[],popups=[],buttons=[],finishClock=0,shake=0;
 let hapticsOn=true,shotMode="direct",simTime=0,actorReact=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
-try { unlocked=clamp(parseInt(localStorage.getItem("velvet_ah_unlocked")||"1",10)||1,1,5); best=parseInt(localStorage.getItem("velvet_ah_best")||"0",10)||0; } catch(e) {}
+try {
+ unlocked=clamp(parseInt(localStorage.getItem("velvet_ah_unlocked")||"1",10)||1,1,LEVELS.length);
+ best=Math.max(0,parseInt(localStorage.getItem("velvet_ah_best")||"0",10)||0);
+ const readRecord=(key,max)=>{try{const v=JSON.parse(localStorage.getItem(key)||"{}");if(!v||typeof v!=="object"||Array.isArray(v))return {};const out={};for(let n=1;n<=LEVELS.length;n++){const x=Number(v[n]);if(Number.isFinite(x)&&x>0)out[n]=Math.min(max,Math.floor(x))}return out}catch(e){return {}}};
+ stageStars=readRecord("velvet_ah_stars",3);stageScores=readRecord("velvet_ah_scores",999999999);
+ // Earlier versions only stored a best score on completing the single level.
+ // Preserve that win and unlock the next stage without inventing a star rating.
+ if(best>0 && localStorage.getItem("velvet_ah_campaign_v1")!=="1"){
+  unlocked=Math.max(unlocked,Math.min(2,LEVELS.length));stageStars[1]=Math.max(stageStars[1]||0,1);stageScores[1]=Math.max(stageScores[1]||0,best);
+  localStorage.setItem("velvet_ah_unlocked",String(unlocked));localStorage.setItem("velvet_ah_stars",JSON.stringify(stageStars));localStorage.setItem("velvet_ah_scores",JSON.stringify(stageScores));localStorage.setItem("velvet_ah_campaign_v1","1");
+ }
+} catch(e) {}
 function haptic(){
  if(!hapticsOn)return;
  try{if(window.NativeBridge)window.NativeBridge.haptic();else if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
@@ -15,22 +27,14 @@ function haptic(){
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
-function addCrate(x,y,w,h,type="wood"){crates.push({id:crates.length,x,y,w,h,type,hp:type==="crystal"?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
+function addCrate(x,y,w,h,type="wood"){crates.push({id:crates.length,x,y,w,h,type,hp:(type==="crystal"||type==="rose")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
 function addEnemy(x,y,kind){enemies.push({x,y,kind,seed:rnd(0,TAU),dead:false,r:25})}
 function start(l){
- // One authored opening arena is the current quality target. The old five
- // prototype stages remain safe on the original branch, not sold as a campaign.
- stage=1;phase="play";score=0;shots=5;balls=[];ball=null;drag=null;aiming=false;activePointer=null;crates=[];enemies=[];particles=[];bloomWaves=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
- // Low cover, an elevated crystal shelf and a more distant target create
- // different choices for precision, an impact burst, and an airborne split.
- addCrate(520,420,24,60,"wood");
- addEnemy(577,395,1);
- addCrate(695,414,18,72,"wood");
- addCrate(779,414,18,72,"wood");
- addCrate(737,372,100,16,"crystal");
- addEnemy(737,338,2);
- addCrate(835,423,18,54,"wood");
- addEnemy(884,412,3);
+ stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
+ const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
+ crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
+ for(const [x,y,w,h,type] of level.blocks)addCrate(x,y,w,h,type);
+ level.targets.forEach(([x,y],i)=>addEnemy(x,y,i+1));
  AfterHoursAudio.setPaused(false);
 }
 function charm(t){if(t.dead)return;t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
@@ -38,7 +42,7 @@ function damageBlock(b,p,damage=1){
  if(b.dead)return;
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
  score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,b.type==="crystal"?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx(b.type==="crystal"?"glass":"wood");
- if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10)}
+ if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18})}
 }
 function bloom(p){
  if(p.bloomed || p.mode!=="bloom")return;p.bloomed=true;
@@ -50,6 +54,23 @@ function bloom(p){
  for(const b of crates){if(b.dead)continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},.8)}}
  p.life=99;
 }
+function explodeRose(q){
+ const radius=76;bloomWaves.push({x:q.x,y:q.y,age:0,duration:.55,radius});
+ burst(q.x,q.y,"#f77ba9",20);burst(q.x,q.y,"#ffe1a4",8);sfx("power");haptic(10);
+ for(const t of enemies)if(!t.dead&&Math.hypot(t.x-q.x,t.y-q.y)<radius+t.r)charm(t);
+ for(const b of crates){
+  if(b.dead)continue;const px=clamp(q.x,b.x-b.w/2,b.x+b.w/2),py=clamp(q.y,b.y-b.h/2,b.y+b.h/2);
+  if(Math.hypot(px-q.x,py-q.y)>=radius)continue;
+  const dx=b.x-q.x,dy=b.y-q.y,d=Math.max(1,Math.hypot(dx,dy));
+  damageBlock(b,{x:q.x,y:q.y,vx:dx/d*260,vy:dy/d*180},1);
+ }
+}
+function updateRoseCharges(dt){
+ // Remove a charge before exploding it: an adjacent rose may safely enqueue
+ // a new charge, but no already-broken crate can trigger twice.
+ for(let i=roseCharges.length-1;i>=0;i--){const q=roseCharges[i];q.remaining-=dt;if(q.remaining<=0){roseCharges.splice(i,1);explodeRose(q)}}
+}
+
 function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{}}}
 function shot(){
  if(!drag)return;const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
@@ -62,7 +83,13 @@ function splitShot(){
 }
 function finished(win){
  if(phase!=="play")return;phase=win?"win":"lose";aiming=false;drag=null;
- if(win){unlocked=1;best=Math.max(best,score);try{localStorage.setItem("velvet_ah_unlocked",unlocked);localStorage.setItem("velvet_ah_best",best)}catch(e){}burst(474,241,"#ffd599",45);haptic(18);sfx("win")}else sfx("switch",.65)
+ if(win){
+  const earned=shots>=3?3:shots>=1?2:1;
+  stageStars[stage]=Math.max(stageStars[stage]||0,earned);stageScores[stage]=Math.max(stageScores[stage]||0,score);
+  unlocked=Math.max(unlocked,Math.min(LEVELS.length,stage+1));best=Math.max(best,score);
+  try{localStorage.setItem("velvet_ah_unlocked",String(unlocked));localStorage.setItem("velvet_ah_best",String(best));localStorage.setItem("velvet_ah_stars",JSON.stringify(stageStars));localStorage.setItem("velvet_ah_scores",JSON.stringify(stageScores));localStorage.setItem("velvet_ah_campaign_v1","1")}catch(e){}
+  burst(474,241,"#ffd599",45);haptic(18);sfx("win");
+ }else sfx("switch",.65)
 }
 function moveCrates(dt){
  for(const b of crates){if(b.dead||!b.moving)continue;b.vy+=780*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.rot+=b.spin*dt;b.vx*=Math.pow(.45,dt);
@@ -91,11 +118,11 @@ function sim(dt){
  if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}
- if(phase!=="play")return;moveCrates(dt);
+ if(phase!=="play")return;updateRoseCharges(dt);moveCrates(dt);
  for(const p of balls)moveBall(p,dt);
  balls=balls.filter(p=>p.x<=1030 && p.x>=-50 && p.y<=580 && p.life<=6 && !(p.bounces>=3 && Math.abs(p.vx)<70));ball=balls[0]||null;
- if(enemies.every(t=>t.dead)){finishClock+=dt;if(finishClock>.85)finished(true)}
- else if(!ball&&shots<=0){finishClock+=dt;if(finishClock>1.0)finished(false)}else finishClock=0;
+ if(enemies.every(t=>t.dead)&&!roseCharges.length){finishClock+=dt;if(finishClock>.85)finished(true)}
+ else if(!ball&&shots<=0&&!roseCharges.length){finishClock+=dt;if(finishClock>1.0)finished(false)}else finishClock=0;
 }
 function screenPoint(e){const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;return{x:(x-ox)/sc,y:(y-oy)/sc}}
 function findButton(p){for(let i=buttons.length-1;i>=0;i--){const b=buttons[i];if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return b}return null}

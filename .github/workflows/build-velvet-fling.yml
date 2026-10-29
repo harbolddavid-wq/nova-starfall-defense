@@ -30,6 +30,8 @@ jobs:
           node tests/audio-lifecycle.test.js
           node tests/pause-regression.test.js
           node tests/bloom-impact.test.js
+          node tests/campaign.test.js
+          node tools/find_campaign_solutions.js
       - name: Compile Android debug APK
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4

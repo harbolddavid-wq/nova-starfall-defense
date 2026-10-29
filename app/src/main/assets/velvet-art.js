@@ -82,10 +82,13 @@ function gargoyle(t){
 }
 function drawCrate(b){if(b.dead)return;c.save();c.translate(b.x,b.y);c.rotate(b.rot);let x=-b.w/2,y=-b.h/2,gl=c.createLinearGradient(x,y,x+b.w,y+b.h);
  if(b.type==="crystal"){gl.addColorStop(0,"#f3eeff");gl.addColorStop(.29,"#80e0ee");gl.addColorStop(.68,"#aa68dd");gl.addColorStop(1,"#5a356f")}
+ else if(b.type==="rose"){gl.addColorStop(0,"#e7809b");gl.addColorStop(.4,"#9a2853");gl.addColorStop(1,"#3c122f")}
  else{gl.addColorStop(0,"#9c5979");gl.addColorStop(.45,"#4a2548");gl.addColorStop(1,"#25132f")}
  box(x,y,b.w,b.h,3,gl,b.type==="crystal"?"#e5f9ff":"#e8b38e",2);
  box(x+4,y+4,b.w-8,b.h-8,2,null,"#efbfd3",.65);
- if(b.type==="crystal")heart(0,0,.48,"#ff91cb");else{stroke([[x+5,y+5],[x+b.w-5,y+b.h-5]],"#b9809c",1.4);stroke([[x+b.w-5,y+5],[x+5,y+b.h-5]],"#b9809c",1.4);dot(0,0,2.5,"#ffdcad")}
+ if(b.type==="crystal")heart(0,0,.48,"#ff91cb");
+ else if(b.type==="rose"){for(let i=0;i<5;i++){let a=i*TAU/5;dot(Math.cos(a)*5,Math.sin(a)*5,4,"#ffb1bd")}dot(0,0,3,"#ffe0a9")}
+ else{stroke([[x+5,y+5],[x+b.w-5,y+b.h-5]],"#b9809c",1.4);stroke([[x+b.w-5,y+5],[x+5,y+b.h-5]],"#b9809c",1.4);dot(0,0,2.5,"#ffdcad")}
  c.restore();}
 function bloomWavesDraw(){
  for(const wave of bloomWaves){
@@ -103,8 +106,8 @@ function bloomWavesDraw(){
 function particlesDraw(){bloomWavesDraw();for(const p of particles){c.globalAlpha=clamp(p.life/p.max,0,1);if(p.heart)heart(p.x,p.y,p.size/17,p.color);else{glow(p.x,p.y,p.size*3,p.color,.44);dot(p.x,p.y,p.size,p.color)}}c.globalAlpha=1;for(const t of popups){c.globalAlpha=clamp(t.life,0,1);words(t.text,t.x,t.y,17,t.color)}c.globalAlpha=1}
 function drawButton(label,x,y,w,h,run,hot=false){let g=c.createLinearGradient(x,y,x,y+h);g.addColorStop(0,hot?"#fc8cba":"#693567");g.addColorStop(1,hot?"#b92573":"#301833");c.save();c.shadowColor=hot?"#ff7cbd":"#000";c.shadowBlur=hot?20:9;box(x,y,w,h,14,g,hot?"#ffe0bd":"#c08c9c",2);c.restore();words(label,x+w/2,y+h/2,Math.min(27,h*.48),"#fff2ea");buttons.push({x,y,w,h,run})}
 function hud(){
- box(12,11,308,61,13,"rgba(19,7,29,.86)","#ddad8f",1.4);words("NIGHT "+stage+"  ·  VELVET KEEP",26,30,17,"#ffdfbe","left");words("SCORE  "+score.toLocaleString(),26,56,17,"#ffc4db","left");
- for(let i=0;i<5;i++){c.globalAlpha=i<shots?1:.18;heart(431+i*35,38,.72)}c.globalAlpha=1;
+ box(12,11,308,61,13,"rgba(19,7,29,.86)","#ddad8f",1.4);words("NIGHT "+stage+"  ·  "+LEVELS[stage-1].name,26,30,17,"#ffdfbe","left");words("SCORE  "+score.toLocaleString(),26,56,17,"#ffc4db","left");
+ for(let i=0;i<shotBudget;i++){c.globalAlpha=i<shots?1:.18;heart(431+i*35,38,.72)}c.globalAlpha=1;
  box(771,12,180,50,12,"rgba(19,7,29,.83)","#ddad8f");words("♥  "+enemies.filter(t=>!t.dead).length+" LEFT",791,38,20,"#fff3e2","left");drawButton("Ⅱ",703,13,55,50,()=>phase="pause");
  if(phase==="play"){
   const modes=[["CLASSIC","direct"],["BLOOM","bloom"],["SPLIT","split"]];
@@ -119,10 +122,20 @@ function projectileDraw(){
  }
 }
 function aimDots(){if(!drag)return;const v=Physics.velocity(launcher,drag);for(let i=1;i<=15;i++){const q=Physics.pointAt(drag,v,i*.105);if(q.y>G)break;c.globalAlpha=.58*(1-i/17);dot(q.x,q.y,Math.max(1.4,5-i*.2),"#fff2ed")}c.globalAlpha=1}
-function gameplay(){scenery();curtains();floorArt();vesper();slingshot();for(const b of crates)drawCrate(b);for(const t of enemies)gargoyle(t);projectileDraw();aimDots();particlesDraw();hud();if(!ball&&!drag&&shots>0)words("PULL THE HEART BACK",18,512,15,"#ffddc8","left","400")}
+function gameplay(){scenery();curtains();floorArt();vesper();slingshot();for(const b of crates)drawCrate(b);for(const t of enemies)gargoyle(t);projectileDraw();aimDots();particlesDraw();hud();if(!ball&&!drag&&shots>0){words("PULL THE HEART BACK",18,512,15,"#ffddc8","left","400");words(LEVELS[stage-1].hint,480,464,15,"#ffe7d8","center","400")}}
 function darkOverlay(){fill(0,0,W,H,"rgba(12,4,21,.80)");glow(488,236,265,"#e055a9",.18);box(246,89,468,386,24,"#2b1236","#dd9f9d",3);box(258,101,444,362,19,null,"#9d6b8c",1)}
-function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275,"#f660a6",.16);box(235,100,539,208,23,"rgba(32,11,41,.86)","#edb08b",3);box(248,112,513,184,16,null,"#b37c98",1.3);words("VELVET FLING",503,165,55,"#ffe1b3");words("AFTER HOURS",503,227,48,"#ff7abb");words("A mischievous night of impossible shots",502,278,17,"#ffe3d4","center","400");drawButton("PLAY THE NIGHT",363,360,288,65,()=>start(1),true);drawButton("HOW TO PLAY",403,441,206,46,()=>phase="help");words("EARLY PLAYABLE WORK IN PROGRESS",504,520,15,"#f5cbd8","center","400")}
+function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275,"#f660a6",.16);box(235,100,539,208,23,"rgba(32,11,41,.86)","#edb08b",3);box(248,112,513,184,16,null,"#b37c98",1.3);words("VELVET FLING",503,165,55,"#ffe1b3");words("AFTER HOURS",503,227,48,"#ff7abb");words("A mischievous night of impossible shots",502,278,17,"#ffe3d4","center","400");drawButton("PLAY THE NIGHT",363,360,288,65,()=>start(unlocked),true);drawButton("CHOOSE NIGHT",315,441,182,46,()=>phase="levels");drawButton("HOW TO PLAY",511,441,182,46,()=>phase="help");words("EARLY PLAYABLE WORK IN PROGRESS",504,520,15,"#f5cbd8","center","400")}
+function levelsScreen(){
+ scenery();floorArt();vesper();darkOverlay();words("CHOOSE YOUR NIGHT",480,139,32,"#ffe0b5");
+ for(let i=0;i<LEVELS.length;i++){
+  const x=264+(i%3)*145,y=177+Math.floor(i/3)*92,n=i+1;
+  if(n<=unlocked){drawButton(String(n),x,y,132,65,()=>start(n),n===unlocked);words(LEVELS[i].name,x+66,y+48,12,"#ffe3d4");}
+  else{box(x,y,132,65,12,"rgba(29,13,37,.8)","#78536c",1);words(String(n),x+66,y+23,23,"#a88a9c");words("LOCKED",x+66,y+48,12,"#a88a9c");}
+  const rating=stageStars[n]||0;if(rating)words("★".repeat(rating),x+66,y+76,16,"#ffdc9d");
+ }
+ drawButton("BACK",381,391,198,44,()=>phase="menu");
+}
 function helpScreen(){scenery();floorArt();vesper();darkOverlay();words("THE ART OF THE FLING",480,150,39,"#ffe0b5");words("Pull the heart back, then release to launch.",480,218,20,"#ffe9df");words("Classic is precise. Bloom bursts on impact.",480,263,20,"#ffe9df");words("Choose Split, then tap during flight to divide it.",480,308,20,"#ffe9df");words("Aim at targets and structures to find a path.",480,353,19,"#ffe9df");drawButton("LET'S PLAY",345,398,268,52,()=>start(1),true)}
 function pauseScreen(){gameplay();darkOverlay();words("A MOMENT, DARLING",480,133,37,"#ffe3c0");drawButton("CONTINUE",346,171,268,47,()=>{phase="play";AfterHoursAudio.setPaused(false)},true);drawButton("RESTART",346,227,268,43,()=>start(stage));drawButton("MUSIC "+(AfterHoursAudio.isMusicOn()?"ON":"OFF"),268,285,135,43,()=>AfterHoursAudio.toggleMusic());drawButton("SFX "+(AfterHoursAudio.isSfxOn()?"ON":"OFF"),413,285,135,43,()=>AfterHoursAudio.toggleSfx());drawButton("HAPTIC "+(hapticsOn?"ON":"OFF"),558,285,135,43,()=>toggleHaptics());drawButton("MAIN MENU",346,368,268,47,()=>{phase="menu";AfterHoursAudio.setPaused(false)})}
-function endScreen(win){gameplay();darkOverlay();words(win?"SCANDALOUS SUCCESS!":"THE NIGHT ISN'T OVER",480,153,win?40:38,"#ffe2bb");words(win?"That is one way to close the curtain.":"Even immortal charm takes practice.",480,210,18,"#ffd5e9","center","400");words("YOUR SCORE",480,258,18,"#ffc2da");words(score.toLocaleString(),480,298,47,"#ffe6ab");if(win){for(let i=0;i<(shots>=3?3:shots>=1?2:1);i++)words("★",431+i*50,363,43,"#ffe3a0")}drawButton(win?"REPLAY":"TRY AGAIN",286,402,188,47,()=>start(1));drawButton("MAIN MENU",492,402,188,47,()=>phase="menu",true)}
-function paint(){c.setTransform(1,0,0,1,0,0);fill(0,0,cv.width,cv.height,"#100718");c.save();c.translate(ox,oy);c.scale(sc,sc);if(shake>1)c.translate(rnd(-shake,shake),rnd(-shake,shake));buttons=[];if(phase==="menu")titleScreen();else if(phase==="play")gameplay();else if(phase==="help")helpScreen();else if(phase==="pause")pauseScreen();else if(phase==="win")endScreen(true);else if(phase==="lose")endScreen(false);c.restore()}
+function endScreen(win){gameplay();darkOverlay();words(win?"SCANDALOUS SUCCESS!":"THE NIGHT ISN'T OVER",480,153,win?40:38,"#ffe2bb");words(win?"That is one way to close the curtain.":"Even immortal charm takes practice.",480,210,18,"#ffd5e9","center","400");words("YOUR SCORE",480,258,18,"#ffc2da");words(score.toLocaleString(),480,298,47,"#ffe6ab");if(win){for(let i=0;i<(shots>=3?3:shots>=1?2:1);i++)words("★",431+i*50,363,43,"#ffe3a0")}drawButton(win?"REPLAY":"TRY AGAIN",286,402,188,47,()=>start(stage));drawButton(win&&stage<LEVELS.length?"NEXT NIGHT":"MAIN MENU",492,402,188,47,()=>win&&stage<LEVELS.length?start(stage+1):phase="menu",true)}
+function paint(){c.setTransform(1,0,0,1,0,0);fill(0,0,cv.width,cv.height,"#100718");c.save();c.translate(ox,oy);c.scale(sc,sc);if(shake>1)c.translate(rnd(-shake,shake),rnd(-shake,shake));buttons=[];if(phase==="menu")titleScreen();else if(phase==="levels")levelsScreen();else if(phase==="play")gameplay();else if(phase==="help")helpScreen();else if(phase==="pause")pauseScreen();else if(phase==="win")endScreen(true);else if(phase==="lose")endScreen(false);c.restore()}

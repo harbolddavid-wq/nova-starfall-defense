@@ -1,0 +1,42 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path'),vm=require('vm');
+const base=path.join(__dirname,'../app/src/main/assets');
+function makeGame(store={}){
+ const gradient={addColorStop(){}};
+ const ctx=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>(o[k]=v,true)});
+ const canvas={width:960,height:540,getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener(){},setPointerCapture(){}};
+ class AudioFake{constructor(){this.paused=true;this.ended=false;this.currentTime=0}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
+ const env={console,Math,Date,Audio:AudioFake,requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate(){}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>store[k]=String(v)},Image:class{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=768}},document:{hidden:false,getElementById:()=>canvas,addEventListener(){}}};env.window=env;env.addEventListener=()=>{};vm.createContext(env);
+ for(const f of ['velvet-art.js','after-hours-levels.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),env,{filename:f});
+ return {run:s=>vm.runInContext(s,env),store};
+}
+const game=makeGame(),run=game.run;
+assert.strictEqual(run('LEVELS.length'),6,'six separately authored stages');
+run('start(1);score=2400;shots=2;finished(true)');
+assert.strictEqual(run('unlocked'),2,'winning unlocks the next stage');
+assert.strictEqual(JSON.parse(game.store.velvet_ah_stars)['1'],2,'earned stars are stored');
+assert.strictEqual(JSON.parse(game.store.velvet_ah_scores)['1'],2400,'best stage score is stored');
+run('start(6)');assert.strictEqual(run('stage'),2,'locked stages cannot be entered');
+run('start(1);score=750;shots=0;finished(true)');
+assert.strictEqual(JSON.parse(game.store.velvet_ah_stars)['1'],2,'replay cannot erase a better rating');
+assert.strictEqual(JSON.parse(game.store.velvet_ah_scores)['1'],2400,'replay cannot erase a better score');
+const resumed=makeGame(game.store);assert.strictEqual(resumed.run('unlocked'),2,'progress survives reload');
+assert.strictEqual(resumed.run('stageStars[1]'),2,'stars survive reload');
+const upgraded=makeGame({velvet_ah_best:'2250',velvet_ah_unlocked:'1',ah_music:'off'});
+assert.strictEqual(upgraded.run('unlocked'),2,'an earlier first-level win unlocks stage two after update');
+assert.strictEqual(upgraded.run('stageStars[1]'),1,'older win is preserved without inventing its rating');
+assert.strictEqual(upgraded.store.ah_music,'off','unrelated settings remain untouched');
+const invalid=makeGame({velvet_ah_unlocked:'999',velvet_ah_stars:'{bad'});assert.strictEqual(invalid.run('unlocked'),6,'invalid progress is safely bounded');
+run(`unlocked=6;start(3);enemies=[];crates=[];roseCharges=[];particles=[];
+ addEnemy(520,300,1);addEnemy(900,100,2);addCrate(500,300,32,32,'rose');addCrate(580,300,32,32,'rose');
+ damageBlock(crates[0],{x:490,y:300,vx:200,vy:0});`);
+assert.strictEqual(run('roseCharges.length'),1,'breaking a rose schedules a delayed reaction');
+run('for(let i=0;i<100;i++)sim(1/120)');
+assert.strictEqual(run('crates.filter(b=>b.dead).length'),2,'nearby rose crates chain exactly once');
+assert.strictEqual(run('enemies[0].dead'),true,'nearby target reacts to a rose blast');
+assert.strictEqual(run('enemies[1].dead'),false,'distant target remains safe');
+assert.strictEqual(run('roseCharges.length'),0,'chain terminates');
+run(`unlocked=6;start(3);enemies=[];crates=[];addEnemy(900,100,1);shots=0;ball=null;balls=[];roseCharges=[{x:100,y:100,remaining:1.5}]`);
+run('for(let i=0;i<130;i++)sim(1/120)');assert.strictEqual(run('phase'),'play','do not declare failure while a delayed reaction remains');
+console.log('Campaign: unlocks, save migration, replay, bounded data and delayed rose chains passed.');
+module.exports={makeGame};

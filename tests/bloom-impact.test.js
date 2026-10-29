@@ -6,7 +6,7 @@ const ctx=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>
 const canvas={width:960,height:540,getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener:(n,f)=>events[n]=f,setPointerCapture(){}};
 class AudioFake{constructor(){this.paused=true;this.ended=false;this.currentTime=0}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
 const env={console,Math,Date,Audio:AudioFake,requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate(){}},localStorage:{getItem:()=>null,setItem(){}},Image:class{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=768}},document:{hidden:false,getElementById:()=>canvas,addEventListener(){}}};env.window=env;env.addEventListener=()=>{};vm.createContext(env);
-for(const f of ['velvet-art.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),env,{filename:f});
+for(const f of ['velvet-art.js','after-hours-levels.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),env,{filename:f});
 const run=s=>vm.runInContext(s,env);
 function event(type,x,y,id=1){events[type]({clientX:x,clientY:y,pointerId:id,preventDefault(){}})}
 // Exercise the actual on-screen choice and launcher input, then let the shot fly
