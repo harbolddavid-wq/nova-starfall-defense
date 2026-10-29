@@ -1,5 +1,9 @@
 # After Hours audio provenance
 
+## Five encore tracks — 0.3.1 test
+
+The private family build retains the exact music and voices from the 0.3.0 APK and adds five related Tomality loops for Nights 15–19: `Lights on the Bridge LOOP 2` and `The Fox LOOP 1`, `LOOP 2`, `LOOP 4`, and `LOOP 5`. The game level-matches and softens their treble, and blends the loop boundary. These are edited recordings by Tomality, not new original compositions. They are used only inside this private game under the supplied license, with credit in the help screen; no raw asset pack is published. The public repository uses original synthesized fallback tracks. The new audio has been checked for decoding and level but needs David and Desi's listening for musical fit and phone-speaker balance.
+
 ## New rival and five family tracks — 0.3.0 test
 
 The new rival's distinct short hit and idle cues are cut, faded, filtered and level-adjusted with `tools/render_rival_sounds.py`. The performances are separate from the unchanged Reitanna gargoyle voices: [female gasp by slamaxu](https://freesound.org/people/slamaxu/sounds/509883/), [female vocal melody by owstu](https://freesound.org/people/owstu/sounds/727696/) and [female vocal 2 by owstu](https://freesound.org/people/owstu/sounds/727694/) are CC0 1.0. Sources, mirrored Git blob IDs and SHA-256 hashes are in `tools/samples/sfx/SOURCE_MANIFEST.json`. The cues use clips from different performances and have not been judged by a listener on the phone.

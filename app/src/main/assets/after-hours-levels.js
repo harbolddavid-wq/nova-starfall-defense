@@ -43,5 +43,22 @@ const AFTER_HOURS_LEVELS = Object.freeze([
   targets:[[550,398,null,'rival'],[625,382],[705,389],[885,343,null,'rival'],[927,412]]},
  {name:'LAST DANCE', hint:'Two Blooms. Choose the moment, then make it count.', shots:8, powers:{bloom:2,split:1},
   blocks:[[500,425,18,50,'iron'],[563,315,28,28,'ward','dance'],[615,423,18,54,'wood'],[690,434,32,32,'rose'],[780,434,32,32,'rose'],[844,412,20,76,'iron'],[900,380,90,16,'crystal']],
-  targets:[[555,363,'dance','rival'],[640,399,'dance'],[731,383],[900,347,null,'rival'],[926,414]]}
+  targets:[[555,363,'dance','rival'],[640,399,'dance'],[731,383],[900,347,null,'rival'],[926,414]]},
+ // The encore keeps the previous chapter's shot budgets and opponent mix,
+ // while moving seals, cover and chain reactions into new combinations.
+ {name:'SILKEN SECRETS', hint:'A well-placed burst can untangle more than one problem.', shots:8, powers:{bloom:2,split:1},
+  blocks:[[490,425,18,50,'iron'],[580,434,32,32,'rose'],[665,417,18,66,'wood'],[735,376,90,16,'crystal'],[805,420,20,60,'wood'],[853,292,28,28,'ward','silk'],[905,425,18,50,'wood']],
+  targets:[[545,401],[627,392,null,'rival'],[735,343],[853,350,'silk','rival'],[918,411,'silk']]},
+ {name:'GILDED STEPS', hint:'High arcs can reach a secret beyond the iron.', shots:8, powers:{bloom:1,split:1},
+  blocks:[[500,424,18,52,'wood'],[597,414,18,72,'wood'],[677,414,18,72,'wood'],[637,373,96,16,'crystal'],[725,434,32,32,'rose'],[805,411,20,78,'iron'],[878,340,92,16,'crystal'],[888,425,18,50,'wood']],
+  targets:[[548,400,null,'rival'],[637,340],[756,395],[878,307,null,'rival'],[925,409]]},
+ {name:'DOUBLE TROUBLE', hint:'Two seals, two choices. Find the opening you like.', shots:8, powers:{bloom:1,split:2},
+  blocks:[[494,421,20,58,'iron'],[560,291,28,28,'ward','lace'],[615,420,18,60,'wood'],[691,434,32,32,'rose'],[760,423,18,54,'wood'],[836,310,28,28,'ward','ribbon'],[891,375,92,16,'crystal']],
+  targets:[[550,350,'lace'],[640,395,'lace','rival'],[729,397],[846,365,'ribbon'],[897,342,'ribbon','rival']]},
+ {name:'ROSES AT MIDNIGHT', hint:'The roses are close enough to start a chain.', shots:8, powers:{bloom:1,split:2},
+  blocks:[[500,423,18,54,'wood'],[587,434,32,32,'rose'],[667,434,32,32,'rose'],[747,434,32,32,'rose'],[806,420,20,60,'iron'],[876,379,100,16,'crystal'],[851,417,18,66,'wood'],[915,290,28,28,'ward','rose']],
+  targets:[[548,397,null,'rival'],[628,382],[711,389],[876,346,'rose','rival'],[928,410,'rose']]},
+ {name:'VELVET ENCORE', hint:'Give the seals and Blooms their own moment to shine.', shots:8, powers:{bloom:2,split:1},
+  blocks:[[495,423,18,54,'iron'],[557,301,28,28,'ward','encore'],[613,420,18,60,'wood'],[682,433,32,32,'rose'],[757,433,32,32,'rose'],[823,410,20,80,'iron'],[880,372,100,16,'crystal'],[925,421,18,58,'wood']],
+  targets:[[551,359,'encore','rival'],[635,398,'encore'],[720,382],[801,393],[880,339,null,'rival'],[929,405]]}
 ]);

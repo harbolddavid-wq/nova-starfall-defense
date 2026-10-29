@@ -28,10 +28,10 @@ for(let level=10;level<=14;level++){
  assert.strictEqual(run('phase'),'win',`night ${level} reaches its win screen`);
  tap(586,425);
  if(level<14)assert.strictEqual(run('stage'),level+1,'next opens the unlocked night');
- else assert.strictEqual(run('phase'),'menu','the chapter finale returns to the menu');
+ else assert.strictEqual(run('stage'),15,'the former finale leads into the encore');
 }
-assert.strictEqual(run('unlocked'),14,'all new nights are unlocked in sequence');
+assert.strictEqual(run('unlocked'),15,'the encore unlocks after night fourteen');
 const reopened=makeGame(g.store);
-assert.strictEqual(reopened.run('unlocked'),14,'chapter progress survives reopening');
+assert.strictEqual(reopened.run('unlocked'),15,'chapter progress survives reopening');
 for(let n=10;n<=14;n++)assert(reopened.run(`stageStars[${n}]`)>0,`night ${n} retained its completion`);
 console.log('New chapter: five pointer-controlled clears, progression and reload passed.');

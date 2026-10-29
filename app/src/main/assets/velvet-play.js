@@ -29,6 +29,9 @@ try {
  if(LEVELS.length>9 && stageStars[9]>0 && unlocked<10){
   unlocked=10;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
  }
+ if(LEVELS.length>14 && stageStars[14]>0 && unlocked<15){
+  unlocked=15;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
+ }
 } catch(e) {}
 function haptic(){
  if(!hapticsOn)return;

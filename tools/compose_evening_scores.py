@@ -14,7 +14,7 @@ RATE=32000
 MINOR=[0,2,3,5,7,8,10]
 MAJOR=[0,2,4,5,7,9,11]
 # Two four-bar, quarter-note phrases per piece; None is a deliberate breath.
-# Menu then nights 1–14. Public-source fallback; private family builds overlay
+# Menu then nights 1–19. Public-source fallback; private family builds overlay
 # licensed recordings. Intervals are diatonic scale degrees, not MIDI pitches.
 SCORES=[
  ('menu',57,'minor',90,[0,5,2,4],
@@ -62,6 +62,21 @@ SCORES=[
  ('14',50,'minor',96,[0,5,2,4],
   [2,4,6,4, 5,2,0,2, 4,5,4,2, 1,2,0,None],
   [4,2,0,2, 5,7,5,4, 6,4,2,0, 1,4,2,None]),
+ ('15',53,'minor',94,[0,5,2,4],
+  [0,2,4,5, 4,2,0,2, 5,4,2,None, 1,2,0,None],
+  [4,5,6,4, 5,2,4,2, 6,4,2,0, 1,4,2,None]),
+ ('16',50,'major',98,[0,3,5,4],
+  [2,4,2,0, 3,5,4,2, 5,4,2,None, 1,2,0,None],
+  [4,5,7,5, 3,2,0,2, 5,4,2,0, 1,4,2,None]),
+ ('17',52,'minor',96,[0,5,2,4],
+  [0,4,2,0, 2,5,4,2, 6,4,2,4, 1,2,0,None],
+  [4,6,5,2, 5,7,5,4, 4,2,0,2, 1,4,2,None]),
+ ('18',48,'minor',100,[0,5,2,4],
+  [2,4,5,2, 5,4,2,0, 2,4,6,4, 1,2,0,None],
+  [0,2,4,6, 5,2,4,2, 6,4,2,0, 1,4,2,None]),
+ ('19',50,'minor',98,[0,5,2,4],
+  [4,2,0,2, 5,4,2,5, 6,4,2,None, 1,4,2,0],
+  [0,2,4,6, 5,7,5,2, 4,5,4,2, 1,2,0,None]),
 ]
 
 def midi(root,scale,degree):

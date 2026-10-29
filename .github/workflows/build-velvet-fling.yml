@@ -37,6 +37,7 @@ jobs:
           node tests/campaign-playthrough.test.js
           node tests/rival-campaign.test.js
           node tests/rival-playthrough.test.js
+          node tests/encore-playthrough.test.js
           node tests/first-level-compat.test.js
           node tools/find_campaign_solutions.js
       - name: Compile Android debug APK

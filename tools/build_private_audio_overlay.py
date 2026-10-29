@@ -27,6 +27,11 @@ MUSIC = [
     ("evening-12.ogg", "LOOPS/FOREWORD/Foreword LOOP 3.ogg", -3.8, 42.667),
     ("evening-13.ogg", "LOOPS/LIGHTS ON THE BRIDGE/Lights on the Bridge LOOP 1.ogg", -6.0, 48.0),
     ("evening-14.ogg", "LOOPS/THE FOX/The Fox LOOP 3.ogg", -4.5, 32.0),
+    ("evening-15.ogg", "LOOPS/LIGHTS ON THE BRIDGE/Lights on the Bridge LOOP 2.ogg", -6.2, 60.0),
+    ("evening-16.ogg", "LOOPS/THE FOX/The Fox LOOP 1.ogg", -3.7, 32.0),
+    ("evening-17.ogg", "LOOPS/THE FOX/The Fox LOOP 2.ogg", -4.7, 32.0),
+    ("evening-18.ogg", "LOOPS/THE FOX/The Fox LOOP 4.ogg", -4.6, 32.0),
+    ("evening-19.ogg", "LOOPS/THE FOX/The Fox LOOP 5.ogg", -3.3, 80.0),
 ]
 # An existing game effect is mixed with a short, quiet, precisely timed excerpt.
 # start, end, fade start, fade duration, old gain, supplied gain
