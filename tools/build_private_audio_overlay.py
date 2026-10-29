@@ -22,6 +22,11 @@ MUSIC = [
     ("evening-02.ogg", "LOOPS/SPACE CAT/Space Cat LOOP 2.ogg", -3.2, 16.271),
     ("evening-03.ogg", "LOOPS/SPACE CAT/Space Cat LOOP 4.ogg", -5.3, 40.678),
     ("evening-04.ogg", "LOOPS/SPACE CAT/Space Cat LOOP 3.ogg", -5.6, 32.542),
+    ("evening-10.ogg", "LOOPS/FOREWORD/Foreword LOOP 2.ogg", -3.8, 42.667),
+    ("evening-11.ogg", "LOOPS/SPACE CAT/Space Cat LOOP 1.ogg", -5.2, 16.271),
+    ("evening-12.ogg", "LOOPS/FOREWORD/Foreword LOOP 3.ogg", -3.8, 42.667),
+    ("evening-13.ogg", "LOOPS/LIGHTS ON THE BRIDGE/Lights on the Bridge LOOP 1.ogg", -6.0, 48.0),
+    ("evening-14.ogg", "LOOPS/THE FOX/The Fox LOOP 3.ogg", -4.5, 32.0),
 ]
 # An existing game effect is mixed with a short, quiet, precisely timed excerpt.
 # start, end, fade start, fade duration, old gain, supplied gain
@@ -47,6 +52,7 @@ def main():
     parser.add_argument("--effects-zip", type=Path, required=True)
     parser.add_argument("--base-audio", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--only-music", nargs="+", help="Render named music files only, for incremental family-build updates")
     args = parser.parse_args()
     if digest(args.music_zip) != MUSIC_SHA or digest(args.effects_zip) != SFX_SHA:
         raise SystemExit("An input archive does not match the documented original.")
@@ -56,6 +62,8 @@ def main():
         tmp = Path(temp)
         with ZipFile(args.music_zip) as music:
             for dest, member, gain, expected_duration in MUSIC:
+                if args.only_music and dest not in args.only_music:
+                    continue
                 source = tmp / "track.ogg"
                 source.write_bytes(music.read(member))
                 # Decode to samples rather than trusting the supplied Ogg's
@@ -94,6 +102,8 @@ def main():
                     raise SystemExit(f"The rendered track {dest} is unexpectedly short.")
         with ZipFile(args.effects_zip) as effects:
             for dest, member, start, end, fade_at, fade_len, base_gain, pack_gain in SFX:
+                if args.only_music:
+                    continue
                 source = tmp / "effect.wav"
                 source.write_bytes(effects.read("Free Sounds Pack/" + member))
                 graph = (f"[0:a]aformat=channel_layouts=mono,volume={base_gain}[base];"

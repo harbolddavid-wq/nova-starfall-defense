@@ -11,7 +11,7 @@ function makeGame(store={}){
  return {run:s=>vm.runInContext(s,env),store,events};
 }
 const game=makeGame(),run=game.run;
-assert.strictEqual(run('LEVELS.length'),9,'nine separately authored stages');
+assert.strictEqual(run('LEVELS.length'),14,'fourteen separately authored stages');
 run('start(1);score=2400;shots=2;finished(true)');
 assert.strictEqual(run('unlocked'),2,'winning unlocks the next stage');
 assert.strictEqual(JSON.parse(game.store.velvet_ah_stars)['1'],2,'earned stars are stored');
@@ -26,7 +26,7 @@ const upgraded=makeGame({velvet_ah_best:'2250',velvet_ah_unlocked:'1',ah_music:'
 assert.strictEqual(upgraded.run('unlocked'),2,'an earlier first-level win unlocks stage two after update');
 assert.strictEqual(upgraded.run('stageStars[1]'),1,'older win is preserved without inventing its rating');
 assert.strictEqual(upgraded.store.ah_music,'off','unrelated settings remain untouched');
-const invalid=makeGame({velvet_ah_unlocked:'999',velvet_ah_stars:'{bad'});assert.strictEqual(invalid.run('unlocked'),9,'invalid progress is safely bounded');
+const invalid=makeGame({velvet_ah_unlocked:'999',velvet_ah_stars:'{bad'});assert.strictEqual(invalid.run('unlocked'),14,'invalid progress is safely bounded');
 const oldFinale=makeGame({velvet_ah_unlocked:'6',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3,"6":2}',velvet_ah_scores:'{"6":4200}',ah_music:'off'});
 assert.strictEqual(oldFinale.run('unlocked'),7,'a previously completed finale unlocks the new chapter');
 assert.strictEqual(oldFinale.run('stageStars[6]'),2,'previous finale stars remain');
@@ -34,6 +34,13 @@ assert.strictEqual(oldFinale.run('stageScores[6]'),4200,'previous finale score r
 assert.strictEqual(oldFinale.store.ah_music,'off','upgrade preserves sound choices');
 const unfinishedFinale=makeGame({velvet_ah_unlocked:'6',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3}'});
 assert.strictEqual(unfinishedFinale.run('unlocked'),6,'opening the old finale without winning it does not skip ahead');
+const completedNine=makeGame({velvet_ah_unlocked:'9',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3,"9":2}',velvet_ah_scores:'{"9":4200}',ah_music:'off'});
+assert.strictEqual(completedNine.run('unlocked'),10,'completed ninth night unlocks the new chapter');
+assert.strictEqual(completedNine.run('stageStars[9]'),2,'ninth-night stars are preserved');
+assert.strictEqual(completedNine.run('stageScores[9]'),4200,'ninth-night score is preserved');
+assert.strictEqual(completedNine.store.ah_music,'off','sound settings survive migration');
+const unfinishedNine=makeGame({velvet_ah_unlocked:'9',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3}'});
+assert.strictEqual(unfinishedNine.run('unlocked'),9,'visiting night nine is not treated as winning it');
 run(`unlocked=6;start(3);enemies=[];crates=[];roseCharges=[];particles=[];
  addEnemy(520,300,1);addEnemy(900,100,2);addCrate(500,300,32,32,'rose');addCrate(580,300,32,32,'rose');
  damageBlock(crates[0],{x:490,y:300,vx:200,vy:0});`);

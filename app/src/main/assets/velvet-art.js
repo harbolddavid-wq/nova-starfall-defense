@@ -69,17 +69,24 @@ function slingshot(){
 }
 const gargoyleArt=new Image();
 gargoyleArt.src="art/gargoyle-after-hours.webp";
+const rivalArt=new Image();
+rivalArt.src="art/midnight-rival.webp";
 function gargoyle(t){
  if(t.dead && !(t.vanish>0))return;
- if(!gargoyleArt.complete||!gargoyleArt.naturalWidth)return;
+ const art=t.type==='rival'?rivalArt:gargoyleArt;
+ if(!art.complete||!art.naturalWidth)return;
  const exit=t.dead ? 1-t.vanish/.55 : 0;
- c.save();c.translate(t.x,t.y+Math.sin(frame*.035+t.seed)*1.2-exit*10);
+ const flinch=t.react>0?Math.sin(t.react*26)*t.react*8:0;
+ c.save();c.translate(t.x+flinch,t.y+Math.sin(frame*.035+t.seed)*1.2-exit*10);
  c.globalAlpha=t.dead ? Math.max(0,1-exit) : 1;
  c.rotate(t.dead ? exit*.17 : Math.sin(frame*.017+t.seed)*.012);
  if(isWarded(t)){c.save();c.globalAlpha=t.wardFlash>0?.95:.52;c.beginPath();c.arc(0,0,34,0,TAU);c.lineWidth=t.wardFlash>0?4:2;c.strokeStyle="#ffe3a1";c.shadowColor="#eab75e";c.shadowBlur=9;c.stroke();c.restore()}
  const squash=t.dead ? 1+.12*Math.sin(exit*Math.PI) : 1+.008*Math.sin(frame*.03+t.seed)+(t.voicePulse>0?.025*Math.sin(t.voicePulse*16):0);
  c.scale(1/squash,squash);
- c.drawImage(gargoyleArt,-32,-48,64,96);c.restore();
+ if(t.type==='rival')c.drawImage(art,-35,-53,70,106);
+ else c.drawImage(art,-32,-48,64,96);
+ c.restore();
+ if(t.type==='rival'&&!t.dead){for(let i=0;i<3;i++){c.globalAlpha=i<t.hp?.95:.18;heart(t.x+(i-1)*12,t.y-60,.23,'#ffb7df')}c.globalAlpha=1}
 }
 function drawCrate(b){if(b.dead)return;c.save();c.translate(b.x,b.y);c.rotate(b.rot);let x=-b.w/2,y=-b.h/2,gl=c.createLinearGradient(x,y,x+b.w,y+b.h);
  if(b.type==="crystal"){gl.addColorStop(0,"#f3eeff");gl.addColorStop(.29,"#80e0ee");gl.addColorStop(.68,"#aa68dd");gl.addColorStop(1,"#5a356f")}
@@ -131,16 +138,21 @@ function aimDots(){if(!drag)return;const v=Physics.velocity(launcher,drag);for(l
 function wardLinksDraw(){for(const t of enemies){if(t.dead||!isWarded(t))continue;const seal=crates.find(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward);if(!seal)continue;c.save();c.globalAlpha=.36;c.setLineDash([4,5]);stroke([[t.x,t.y],[seal.x,seal.y]],"#ffe0a2",1.6);c.restore()}}
 function gameplay(){scenery();curtains();floorArt();vesper();slingshot();wardLinksDraw();for(const b of crates)drawCrate(b);for(const t of enemies)gargoyle(t);projectileDraw();aimDots();particlesDraw();hud();if(!ball&&!drag&&shots>0){words("PULL THE HEART BACK",18,512,15,"#ffddc8","left","400");if(stage>1)words(LEVELS[stage-1].hint,480,464,15,"#ffe7d8","center","400")}}
 function darkOverlay(){fill(0,0,W,H,"rgba(12,4,21,.80)");glow(488,236,265,"#e055a9",.18);box(246,89,468,386,24,"#2b1236","#dd9f9d",3);box(258,101,444,362,19,null,"#9d6b8c",1)}
-function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275,"#f660a6",.16);box(235,100,539,208,23,"rgba(32,11,41,.86)","#edb08b",3);box(248,112,513,184,16,null,"#b37c98",1.3);words("VELVET FLING",503,165,55,"#ffe1b3");words("AFTER HOURS",503,227,48,"#ff7abb");words("A mischievous night of impossible shots",502,278,17,"#ffe3d4","center","400");drawButton("PLAY THE NIGHT",363,360,288,65,()=>start(unlocked),true);drawButton("CHOOSE NIGHT",315,441,182,46,()=>phase="levels");drawButton("HOW TO PLAY",511,441,182,46,()=>phase="help");words("EARLY PLAYABLE WORK IN PROGRESS",504,520,15,"#f5cbd8","center","400")}
+function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275,"#f660a6",.16);box(235,100,539,208,23,"rgba(32,11,41,.86)","#edb08b",3);box(248,112,513,184,16,null,"#b37c98",1.3);words("VELVET FLING",503,165,55,"#ffe1b3");words("AFTER HOURS",503,227,48,"#ff7abb");words("A mischievous night of impossible shots",502,278,17,"#ffe3d4","center","400");drawButton("PLAY THE NIGHT",363,360,288,65,()=>start(unlocked),true);drawButton("CHOOSE NIGHT",315,441,182,46,()=>{levelPage=Math.floor((unlocked-1)/9);phase="levels"});drawButton("HOW TO PLAY",511,441,182,46,()=>phase="help");words("EARLY PLAYABLE WORK IN PROGRESS",504,520,15,"#f5cbd8","center","400")}
 function levelsScreen(){
  scenery();floorArt();vesper();darkOverlay();words("CHOOSE YOUR NIGHT",480,139,32,"#ffe0b5");
- for(let i=0;i<LEVELS.length;i++){
-  const x=264+(i%3)*145,y=166+Math.floor(i/3)*72,n=i+1;
+ const pageCount=Math.ceil(LEVELS.length/9);levelPage=clamp(levelPage,0,pageCount-1);
+ words((levelPage+1)+' / '+pageCount,480,389,13,'#f5cbd8','center','400');
+ for(let slot=0;slot<9;slot++){
+  const i=levelPage*9+slot;if(i>=LEVELS.length)break;
+  const x=264+(slot%3)*145,y=166+Math.floor(slot/3)*72,n=i+1;
   if(n<=unlocked){drawButton("",x,y,132,54,()=>start(n),n===unlocked);words(String(n),x+66,y+16,22,"#fff2ea");words(LEVELS[i].name,x+66,y+39,11,"#ffe3d4");}
   else{box(x,y,132,54,12,"rgba(29,13,37,.8)","#78536c",1);words(String(n),x+66,y+16,22,"#a88a9c");words("LOCKED",x+66,y+39,11,"#a88a9c");}
   const rating=stageStars[n]||0;for(let j=0;j<rating;j++)starIcon(x+66+(j-(rating-1)/2)*15,y+63,5);
  }
+ drawButton("‹",264,402,78,44,()=>levelPage--,false,levelPage>0);
  drawButton("BACK",381,402,198,44,()=>phase="menu");
+ drawButton("›",618,402,78,44,()=>levelPage++,false,levelPage<pageCount-1);
 }
 function helpScreen(){scenery();floorArt();vesper();darkOverlay();words("THE ART OF THE FLING",480,150,39,"#ffe0b5");words("Pull the heart back, then release to launch.",480,202,19,"#ffe9df");words("Classic is precise. Bloom bursts on impact.",480,238,19,"#ffe9df");words("Choose Split, then tap during flight to divide it.",480,274,19,"#ffe9df");words("Bloom and Split have limited uses each night.",480,310,19,"#ffe9df");words("Classic is always available while hearts remain.",480,346,19,"#ffe9df");if(window.VELVET_ASSET_CREDIT_LINE)words(window.VELVET_ASSET_CREDIT_LINE,480,376,12,"#f5cbd8","center","400");drawButton("LET'S PLAY",345,398,268,52,()=>start(1),true)}
 function pauseScreen(){gameplay();darkOverlay();words("A MOMENT, DARLING",480,133,37,"#ffe3c0");drawButton("CONTINUE",346,171,268,47,()=>{phase="play";AfterHoursAudio.setPaused(false)},true);drawButton("RESTART",346,227,268,43,()=>start(stage));drawButton("MUSIC "+(AfterHoursAudio.isMusicOn()?"ON":"OFF"),268,285,135,43,()=>AfterHoursAudio.toggleMusic());drawButton("SFX "+(AfterHoursAudio.isSfxOn()?"ON":"OFF"),413,285,135,43,()=>AfterHoursAudio.toggleSfx());drawButton("HAPTIC "+(hapticsOn?"ON":"OFF"),558,285,135,43,()=>toggleHaptics());drawButton("MAIN MENU",346,368,268,47,()=>{phase="menu";AfterHoursAudio.setPaused(false)})}

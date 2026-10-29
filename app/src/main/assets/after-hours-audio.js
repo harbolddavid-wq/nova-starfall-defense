@@ -7,8 +7,8 @@
  let enabledMusic=true,enabledSfx=true,paused=false,started=false;
  const pools={},last={};
  try { enabledMusic=localStorage.getItem('ah_music')!=='off'; enabledSfx=localStorage.getItem('ah_sfx')!=='off'; }catch(e){}
- const file={click:'click-b.ogg',switch:'switch-a.ogg',tap:'tap-a.ogg',sling:'sling.ogg',wood:'wood.ogg',glass:'glass.ogg',iron:'iron.ogg',charm:'charm.ogg',power:'power.ogg',win:'win.ogg',voiceHitA:'voice-hit-a.ogg',voiceHitB:'voice-hit-b.ogg',voiceIdleA:'voice-idle-a.ogg',voiceIdleB:'voice-idle-b.ogg'};
- const preload=['sling','wood','glass','iron','voiceHitA','voiceHitB','voiceIdleA','voiceIdleB'];
+ const file={click:'click-b.ogg',switch:'switch-a.ogg',tap:'tap-a.ogg',sling:'sling.ogg',wood:'wood.ogg',glass:'glass.ogg',iron:'iron.ogg',charm:'charm.ogg',power:'power.ogg',win:'win.ogg',voiceHitA:'voice-hit-a.ogg',voiceHitB:'voice-hit-b.ogg',voiceIdleA:'voice-idle-a.ogg',voiceIdleB:'voice-idle-b.ogg',rivalHitA:'rival-hit-a.ogg',rivalHitB:'rival-hit-b.ogg',rivalIdleA:'rival-idle-a.ogg',rivalIdleB:'rival-idle-b.ogg'};
+ const preload=['sling','wood','glass','iron','voiceHitA','voiceHitB','voiceIdleA','voiceIdleB','rivalHitA','rivalHitB','rivalIdleA','rivalIdleB'];
  const wanted=()=>started&&enabledMusic&&!paused&&!document.hidden;
  function filename(n){return 'audio/evening-'+(n===0?'menu':String(n).padStart(2,'0'))+'.ogg'}
  function newMusic(n){const m=new Audio(filename(n));m.loop=true;m.preload='auto';m.volume=MUSIC_GAIN;return m}

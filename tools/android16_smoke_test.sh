@@ -88,7 +88,27 @@ sleep .80
 adb exec-out screencap -p > "$OUT/07-after-shot.png"
 python3 tools/verify_phone_lab_screen.py --shot "$OUT/03-bloom-selected.png" "$OUT/07-after-shot.png" | tee "$OUT/shot-check.txt"
 
+# The unmodified APK above is the one saved as the build artifact. A separate,
+# disposable variant seeds a completed ninth night only inside this emulator so
+# the newly authored chapter can also be inspected without modifying a real save.
+adb shell am force-stop "$PKG"
+adb install -r phone-lab-variants/seeded-night-10.apk | tee "$OUT/fixture-install.txt"
+adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > "$OUT/fixture-launch.txt"
+sleep 8
+adb shell input tap "$(world_x 507)" "$(world_y 392)"
+sleep 2
+adb exec-out screencap -p > "$OUT/08-night-10.png"
+python3 tools/verify_phone_lab_screen.py --rival "$OUT/08-night-10.png" | tee "$OUT/rival-check.txt"
+adb shell input tap "$(world_x 500)" "$(world_y 505)"
+sleep 1
+adb exec-out screencap -p > "$OUT/09-night-10-bloom.png"
+python3 tools/verify_phone_lab_screen.py "$OUT/09-night-10-bloom.png" | tee "$OUT/rival-bloom-check.txt"
+adb shell input swipe "$(world_x 158)" "$(world_y 368)" "$(world_x 50)" "$(world_y 396)" 350
+sleep 2
+adb exec-out screencap -p > "$OUT/10-night-10-after-shot.png"
+python3 tools/verify_phone_lab_screen.py --shot-6 "$OUT/09-night-10-bloom.png" "$OUT/10-night-10-after-shot.png" | tee "$OUT/rival-shot-check.txt"
+
 if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then echo "App process exited during play";exit 1;fi
 adb logcat -d -v time | grep -A 15 -E 'FATAL EXCEPTION|AndroidRuntime' > "$OUT/fatals-candidate.txt" || true
 if grep -q "Process: $PKG" "$OUT/fatals-candidate.txt"; then echo "App-scoped fatal exception";exit 1;fi
-echo "Selected Bloom and released one shot; inspect impact frames for visual evidence."
+echo "The unmodified app and a separate progress-seeded fixture both accepted a Bloom shot; inspect screenshots for visual evidence."

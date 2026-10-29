@@ -48,14 +48,26 @@ def main(path):
   raise AssertionError(f'Bloom selected button not detected at ({x},{y}); RGB={r},{g},{b}. Check screenshot for overlay or wrong screen.')
  print(f'PASS visible selected Bloom control at ({x},{y}); screenshot {w}x{h}; RGB={r},{g},{b}.')
 
-def check_shot(before,after):
+def check_shot(before,after,heart_x=570):
  w,h,bpp,rows=pixels(before);w2,h2,bpp2,rows2=pixels(after)
  if (w,h)!=(w2,h2):raise AssertionError('Screen dimensions changed during the shot')
- x,y=point(w,h,570,36);red_before=rows[y][x*bpp];red_after=rows2[y][x*bpp2]
+ x,y=point(w,h,heart_x,36);red_before=rows[y][x*bpp];red_after=rows2[y][x*bpp2]
  if red_before-red_after<25:raise AssertionError(f'Last shot indicator did not dim: {red_before} -> {red_after}. Inspect screenshots.')
  print(f'PASS shot indicator dimmed after swipe: red {red_before} -> {red_after}.')
 
+def check_rival(path):
+ w,h,bpp,rows=pixels(path)
+ # The Night 10 fixture has a sixth shot heart and three tiny rose health
+ # hearts above the new opponent. These pixels are not present on Night 1.
+ for wx,wy in [(606,38),(655,284),(667,284),(679,284)]:
+  x,y=point(w,h,wx,wy);r,g,b=rows[y][x*bpp:x*bpp+3]
+  if not(r>115 and r>g*1.25 and r>b*1.05):
+   raise AssertionError(f'Night 10 marker absent at world {wx},{wy}: {r},{g},{b}')
+ print('PASS six-shot Night 10 and three visible rival hearts.')
+
 if __name__=='__main__':
  if len(sys.argv)==4 and sys.argv[1]=='--shot':check_shot(sys.argv[2],sys.argv[3])
+ elif len(sys.argv)==4 and sys.argv[1]=='--shot-6':check_shot(sys.argv[2],sys.argv[3],606)
+ elif len(sys.argv)==3 and sys.argv[1]=='--rival':check_rival(sys.argv[2])
  elif len(sys.argv)==2:main(sys.argv[1])
  else:raise SystemExit('Usage: verify_phone_lab_screen.py SELECTED.png | --shot BEFORE.png AFTER.png')

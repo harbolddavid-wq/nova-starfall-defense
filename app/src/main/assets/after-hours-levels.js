@@ -27,5 +27,21 @@ const AFTER_HOURS_LEVELS = Object.freeze([
   targets:[[530,402],[608,379,'ruby'],[690,396,'ruby'],[846,365,'violet'],[903,361,'violet'],[923,416]]},
  {name:'MIDNIGHT REPRISE', hint:'Open both seals before the final flourish.', shots:7, powers:{bloom:1,split:2},
   blocks:[[500,421,20,58,'iron'],[553,303,28,28,'ward','left'],[602,423,18,54,'wood'],[684,434,32,32,'rose'],[773,434,32,32,'rose'],[814,416,20,68,'iron'],[866,385,90,16,'crystal'],[900,294,28,28,'ward','right']],
-  targets:[[545,367,'left'],[628,403,'left'],[725,372],[847,351,'right'],[912,361,'right'],[928,416]]}
+  targets:[[545,367,'left'],[628,403,'left'],[725,372],[847,351,'right'],[912,361,'right'],[928,416]]},
+ // Fourth target field is the character type; earlier levels stay identical.
+ {name:'THE NEW ARRIVAL', hint:'Three hearts of charm — or one well-placed Bloom.', shots:6, powers:{bloom:1,split:1},
+  blocks:[[505,421,20,58,'wood'],[625,416,18,68,'wood'],[708,416,18,68,'wood'],[667,377,102,16,'crystal'],[814,434,32,32,'rose']],
+  targets:[[550,400],[667,344,null,'rival'],[860,405]]},
+ {name:'TWO TO TANGO', hint:'Save your Bloom for the one behind the glass.', shots:8, powers:{bloom:1,split:2},
+  blocks:[[490,425,18,50,'wood'],[610,434,32,32,'rose'],[728,421,20,58,'iron'],[805,377,102,16,'crystal'],[758,416,18,68,'wood'],[852,416,18,68,'wood']],
+  targets:[[545,397,null,'rival'],[660,393],[805,344,null,'rival'],[912,405]]},
+ {name:'VELVET LOCK', hint:'Unseal her first; Bloom can open both at once.', shots:7, powers:{bloom:1,split:1},
+  blocks:[[510,421,20,58,'iron'],[595,434,32,32,'rose'],[692,420,18,60,'wood'],[760,380,94,16,'crystal'],[858,320,28,28,'ward','velvet'],[895,422,18,56,'wood']],
+  targets:[[556,400],[650,389],[803,356,'velvet','rival'],[916,408,'velvet']]},
+ {name:'CROSS MY HEART', hint:'A chain of roses may open a surprising path.', shots:8, powers:{bloom:1,split:2},
+  blocks:[[500,419,20,62,'wood'],[585,434,32,32,'rose'],[665,434,32,32,'rose'],[745,434,32,32,'rose'],[817,412,20,76,'iron'],[886,376,100,16,'crystal'],[850,418,18,64,'wood']],
+  targets:[[550,398,null,'rival'],[625,382],[705,389],[885,343,null,'rival'],[927,412]]},
+ {name:'LAST DANCE', hint:'Two Blooms. Choose the moment, then make it count.', shots:8, powers:{bloom:2,split:1},
+  blocks:[[500,425,18,50,'iron'],[563,315,28,28,'ward','dance'],[615,423,18,54,'wood'],[690,434,32,32,'rose'],[780,434,32,32,'rose'],[844,412,20,76,'iron'],[900,380,90,16,'crystal']],
+  targets:[[555,363,'dance','rival'],[640,399,'dance'],[731,383],[900,347,null,'rival'],[926,414]]}
 ]);

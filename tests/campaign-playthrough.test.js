@@ -29,11 +29,11 @@ for(let level=1;level<=routes.length;level++){
  assert.strictEqual(run('phase'),'win',`stage ${level} reaches its win screen`);
  event('pointerdown',586,425);
  if(level<routes.length)assert.strictEqual(run('stage'),level+1,'next button starts the newly unlocked stage');
- else assert.strictEqual(run('phase'),'menu','last win returns to menu');
+ else assert.strictEqual(run('stage'),10,'the former finale leads into the new chapter');
 }
-assert.strictEqual(run('unlocked'),9,'all nine stages unlocked');
+assert.strictEqual(run('unlocked'),10,'completing nine unlocks the next chapter');
 assert.strictEqual(Object.keys(JSON.parse(g.store.velvet_ah_stars)).length,9,'each completion persists a star record');
-const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),9,'all progress survives reopening');
+const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),10,'all progress survives reopening');
 reopened.run('phase="levels";paint()');
 assert.strictEqual(reopened.run('buttons.filter(b=>b.w===132).length'),9,'all unlocked stages can be replayed from the selection screen');
 console.log('Campaign: pointer-controlled clears, next-stage navigation and reload passed for nine stages.');

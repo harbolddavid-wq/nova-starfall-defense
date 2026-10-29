@@ -70,6 +70,30 @@
       "file": "glass-original.ogg",
       "source": "Earlier After Hours cues created from CC0 instrumental samples; see AUDIO_CREDITS.md",
       "sha256": "cd33d5a19bece29bea57aa10a09a8b98fb08d09245f7f2ec1491cae6696fb8a4"
+    },
+    {
+      "file": "509883__slamaxu__female_gasp.wav",
+      "source": "https://freesound.org/people/slamaxu/sounds/509883/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "fe33bb4bace0d257b23f95e9d00e4f5069e2f2d3",
+      "sha256": "46da12d6f143ad291b975a6b83ae748d7fe5692af844bef86c32137173d0094b"
+    },
+    {
+      "file": "727694__owstu__female-vocal-2-higher-notes.wav",
+      "source": "https://freesound.org/people/owstu/sounds/727694/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "66882395585a21e3e88db94ae37549047675481a",
+      "sha256": "be9b11d8850c9813320a65a910c61721770204c495732d0cf052e737063a6ff7"
+    },
+    {
+      "file": "727696__owstu__female-vocal-melody-humming.wav",
+      "source": "https://freesound.org/people/owstu/sounds/727696/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "685b158ae32975073803c66cb460e741ebbf85af",
+      "sha256": "bd5ee0431ac7ea4c9b9f3c30534fd4a4f85f00632fb7984835c89f941f539e30"
     }
   ]
 }

@@ -7,6 +7,7 @@ let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null
 let crates=[],enemies=[],particles=[],bloomWaves=[],roseCharges=[],popups=[],buttons=[],finishClock=0,shake=0;
 let hapticsOn=true,shotMode="direct",powerCharges={bloom:0,split:0},simTime=0,actorReact=0;
 let soundClock=0,idleVoiceAt=0,lastHitVoice=-10,lastShotAt=-10,idleVoiceIndex=0,hitVoiceIndex=0;
+let rivalIdleIndex=0,rivalHitIndex=0,shotSerial=0,levelPage=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try {
@@ -25,47 +26,61 @@ try {
  if(LEVELS.length>6 && stageStars[6]>0 && unlocked<7){
   unlocked=7;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
  }
+ if(LEVELS.length>9 && stageStars[9]>0 && unlocked<10){
+  unlocked=10;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
+ }
 } catch(e) {}
 function haptic(){
  if(!hapticsOn)return;
  try{if(window.NativeBridge)window.NativeBridge.haptic();else if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
 }
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
-function quietIdleVoice(){AfterHoursAudio.stopCue('voiceIdleA');AfterHoursAudio.stopCue('voiceIdleB')}
-function gargoyleHitVoice(){
+function quietIdleVoice(){for(const name of ['voiceIdleA','voiceIdleB','rivalIdleA','rivalIdleB'])AfterHoursAudio.stopCue(name)}
+function gargoyleHitVoice(t){
  if(phase!=="play"||soundClock-lastHitVoice<.38)return;
- quietIdleVoice();sfx(hitVoiceIndex++%2?'voiceHitB':'voiceHitA',.92);lastHitVoice=soundClock;
+ quietIdleVoice();
+ if(t && t.type==='rival')sfx(rivalHitIndex++%2?'rivalHitB':'rivalHitA',.88);
+ else sfx(hitVoiceIndex++%2?'voiceHitB':'voiceHitA',.92);
+ lastHitVoice=soundClock;
  idleVoiceAt=Math.max(idleVoiceAt,soundClock+5);
 }
 function updateGargoyleIdle(){
  if(soundClock<idleVoiceAt||ball||aiming||roseCharges.length||soundClock-lastShotAt<1.4||soundClock-lastHitVoice<3)return;
  const present=enemies.filter(t=>!t.dead);if(!present.length)return;
  const t=present[Math.floor(Math.random()*present.length)];t.voicePulse=.7;
- sfx(idleVoiceIndex++%2?'voiceIdleB':'voiceIdleA',.48);idleVoiceAt=soundClock+rnd(7.5,12);
+ if(t.type==='rival')sfx(rivalIdleIndex++%2?'rivalIdleB':'rivalIdleA',.48);
+ else sfx(idleVoiceIndex++%2?'voiceIdleB':'voiceIdleA',.48);
+ idleVoiceAt=soundClock+rnd(7.5,12);
 }
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
 function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:type==="iron"?Infinity:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
-function addEnemy(x,y,kind,ward=null){enemies.push({id:enemies.length,x,y,kind,ward,wardFlash:0,voicePulse:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
+function addEnemy(x,y,kind,ward=null,type='gargoyle'){enemies.push({id:enemies.length,x,y,kind,ward,type,hp:type==='rival'?3:1,damageKeys:{},react:0,wardFlash:0,voicePulse:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
 function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward)}
 function start(l){
  stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
  const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
  powerCharges={bloom:level.powers.bloom,split:level.powers.split};shotMode="direct";
  crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
- soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;quietIdleVoice();
+ soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;rivalIdleIndex=0;rivalHitIndex=0;shotSerial=0;quietIdleVoice();
  for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
- level.targets.forEach(([x,y,ward],i)=>addEnemy(x,y,i+1,ward||null));
+ level.targets.forEach(([x,y,ward,type],i)=>addEnemy(x,y,i+1,ward||null,type||'gargoyle'));
  AfterHoursAudio.setScene(stage);AfterHoursAudio.setPaused(false);
 }
-function charm(t){
+function charm(t,hit={}){
  if(t.dead)return false;
  if(isWarded(t)){
   t.wardFlash=.25;
-  if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55);gargoyleHitVoice()}
+  if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55);gargoyleHitVoice(t)}
   return false;
  }
- t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm",.5);gargoyleHitVoice();haptic(8);return true;
+ if(t.type==='rival'){
+  if(hit.key && t.damageKeys[hit.key])return false;
+  if(hit.key)t.damageKeys[hit.key]=true;
+  t.hp=hit.bloom?0:Math.max(0,t.hp-1);t.react=.38;
+  if(t.hp>0){score+=125;shake=Math.max(shake,2);burst(t.x,t.y,'#eeb8ff',9);popup(t.x,t.y-58,t.hp+' ♥ LEFT','#ffd6eb');sfx('charm',.28);gargoyleHitVoice(t);haptic(8);return false}
+ }
+ t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm",.5);gargoyleHitVoice(t);haptic(8);return true;
 }
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
@@ -81,7 +96,7 @@ function bloom(p){
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
  for(const b of crates){if(b.dead||b.type==="iron")continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},b.type==="ward"?1:.8)}}
- for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t);
+ for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t,{bloom:true,key:'shot:'+p.shotId});
  p.life=99;
 }
 function explodeRose(q){
@@ -101,7 +116,7 @@ function updateRoseCharges(dt){
  for(let i=roseCharges.length-1;i>=0;i--){const q=roseCharges[i];q.remaining-=dt;if(q.remaining<=0){roseCharges.splice(i,1);explodeRose(q)}}
 }
 
-function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{},targetCooldowns:{}}}
+function newBall(x,y,vx,vy,mode=shotMode,r=17,shotId=++shotSerial){return{x,y,px:x,py:y,vx,vy,r,shotId,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{},targetCooldowns:{}}}
 function selectShot(mode){
  if(phase!=="play"||ball||aiming)return false;
  if(mode!=="direct" && (mode!=="bloom"&&mode!=="split" || powerCharges[mode]<=0))return false;
@@ -117,7 +132,7 @@ function shot(){
 }
 function splitShot(){
  if(balls.length!==1)return false;const p=balls[0];if(p.mode!=="split" || p.splitUsed || p.life<.08)return false;
- const speed=Math.hypot(p.vx,p.vy),angle=Math.atan2(p.vy,p.vx);balls=[-.24,0,.24].map(a=>{let q=newBall(p.x,p.y,Math.cos(angle+a)*speed*.88,Math.sin(angle+a)*speed*.88,"fragment",10);q.splitUsed=true;return q});ball=balls[0];burst(p.x,p.y,"#ffd2ed",12);sfx("power");haptic(8);return true;
+ const speed=Math.hypot(p.vx,p.vy),angle=Math.atan2(p.vy,p.vx);balls=[-.24,0,.24].map(a=>{let q=newBall(p.x,p.y,Math.cos(angle+a)*speed*.88,Math.sin(angle+a)*speed*.88,"fragment",10,p.shotId);q.splitUsed=true;return q});ball=balls[0];burst(p.x,p.y,"#ffd2ed",12);sfx("power");haptic(8);return true;
 }
 function finished(win){
  if(phase!=="play")return;phase=win?"win":"lose";aiming=false;drag=null;
@@ -133,7 +148,7 @@ function moveCrates(dt){
  for(const b of crates){if(b.dead||!b.moving)continue;b.vy+=780*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.rot+=b.spin*dt;b.vx*=Math.pow(.45,dt);
   if(b.y+b.h/2>=G){b.y=G-b.h/2;if(b.vy>35)b.vy*=-.18;else b.vy=0;b.vx*=Math.pow(.06,dt);b.spin*=Math.pow(.05,dt)}
   if(Math.hypot(b.vx,b.vy)>28){
-   for(const t of enemies){if(t.dead)continue;const qx=clamp(t.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(t.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-t.x,qy-t.y)<t.r)charm(t)}
+   for(const t of enemies){if(t.dead)continue;const qx=clamp(t.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(t.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-t.x,qy-t.y)<t.r)charm(t,{key:'block:'+b.id})}
    if(simTime>=b.transferAfter){for(const other of crates){if(other===b||other.dead||other.moving)continue;if(Math.abs(b.x-other.x)<(b.w+other.w)/2 && Math.abs(b.y-other.y)<(b.h+other.h)/2){
     if(other.type==="iron"){
      const dx=b.x-other.x,dy=b.y-other.y,overX=(b.w+other.w)/2-Math.abs(dx),overY=(b.h+other.h)/2-Math.abs(dy);
@@ -152,7 +167,7 @@ function moveBall(p,dt){
  for(const b of crates){if(b.dead || (p.cooldowns[b.id]||0)>simTime)continue;const h=Physics.sweepBox(x,y,dx,dy,p.r,b);if(h && (!hit || h.t<hit.t))hit={...h,block:b}}
  if(hit){p.x=x+dx*hit.t;p.y=y+dy*hit.t;
   if(hit.target){
-   if(charm(hit.target)){p.vx*=.74;p.vy*=.82;}
+   if(charm(hit.target,{bloom:p.mode==='bloom',key:'shot:'+p.shotId})){p.vx*=.74;p.vy*=.82;}
    else{let nx=p.x-hit.target.x,ny=p.y-hit.target.y,d=Math.hypot(nx,ny);if(d<.001){nx=-p.vx;ny=-p.vy;d=Math.max(.001,Math.hypot(nx,ny))}nx/=d;ny/=d;let v=Physics.reflect(p.vx,p.vy,nx,ny,.45);p.vx=v.x*.85;p.vy=v.y*.85;p.x+=nx*.3;p.y+=ny*.3;p.targetCooldowns[hit.target.id]=simTime+.12;}
    bloom(p);
   }
@@ -163,7 +178,7 @@ function moveBall(p,dt){
 }
 function sim(dt){
  frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
- for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt);if(phase==="play"&&t.voicePulse>0)t.voicePulse=Math.max(0,t.voicePulse-dt)}
+ for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt);if(phase==="play"&&t.voicePulse>0)t.voicePulse=Math.max(0,t.voicePulse-dt);if(phase==="play"&&t.react>0)t.react=Math.max(0,t.react-dt)}
  if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}

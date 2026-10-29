@@ -14,7 +14,9 @@ const result=run(`(()=>{
   return {dead:enemies.filter(t=>t.dead).length,total:enemies.length,score};
  }
  const answers=[];
- for(let n=1;n<=LEVELS.length;n++){
+ // Newer multi-hit chapters use powers and have dedicated pointer routes in
+ // rival-playthrough.test.js; this search covers the original direct-shot set.
+ for(let n=1;n<=Math.min(9,LEVELS.length);n++){
   const seq=[];let current=play(n,seq);
   for(let turn=0;turn<LEVELS[n-1].shots && current.dead<current.total;turn++){
    let choice=null,rank=-1;
