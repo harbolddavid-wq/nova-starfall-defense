@@ -32,6 +32,17 @@ public class WorkspaceModelTest {
         check(!m.regionFree(new Pos(1,widget.slot+1),2,2,null),"no overlapping widgets");
         check(!m.move(widget,new Pos(-1,1)),"widgets cannot enter dock");
         check(m.move(widget,new Pos(1,2)),"move widget within page");
+        Pos movedWidget=new Pos(1,2);
+        check(m.containsWidget(123) && !m.containsWidget(124),"find only the placed widget ID");
+        check(!m.resizeWidget(movedWidget,3,2),"resize cannot extend beyond a page edge");
+        check(m.resizeWidget(movedWidget,1,2),"shrink a widget in place");
+        check(m.occupant(new Pos(1,3))==null,"shrinking frees previously occupied cells");
+        m.put(new Pos(1,3),Item.app("neighbor/App"));
+        check(!m.resizeWidget(movedWidget,2,2),"resize cannot cover a shortcut");
+        check(m.get(movedWidget).spanX==1 && m.get(movedWidget).spanY==2,"rejected resize leaves widget unchanged");
+        check(!m.resizeWidget(new Pos(1,3),2,2),"a shortcut cannot be resized as a widget");
+        check(m.move(movedWidget,new Pos(0,12)),"move widget between pages");
+        check(m.occupant(new Pos(0,12)).equals(new Pos(0,12)) && m.get(new Pos(1,3))!=null,"move preserves the neighbor");
         check(m.validLayout(),"valid widget layout");
         Random random = new Random(82);
         for (int i = 0; i < 15; i++) m.addToPage("x/" + i, 0);

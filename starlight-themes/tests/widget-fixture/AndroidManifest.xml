@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.novasky.widgetfixture">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
+    <application android:label="Starlight QA Widget" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <receiver android:name=".FixtureWidget" android:exported="true" android:label="Starlight QA Widget">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info"/>
+        </receiver>
+        <activity android:name=".ConfigActivity" android:exported="true">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/></intent-filter>
+        </activity>
+    </application>
+</manifest>

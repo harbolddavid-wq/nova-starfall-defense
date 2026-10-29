@@ -82,6 +82,17 @@ public final class WorkspaceModel {
     public Pos firstRegion(int page,int width,int height) {
         for(int i=0;i<CELLS;i++){Pos p=new Pos(page,i);if(regionFree(p,width,height,null))return p;}return null;
     }
+    /** Resize in place without covering another shortcut or moving the widget. */
+    public boolean resizeWidget(Pos origin,int width,int height) {
+        Item widget=get(origin);
+        if(widget==null || !widget.isWidget() || !regionFree(origin,width,height,origin))return false;
+        widget.spanX=width; widget.spanY=height; return true;
+    }
+    public boolean containsWidget(int id) {
+        for(Item[] page:pages)for(Item item:page)
+            if(item!=null && item.isWidget() && item.widgetId==id)return true;
+        return false;
+    }
     public boolean validLayout() {
         java.util.HashSet<Integer> ids=new java.util.HashSet<>();
         for(Item item:dock)if(item!=null && item.isWidget())return false;

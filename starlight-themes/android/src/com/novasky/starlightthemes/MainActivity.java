@@ -32,6 +32,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.LruCache;
+import android.util.SizeF;
 import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -63,7 +64,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** A separate, preview-first Home. Widget hosting and advanced studio are future work. */
+/** A separate, preview-first Home with an early native widget host. */
 public final class MainActivity extends Activity {
     private static final String PREFS = "starlight_home_v1";
     private static final int WIDGET_HOST_ID=18331, REQUEST_WIDGET_BIND=501, REQUEST_WIDGET_CONFIG=502;
@@ -90,6 +91,7 @@ public final class MainActivity extends Activity {
     private AppWidgetHost widgetHost;
     private AppWidgetManager widgetManager;
     private int pendingWidgetId=-1, pendingPage, pendingSlot, pendingWidth, pendingHeight;
+    private String pendingProvider;
     private ImageView ambient;
     private ValueAnimator ambientAnimator;
     private static final String[] ICON_KEYS={"original","notes","dream","atlas","video","reader","camera","music","files","settings","messages","calendar","browser","phone","gallery","weather","clock","search","apps"};
@@ -124,8 +126,12 @@ public final class MainActivity extends Activity {
         widgetHost=new AppWidgetHost(this,WIDGET_HOST_ID);widgetManager=AppWidgetManager.getInstance(this);
         pendingWidgetId=prefs.getInt("pending_widget_id",-1);pendingPage=prefs.getInt("pending_widget_page",0);
         pendingSlot=prefs.getInt("pending_widget_slot",0);pendingWidth=prefs.getInt("pending_widget_width",1);pendingHeight=prefs.getInt("pending_widget_height",1);
+        pendingProvider=prefs.getString("pending_widget_provider",null);
         themeId = theme(prefs.getString("theme", "moonflower")).id;
         model = readLayout(); currentPage = Math.max(0, Math.min(prefs.getInt("page", 0), model.pages.size()-1));
+        // A previous version could save placement and pending state separately.
+        // Never delete an ID that already belongs to the saved workspace.
+        if(pendingWidgetId>0 && model.containsWidget(pendingWidgetId))clearPendingWidget();
         showHome(); loadApps();
     }
     @Override protected void onStart() {super.onStart();try{widgetHost.startListening();}catch(Exception ignored){}}
@@ -181,15 +187,19 @@ public final class MainActivity extends Activity {
         else { o.put("type", "folder"); o.put("title", item.title); o.put("children", new JSONArray(item.children)); }
         return o;
     }
-    private void saveLayout() {
+    private boolean persistLayout(boolean sync, boolean finishPending) {
         try {
             JSONObject o=new JSONObject(); JSONArray pages=new JSONArray(), dock=new JSONArray();
             for (WorkspaceModel.Item[] page : model.pages) { JSONArray a=new JSONArray(); for (WorkspaceModel.Item i:page) a.put(writeItem(i)); pages.put(a); }
             for (WorkspaceModel.Item i:model.dock) dock.put(writeItem(i));
             o.put("pages", pages); o.put("dock", dock);
-            prefs.edit().putString("layout", o.toString()).putInt("page", currentPage).apply();
-        } catch (Exception e) { toast("Could not save the layout"); }
+            SharedPreferences.Editor edit=prefs.edit().putString("layout",o.toString()).putInt("page",currentPage);
+            if(finishPending)removePendingFields(edit);
+            if(sync)return edit.commit();
+            edit.apply(); return true;
+        } catch (Exception e) { return false; }
     }
+    private void saveLayout() { if(!persistLayout(false,false))toast("Could not save the layout"); }
     private void loadApps() {
         if (loading || destroyed) return; loading=true;
         worker.execute(() -> {
@@ -457,14 +467,23 @@ public final class MainActivity extends Activity {
             view.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,oright,ob)->{
                 if((r-l)!=(oright-ol) || (b-t)!=(ob-ot)){
                     int w=Math.round((r-l)/getResources().getDisplayMetrics().density),h=Math.round((b-t)/getResources().getDisplayMetrics().density);
-                    if(w>0 && h>0)try{view.updateAppWidgetSize(null,w,h,w,h);}catch(Exception ignored){}
+                    if(w>0 && h>0)try{
+                        if(Build.VERSION.SDK_INT>=31)view.updateAppWidgetSize(new Bundle(),Collections.singletonList(new SizeF(w,h)));
+                        else view.updateAppWidgetSize(null,w,h,w,h);
+                    }catch(Exception ignored){}
                 }
             });
         }catch(Exception e){TextView missing=text("Widget unavailable\nRemove in Home options",13);missing.setGravity(Gravity.CENTER);missing.setBackground(rounded(0xbb242034,0x88dfc6e7,18));frame.addView(missing,new FrameLayout.LayoutParams(-1,-1));}
         return frame;
     }
     private void widgetMenu() {
-        new AlertDialog.Builder(this).setTitle("Widgets").setItems(new String[]{"Add a widget","Remove a widget"},(d,n)->{if(n==0)chooseWidget();else removeWidget();}).show();
+        String[] choices=pendingWidgetId>0
+                ? new String[]{"Add a widget","Move or resize a widget","Remove a widget","Continue unfinished setup","Cancel unfinished setup"}
+                : new String[]{"Add a widget","Move or resize a widget","Remove a widget"};
+        new AlertDialog.Builder(this).setTitle("Widgets").setItems(choices,(d,n)->{
+            switch(n){case 0:chooseWidget();break;case 1:editWidget();break;case 2:removeWidget();break;
+                case 3:continuePendingWidget();break;case 4:cancelPendingWidget();toast("Unfinished widget setup cancelled");break;}
+        }).show();
     }
     private void chooseWidget() {
         if(pendingWidgetId>0){toast("Finish the current widget setup first");return;}
@@ -488,19 +507,35 @@ public final class MainActivity extends Activity {
         WorkspaceModel.Pos free=model.firstRegion(currentPage,x,y);
         if(free==null){toast("This widget needs more free space on this page");return;}
         try {
-            pendingWidgetId=widgetHost.allocateAppWidgetId();pendingPage=currentPage;pendingSlot=free.slot;pendingWidth=x;pendingHeight=y;savePendingWidget();
+            pendingWidgetId=widgetHost.allocateAppWidgetId();pendingPage=currentPage;pendingSlot=free.slot;pendingWidth=x;pendingHeight=y;
+            pendingProvider=info.provider.flattenToString();
+            if(!savePendingWidget()){cancelPendingWidget();toast("Couldn't save widget setup");return;}
             if(widgetManager.bindAppWidgetIdIfAllowed(pendingWidgetId,info.provider))configureWidget();
             else {Intent bind=new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,pendingWidgetId);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,info.provider);startActivityForResult(bind,REQUEST_WIDGET_BIND);}
         }catch(Exception e){cancelPendingWidget();toast("Couldn't start widget setup");}
     }
-    private void savePendingWidget() {
-        prefs.edit().putInt("pending_widget_id",pendingWidgetId).putInt("pending_widget_page",pendingPage).putInt("pending_widget_slot",pendingSlot).putInt("pending_widget_width",pendingWidth).putInt("pending_widget_height",pendingHeight).apply();
+    private boolean savePendingWidget() {
+        return prefs.edit().putInt("pending_widget_id",pendingWidgetId).putInt("pending_widget_page",pendingPage).putInt("pending_widget_slot",pendingSlot).putInt("pending_widget_width",pendingWidth).putInt("pending_widget_height",pendingHeight).putString("pending_widget_provider",pendingProvider).commit();
+    }
+    private void removePendingFields(SharedPreferences.Editor edit) {
+        edit.remove("pending_widget_id").remove("pending_widget_page").remove("pending_widget_slot").remove("pending_widget_width").remove("pending_widget_height").remove("pending_widget_provider");
     }
     private void clearPendingWidget() {
-        pendingWidgetId=-1;prefs.edit().remove("pending_widget_id").remove("pending_widget_page").remove("pending_widget_slot").remove("pending_widget_width").remove("pending_widget_height").apply();
+        pendingWidgetId=-1;pendingProvider=null;SharedPreferences.Editor edit=prefs.edit();removePendingFields(edit);edit.apply();
     }
     private void cancelPendingWidget() {
-        if(pendingWidgetId>0)try{widgetHost.deleteAppWidgetId(pendingWidgetId);}catch(Exception ignored){}clearPendingWidget();
+        if(pendingWidgetId>0 && !model.containsWidget(pendingWidgetId))try{widgetHost.deleteAppWidgetId(pendingWidgetId);}catch(Exception ignored){}clearPendingWidget();
+    }
+    private void continuePendingWidget() {
+        if(pendingWidgetId<1)return;
+        if(model.containsWidget(pendingWidgetId)){clearPendingWidget();toast("That widget is already on Home");return;}
+        if(widgetManager.getAppWidgetInfo(pendingWidgetId)!=null){configureWidget();return;}
+        ComponentName provider=pendingProvider==null?null:ComponentName.unflattenFromString(pendingProvider);
+        if(provider==null){cancelPendingWidget();toast("Please choose that widget again");return;}
+        try {
+            if(widgetManager.bindAppWidgetIdIfAllowed(pendingWidgetId,provider))configureWidget();
+            else {Intent bind=new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,pendingWidgetId);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,provider);startActivityForResult(bind,REQUEST_WIDGET_BIND);}
+        }catch(Exception e){toast("Couldn't resume widget setup; cancel it and try again");}
     }
     private void configureWidget() {
         AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(pendingWidgetId);
@@ -513,7 +548,14 @@ public final class MainActivity extends Activity {
         WorkspaceModel.Pos p=new WorkspaceModel.Pos(pendingPage,pendingSlot);
         if(!model.regionFree(p,pendingWidth,pendingHeight,null))p=model.firstRegion(pendingPage,pendingWidth,pendingHeight);
         if(p==null){cancelPendingWidget();toast("There is no longer room for that widget");return;}
-        model.put(p,WorkspaceModel.Item.widget(pendingWidgetId,pendingWidth,pendingHeight));currentPage=p.page;saveLayout();clearPendingWidget();showHome();
+        int previousPage=currentPage;
+        model.put(p,WorkspaceModel.Item.widget(pendingWidgetId,pendingWidth,pendingHeight));currentPage=p.page;
+        // Placement and clearing pending state must reach disk together.
+        if(!persistLayout(true,true)){
+            model.put(p,null);currentPage=previousPage;persistLayout(true,false);savePendingWidget();
+            toast("Couldn't save that widget; try continuing setup again");showHome();return;
+        }
+        pendingWidgetId=-1;pendingProvider=null;showHome();
     }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
         super.onActivityResult(requestCode,resultCode,data);
@@ -522,6 +564,93 @@ public final class MainActivity extends Activity {
             if(resultCode!=RESULT_OK){cancelPendingWidget();toast("Widget not added");}
             else if(requestCode==REQUEST_WIDGET_BIND)configureWidget();else finishWidget();
         }
+    }
+    private void editWidget() {
+        ArrayList<WorkspaceModel.Pos> positions=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();
+        for(int page=0;page<model.pages.size();page++)for(int slot=0;slot<WorkspaceModel.CELLS;slot++){
+            WorkspaceModel.Pos pos=new WorkspaceModel.Pos(page,slot);WorkspaceModel.Item item=model.get(pos);
+            if(item!=null && item.isWidget()){
+                AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);
+                positions.add(pos);labels.add((info==null?"Unavailable widget":widgetLabel(info))+" · page "+(page+1)+" · "+item.spanX+" × "+item.spanY);
+            }
+        }
+        if(positions.isEmpty()){toast("There are no widgets to edit");return;}
+        new AlertDialog.Builder(this).setTitle("Choose a widget").setItems(labels.toArray(new String[0]),(d,n)->widgetEditOptions(positions.get(n))).setNegativeButton("Cancel",null).show();
+    }
+    private void widgetEditOptions(WorkspaceModel.Pos pos) {
+        WorkspaceModel.Item item=model.get(pos);if(item==null || !item.isWidget())return;
+        new AlertDialog.Builder(this).setTitle("Widget options").setItems(new String[]{"Move to a position","Resize in place"},(d,n)->{
+            if(n==0)chooseWidgetPage(pos);else resizeWidget(pos);
+        }).setNegativeButton("Cancel",null).show();
+    }
+    private void chooseWidgetPage(WorkspaceModel.Pos origin) {
+        String[] pages=new String[model.pages.size()];for(int i=0;i<pages.length;i++)pages[i]="Page "+(i+1)+(i==origin.page?" · current":"");
+        new AlertDialog.Builder(this).setTitle("Move widget to page").setItems(pages,(d,n)->chooseWidgetSpot(origin,n)).setNegativeButton("Cancel",null).show();
+    }
+    private void chooseWidgetSpot(WorkspaceModel.Pos origin,int page) {
+        WorkspaceModel.Item widget=model.get(origin);if(widget==null || !widget.isWidget())return;
+        LinearLayout grid=col();grid.setPadding(dp(12),dp(4),dp(12),dp(4));
+        TextView instructions=new TextView(this);instructions.setText("Choose the widget's top-left position.\n◆ current  ·  ○ available  ·  × occupied");instructions.setTextColor(0xff30283c);instructions.setTextSize(14);add(grid,instructions,0);
+        final AlertDialog[] dialog=new AlertDialog[1];
+        for(int y=0;y<WorkspaceModel.ROWS;y++){
+            LinearLayout line=row();
+            for(int x=0;x<WorkspaceModel.COLS;x++){
+                WorkspaceModel.Pos dest=new WorkspaceModel.Pos(page,y*WorkspaceModel.COLS+x);
+                boolean here=dest.equals(origin),free=model.regionFree(dest,widget.spanX,widget.spanY,origin);
+                TextView cell=button(here?"◆":free?"○":"×",()->{
+                    dialog[0].dismiss();int previousPage=currentPage;
+                    if(!model.move(origin,dest)){toast("That position is no longer available");return;}
+                    currentPage=dest.page;
+                    if(!persistLayout(true,false)){
+                        model.move(dest,origin);currentPage=previousPage;persistLayout(true,false);
+                        toast("Couldn't save the move");
+                    }
+                    showHome();
+                });
+                cell.setContentDescription("Row "+(y+1)+", column "+(x+1)+(here?", current position":free?", available":", unavailable"));
+                cell.setEnabled(free && !here);cell.setAlpha(free?1f:.4f);
+                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(48),1);lp.setMargins(dp(2),dp(2),dp(2),dp(2));line.addView(cell,lp);
+            }
+            grid.addView(line);
+        }
+        dialog[0]=new AlertDialog.Builder(this).setTitle("Page "+(page+1)+" · "+widget.spanX+" × "+widget.spanY+" cells").setView(grid).setNegativeButton("Cancel",null).create();dialog[0].show();
+    }
+    private void resizeWidget(WorkspaceModel.Pos pos) {
+        WorkspaceModel.Item item=model.get(pos);if(item==null || !item.isWidget())return;
+        AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);
+        if(info==null){toast("This widget's app is unavailable");return;}
+        boolean horizontal=(info.resizeMode & AppWidgetProviderInfo.RESIZE_HORIZONTAL)!=0;
+        boolean vertical=(info.resizeMode & AppWidgetProviderInfo.RESIZE_VERTICAL)!=0;
+        if(!horizontal && !vertical){toast("This widget does not support resizing");return;}
+        if(workspace==null || workspace.getChildCount()==0){toast("Home is not ready yet");return;}
+        View page=((ViewGroup)workspace.getChildAt(0)).getChildAt(pos.page);
+        int cw=page.getWidth()/WorkspaceModel.COLS,ch=page.getHeight()/WorkspaceModel.ROWS;
+        if(cw<1 || ch<1){toast("Home is not ready yet");return;}
+        int minW=info.minResizeWidth>0 && info.minResizeWidth<=info.minWidth?info.minResizeWidth:info.minWidth;
+        int minH=info.minResizeHeight>0 && info.minResizeHeight<=info.minHeight?info.minResizeHeight:info.minHeight;
+        int maxW=0,maxH=0;
+        if(Build.VERSION.SDK_INT>=31){
+            if(info.maxResizeWidth>=info.minWidth && info.maxResizeWidth>0)maxW=(info.maxResizeWidth+cw-1)/cw;
+            if(info.maxResizeHeight>=info.minHeight && info.maxResizeHeight>0)maxH=(info.maxResizeHeight+ch-1)/ch;
+        }
+        ArrayList<int[]> sizes=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();
+        for(int h=1;h<=WorkspaceModel.ROWS;h++)for(int w=1;w<=WorkspaceModel.COLS;w++){
+            if(w==item.spanX && h==item.spanY)continue;
+            if((!horizontal && w!=item.spanX) || (!vertical && h!=item.spanY))continue;
+            if(w!=item.spanX && (w*cw<minW || (maxW>0 && w>maxW)))continue;
+            if(h!=item.spanY && (h*ch<minH || (maxH>0 && h>maxH)))continue;
+            if(!model.regionFree(pos,w,h,pos))continue;
+            sizes.add(new int[]{w,h});labels.add(w+" × "+h+" cells");
+        }
+        if(sizes.isEmpty()){toast("No other size fits here; try moving the widget first");return;}
+        new AlertDialog.Builder(this).setTitle("Resize widget · now "+item.spanX+" × "+item.spanY).setItems(labels.toArray(new String[0]),(d,n)->{
+            int oldW=item.spanX,oldH=item.spanY;int[] size=sizes.get(n);
+            if(!model.resizeWidget(pos,size[0],size[1])){toast("That size no longer fits");return;}
+            if(!persistLayout(true,false)){
+                model.resizeWidget(pos,oldW,oldH);persistLayout(true,false);toast("Couldn't save the new size");
+            }
+            showHome();
+        }).setNegativeButton("Cancel",null).show();
     }
     private void removeWidget() {
         ArrayList<WorkspaceModel.Pos> positions=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();
@@ -533,7 +662,9 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Remove widget").setItems(labels.toArray(new String[0]),(d,n)->{
             WorkspaceModel.Pos p=positions.get(n);WorkspaceModel.Item item=model.get(p);if(item==null || !item.isWidget())return;
             new AlertDialog.Builder(this).setMessage("Remove this widget from Starlight Home?").setPositiveButton("Remove",(dialog,which)->{
-                try{widgetHost.deleteAppWidgetId(item.widgetId);}catch(Exception ignored){}model.put(p,null);saveLayout();showHome();
+                model.put(p,null);
+                if(!persistLayout(true,false)){model.put(p,item);persistLayout(true,false);toast("Couldn't save the removal");showHome();return;}
+                try{widgetHost.deleteAppWidgetId(item.widgetId);}catch(Exception ignored){}showHome();
             }).setNegativeButton("Cancel",null).show();
         }).show();
     }
@@ -630,7 +761,7 @@ public final class MainActivity extends Activity {
         add(content,button("Undo last theme",()->{String prev=prefs.getString("previous_theme",themeId);prefs.edit().putString("previous_theme",themeId).putString("theme",prev).apply();themeId=theme(prev).id;showHome();}),8);
         add(content,button(prefs.getBoolean("ambient",true)?"Ambient effect: on":"Ambient effect: off",()->{prefs.edit().putBoolean("ambient",!prefs.getBoolean("ambient",true)).apply();showSettings();}),8);
         add(content,text("Touch and hold an icon to move it. Drop it onto another icon to make a folder. Swipe up for all apps. Long-press an app in the drawer to add it to Home. Your Samsung Home and its layout stay separate.",14),18);
-        add(content,text("Widget placement is an early feature; resizing, detailed appearance controls, layout backup and more themes are still being developed.",13),18);
+        add(content,text("Widgets are an early feature. Move or resize them in Home options → Widgets. Detailed appearance controls, layout backup and more themes are still being developed.",13),18);
     }
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
         if(e.getAction()==MotionEvent.ACTION_DOWN){downX=e.getX();downY=e.getY();}
