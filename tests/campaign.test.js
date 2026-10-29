@@ -11,7 +11,7 @@ function makeGame(store={}){
  return {run:s=>vm.runInContext(s,env),store,events};
 }
 const game=makeGame(),run=game.run;
-assert.strictEqual(run('LEVELS.length'),6,'six separately authored stages');
+assert.strictEqual(run('LEVELS.length'),9,'nine separately authored stages');
 run('start(1);score=2400;shots=2;finished(true)');
 assert.strictEqual(run('unlocked'),2,'winning unlocks the next stage');
 assert.strictEqual(JSON.parse(game.store.velvet_ah_stars)['1'],2,'earned stars are stored');
@@ -26,7 +26,14 @@ const upgraded=makeGame({velvet_ah_best:'2250',velvet_ah_unlocked:'1',ah_music:'
 assert.strictEqual(upgraded.run('unlocked'),2,'an earlier first-level win unlocks stage two after update');
 assert.strictEqual(upgraded.run('stageStars[1]'),1,'older win is preserved without inventing its rating');
 assert.strictEqual(upgraded.store.ah_music,'off','unrelated settings remain untouched');
-const invalid=makeGame({velvet_ah_unlocked:'999',velvet_ah_stars:'{bad'});assert.strictEqual(invalid.run('unlocked'),6,'invalid progress is safely bounded');
+const invalid=makeGame({velvet_ah_unlocked:'999',velvet_ah_stars:'{bad'});assert.strictEqual(invalid.run('unlocked'),9,'invalid progress is safely bounded');
+const oldFinale=makeGame({velvet_ah_unlocked:'6',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3,"6":2}',velvet_ah_scores:'{"6":4200}',ah_music:'off'});
+assert.strictEqual(oldFinale.run('unlocked'),7,'a previously completed finale unlocks the new chapter');
+assert.strictEqual(oldFinale.run('stageStars[6]'),2,'previous finale stars remain');
+assert.strictEqual(oldFinale.run('stageScores[6]'),4200,'previous finale score remains');
+assert.strictEqual(oldFinale.store.ah_music,'off','upgrade preserves sound choices');
+const unfinishedFinale=makeGame({velvet_ah_unlocked:'6',velvet_ah_campaign_v1:'1',velvet_ah_stars:'{"1":3}'});
+assert.strictEqual(unfinishedFinale.run('unlocked'),6,'opening the old finale without winning it does not skip ahead');
 run(`unlocked=6;start(3);enemies=[];crates=[];roseCharges=[];particles=[];
  addEnemy(520,300,1);addEnemy(900,100,2);addCrate(500,300,32,32,'rose');addCrate(580,300,32,32,'rose');
  damageBlock(crates[0],{x:490,y:300,vx:200,vy:0});`);
@@ -53,5 +60,10 @@ assert.strictEqual(run('enemies[1].dead'),false,'Bloom does not affect distant t
 run(`unlocked=6;start(4);enemies=[];crates=[];addCrate(500,100,28,28,"ward","a");addEnemy(200,100,1,"a");addEnemy(800,50,2);balls=[newBall(140,100,400,0,'direct')];ball=balls[0];for(let i=0;i<30;i++)sim(1/120);`);
 assert.strictEqual(run('enemies[0].dead'),false,'impact cannot pass through a ward');
 assert(run('ball && ball.vx<0'),'a shot bounces away rather than sticking to a warded target');
+run(`unlocked=9;start(7);enemies=[];crates=[];addCrate(400,300,20,100,"iron");addEnemy(900,100,1);balls=[newBall(350,300,400,0,'direct')];ball=balls[0];for(let i=0;i<30;i++)sim(1/120);`);
+assert(run('!crates[0].dead && !crates[0].moving && crates[0].x===400'),'iron remains fixed after impact');
+assert(run('ball && ball.vx<0'),'iron reflects an incoming shot');
+run(`let b=newBall(400,300,0,0,'bloom');bloom(b);explodeRose({x:400,y:300});`);
+assert(run('!crates[0].dead && !crates[0].moving && crates[0].x===400'),'Bloom and rose chains do not destroy or move iron');
 console.log('Campaign: unlocks, save migration, replay, bounded data and delayed rose chains and ward interactions passed.');
 module.exports={makeGame};

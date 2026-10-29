@@ -10,7 +10,10 @@ const routes=[
  [[-90,20],[-108,36]],
  [[-108,52]],
  [[-72,44],[-99,36],[-108,44],[-81,36]],
- [[-99,44],[-108,36]]
+ [[-99,44],[-108,36]],
+ [[-72,36],[-99,28],[-72,28],[-81,28]],
+ [[-108,44],[-108,28],[-81,20],[-81,36]],
+ [[-63,44],[-108,44],[-90,36],[-108,20]]
 ];
 run('start(1);shotMode="direct";paint()');
 for(let level=1;level<=routes.length;level++){
@@ -28,9 +31,9 @@ for(let level=1;level<=routes.length;level++){
  if(level<routes.length)assert.strictEqual(run('stage'),level+1,'next button starts the newly unlocked stage');
  else assert.strictEqual(run('phase'),'menu','last win returns to menu');
 }
-assert.strictEqual(run('unlocked'),6,'all six stages unlocked');
-assert.strictEqual(Object.keys(JSON.parse(g.store.velvet_ah_stars)).length,6,'each completion persists a star record');
-const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),6,'all progress survives reopening');
+assert.strictEqual(run('unlocked'),9,'all nine stages unlocked');
+assert.strictEqual(Object.keys(JSON.parse(g.store.velvet_ah_stars)).length,9,'each completion persists a star record');
+const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),9,'all progress survives reopening');
 reopened.run('phase="levels";paint()');
-assert.strictEqual(reopened.run('buttons.filter(b=>b.w===132).length'),6,'all unlocked stages can be replayed from the selection screen');
-console.log('Campaign: pointer-controlled clears, next-stage navigation and reload passed for six stages.');
+assert.strictEqual(reopened.run('buttons.filter(b=>b.w===132).length'),9,'all unlocked stages can be replayed from the selection screen');
+console.log('Campaign: pointer-controlled clears, next-stage navigation and reload passed for nine stages.');

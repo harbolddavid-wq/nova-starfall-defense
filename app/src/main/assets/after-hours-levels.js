@@ -1,4 +1,4 @@
-/* Six hand-authored opening-night puzzles. Coordinates are logical game units.
+/* Hand-authored opening-night puzzles. Coordinates are logical game units.
    Block types use the same collision rules in every level. */
 const AFTER_HOURS_LEVELS = Object.freeze([
  {name:'THE FIRST FLING', hint:'A little cover can hide a lovely target.', shots:5, powers:{bloom:2,split:1},
@@ -18,5 +18,14 @@ const AFTER_HOURS_LEVELS = Object.freeze([
   targets:[[572,338],[665,405],[784,337],[887,344,'high'],[913,410,'high']]},
  {name:'CLOSING CURTAIN', hint:'A little planning gives the roses room to shine.', shots:6, powers:{bloom:2,split:1},
   blocks:[[490,421,20,58,'wood'],[565,379,100,16,'crystal'],[525,415,18,70,'wood'],[605,415,18,70,'wood'],[665,434,32,32,'rose'],[755,434,32,32,'rose'],[830,376,100,16,'crystal'],[790,414,18,72,'wood'],[870,414,18,72,'wood'],[915,425,18,50,'wood'],[905,302,28,28,'ward','finale']],
-  targets:[[565,346],[622,402],[705,379],[775,405],[830,343],[910,378,'finale']]}
+  targets:[[565,346],[622,402],[705,379],[775,405],[830,343],[910,378,'finale']]},
+ {name:'IRON WALTZ', hint:'Iron stays put; try a higher arc.', shots:6, powers:{bloom:1,split:1},
+  blocks:[[500,412,20,76,'iron'],[605,416,18,68,'wood'],[677,416,18,68,'wood'],[641,377,90,16,'crystal'],[744,434,32,32,'rose'],[816,423,18,54,'wood'],[878,388,76,16,'crystal']],
+  targets:[[550,405],[641,344],[780,404],[878,355],[921,416]]},
+ {name:'TWIN SEALS', hint:'Two seals protect different guests.', shots:7, powers:{bloom:1,split:1},
+  blocks:[[488,425,18,50,'iron'],[550,416,18,68,'wood'],[617,324,28,28,'ward','ruby'],[665,434,32,32,'rose'],[722,412,20,76,'iron'],[790,434,32,32,'rose'],[859,306,28,28,'ward','violet'],[902,394,78,16,'crystal']],
+  targets:[[530,402],[608,379,'ruby'],[690,396,'ruby'],[846,365,'violet'],[903,361,'violet'],[923,416]]},
+ {name:'MIDNIGHT REPRISE', hint:'Open both seals before the final flourish.', shots:7, powers:{bloom:1,split:2},
+  blocks:[[500,421,20,58,'iron'],[553,303,28,28,'ward','left'],[602,423,18,54,'wood'],[684,434,32,32,'rose'],[773,434,32,32,'rose'],[814,416,20,68,'iron'],[866,385,90,16,'crystal'],[900,294,28,28,'ward','right']],
+  targets:[[545,367,'left'],[628,403,'left'],[725,372],[847,351,'right'],[912,361,'right'],[928,416]]}
 ]);

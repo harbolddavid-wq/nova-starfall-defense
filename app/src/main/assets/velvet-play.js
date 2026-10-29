@@ -19,6 +19,11 @@ try {
   unlocked=Math.max(unlocked,Math.min(2,LEVELS.length));stageStars[1]=Math.max(stageStars[1]||0,1);stageScores[1]=Math.max(stageScores[1]||0,best);
   localStorage.setItem("velvet_ah_unlocked",String(unlocked));localStorage.setItem("velvet_ah_stars",JSON.stringify(stageStars));localStorage.setItem("velvet_ah_scores",JSON.stringify(stageScores));localStorage.setItem("velvet_ah_campaign_v1","1");
  }
+ // A completed old finale unlocks the newly added next night on upgrade.
+ // Scores, stars and the user's existing settings are never reset.
+ if(LEVELS.length>6 && stageStars[6]>0 && unlocked<7){
+  unlocked=7;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
+ }
 } catch(e) {}
 function haptic(){
  if(!hapticsOn)return;
@@ -27,7 +32,7 @@ function haptic(){
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
-function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
+function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:type==="iron"?Infinity:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
 function addEnemy(x,y,kind,ward=null){enemies.push({id:enemies.length,x,y,kind,ward,wardFlash:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
 function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward)}
 function start(l){
@@ -50,6 +55,7 @@ function charm(t){
 }
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
+ if(b.type==="iron"){shake=Math.max(shake,1.2);burst(p.x,p.y,"#d7c5ed",5);sfx("glass",.5);return}
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
  score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,(b.type==="crystal"||b.type==="ward")?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx((b.type==="crystal"||b.type==="ward")?"glass":"wood");
  if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18})}
@@ -60,7 +66,7 @@ function bloom(p){
  burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);sfx("power");haptic(12);
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
- for(const b of crates){if(b.dead)continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},b.type==="ward"?1:.8)}}
+ for(const b of crates){if(b.dead||b.type==="iron")continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},b.type==="ward"?1:.8)}}
  for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t);
  p.life=99;
 }
@@ -68,7 +74,7 @@ function explodeRose(q){
  const radius=76;bloomWaves.push({x:q.x,y:q.y,age:0,duration:.55,radius});
  burst(q.x,q.y,"#f77ba9",20);burst(q.x,q.y,"#ffe1a4",8);sfx("power");haptic(10);
  for(const b of crates){
-  if(b.dead)continue;const px=clamp(q.x,b.x-b.w/2,b.x+b.w/2),py=clamp(q.y,b.y-b.h/2,b.y+b.h/2);
+  if(b.dead||b.type==="iron")continue;const px=clamp(q.x,b.x-b.w/2,b.x+b.w/2),py=clamp(q.y,b.y-b.h/2,b.y+b.h/2);
   if(Math.hypot(px-q.x,py-q.y)>=radius)continue;
   const dx=b.x-q.x,dy=b.y-q.y,d=Math.max(1,Math.hypot(dx,dy));
   damageBlock(b,{x:q.x,y:q.y,vx:dx/d*260,vy:dy/d*180},1);
@@ -114,7 +120,14 @@ function moveCrates(dt){
   if(b.y+b.h/2>=G){b.y=G-b.h/2;if(b.vy>35)b.vy*=-.18;else b.vy=0;b.vx*=Math.pow(.06,dt);b.spin*=Math.pow(.05,dt)}
   if(Math.hypot(b.vx,b.vy)>28){
    for(const t of enemies){if(t.dead)continue;const qx=clamp(t.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(t.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-t.x,qy-t.y)<t.r)charm(t)}
-   if(simTime>=b.transferAfter){for(const other of crates){if(other===b||other.dead||other.moving)continue;if(Math.abs(b.x-other.x)<(b.w+other.w)/2 && Math.abs(b.y-other.y)<(b.h+other.h)/2){other.moving=true;other.vx+=b.vx*.5;other.vy-=45;other.spin+=b.spin*.35;b.vx*=.7;b.transferAfter=simTime+.18;break}}}
+   if(simTime>=b.transferAfter){for(const other of crates){if(other===b||other.dead||other.moving)continue;if(Math.abs(b.x-other.x)<(b.w+other.w)/2 && Math.abs(b.y-other.y)<(b.h+other.h)/2){
+    if(other.type==="iron"){
+     const dx=b.x-other.x,dy=b.y-other.y,overX=(b.w+other.w)/2-Math.abs(dx),overY=(b.h+other.h)/2-Math.abs(dy);
+     if(overX<overY){b.x+=(Math.sign(dx)||-Math.sign(b.vx)||1)*(overX+.1);b.vx*=-.3}
+     else{b.y+=(Math.sign(dy)||-Math.sign(b.vy)||-1)*(overY+.1);b.vy*=-.2}
+    }else{other.moving=true;other.vx+=b.vx*.5;other.vy-=45;other.spin+=b.spin*.35;b.vx*=.7}
+    b.transferAfter=simTime+.18;break
+   }}}
   }
  }
 }
@@ -129,7 +142,7 @@ function moveBall(p,dt){
    else{let nx=p.x-hit.target.x,ny=p.y-hit.target.y,d=Math.hypot(nx,ny);if(d<.001){nx=-p.vx;ny=-p.vy;d=Math.max(.001,Math.hypot(nx,ny))}nx/=d;ny/=d;let v=Physics.reflect(p.vx,p.vy,nx,ny,.45);p.vx=v.x*.85;p.vy=v.y*.85;p.x+=nx*.3;p.y+=ny*.3;p.targetCooldowns[hit.target.id]=simTime+.12;}
    bloom(p);
   }
-  else{p.cooldowns[hit.block.id]=simTime+.12;damageBlock(hit.block,p,p.mode==="fragment"?.65:1);let v=Physics.reflect(p.vx,p.vy,hit.nx,hit.ny,.42);p.vx=v.x*.82;p.vy=v.y*.82;p.x+=hit.nx*.3;p.y+=hit.ny*.3;bloom(p)}
+  else{p.cooldowns[hit.block.id]=simTime+.12;damageBlock(hit.block,p,p.mode==="fragment"?.65:1);let v=Physics.reflect(p.vx,p.vy,hit.nx,hit.ny,hit.block.type==="iron"?.72:.42);p.vx=v.x*.82;p.vy=v.y*.82;p.x+=hit.nx*.3;p.y+=hit.ny*.3;bloom(p)}
  }
  if(p.y+p.r>G){p.y=G-p.r;if(p.vy>0){p.vy*=-.4;p.vx*=.72;p.bounces++;sfx("wood",.42);bloom(p)}}
  if(p.trail.length===0 || Math.hypot(p.x-p.trail[p.trail.length-1].x,p.y-p.trail[p.trail.length-1].y)>9)p.trail.push({x:p.x,y:p.y});if(p.trail.length>14)p.trail.shift();

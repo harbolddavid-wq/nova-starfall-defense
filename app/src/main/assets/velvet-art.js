@@ -85,12 +85,14 @@ function drawCrate(b){if(b.dead)return;c.save();c.translate(b.x,b.y);c.rotate(b.
  if(b.type==="crystal"){gl.addColorStop(0,"#f3eeff");gl.addColorStop(.29,"#80e0ee");gl.addColorStop(.68,"#aa68dd");gl.addColorStop(1,"#5a356f")}
  else if(b.type==="rose"){gl.addColorStop(0,"#e7809b");gl.addColorStop(.4,"#9a2853");gl.addColorStop(1,"#3c122f")}
  else if(b.type==="ward"){gl.addColorStop(0,"#ffe3a4");gl.addColorStop(.35,"#b5824a");gl.addColorStop(1,"#42304a")}
+ else if(b.type==="iron"){gl.addColorStop(0,"#dac9e0");gl.addColorStop(.25,"#8b759a");gl.addColorStop(.6,"#51415f");gl.addColorStop(1,"#b5a3c3")}
  else{gl.addColorStop(0,"#9c5979");gl.addColorStop(.45,"#4a2548");gl.addColorStop(1,"#25132f")}
  box(x,y,b.w,b.h,3,gl,b.type==="crystal"?"#e5f9ff":"#e8b38e",2);
  box(x+4,y+4,b.w-8,b.h-8,2,null,"#efbfd3",.65);
  if(b.type==="crystal")heart(0,0,.48,"#ff91cb");
  else if(b.type==="rose"){for(let i=0;i<5;i++){let a=i*TAU/5;dot(Math.cos(a)*5,Math.sin(a)*5,4,"#ffb1bd")}dot(0,0,3,"#ffe0a9")}
  else if(b.type==="ward"){c.beginPath();c.moveTo(0,-8);c.lineTo(7,0);c.lineTo(0,8);c.lineTo(-7,0);c.closePath();c.fillStyle="#fff0b6";c.fill();c.strokeStyle="#803d58";c.lineWidth=1;c.stroke()}
+ else if(b.type==="iron"){stroke([[x+4,0],[x+b.w-4,0]],"#f8e2f4",1.5);dot(0,y+7,2,"#fff3dc");dot(0,y+b.h-7,2,"#fff3dc")}
  else{stroke([[x+5,y+5],[x+b.w-5,y+b.h-5]],"#b9809c",1.4);stroke([[x+b.w-5,y+5],[x+5,y+b.h-5]],"#b9809c",1.4);dot(0,0,2.5,"#ffdcad")}
  c.restore();}
 function bloomWavesDraw(){
@@ -133,12 +135,12 @@ function titleScreen(){scenery();curtains();floorArt();vesper();glow(493,211,275
 function levelsScreen(){
  scenery();floorArt();vesper();darkOverlay();words("CHOOSE YOUR NIGHT",480,139,32,"#ffe0b5");
  for(let i=0;i<LEVELS.length;i++){
-  const x=264+(i%3)*145,y=177+Math.floor(i/3)*92,n=i+1;
-  if(n<=unlocked){drawButton("",x,y,132,65,()=>start(n),n===unlocked);words(String(n),x+66,y+20,24,"#fff2ea");words(LEVELS[i].name,x+66,y+48,12,"#ffe3d4");}
-  else{box(x,y,132,65,12,"rgba(29,13,37,.8)","#78536c",1);words(String(n),x+66,y+23,23,"#a88a9c");words("LOCKED",x+66,y+48,12,"#a88a9c");}
-  const rating=stageStars[n]||0;for(let j=0;j<rating;j++)starIcon(x+66+(j-(rating-1)/2)*15,y+76,6);
+  const x=264+(i%3)*145,y=166+Math.floor(i/3)*72,n=i+1;
+  if(n<=unlocked){drawButton("",x,y,132,54,()=>start(n),n===unlocked);words(String(n),x+66,y+16,22,"#fff2ea");words(LEVELS[i].name,x+66,y+39,11,"#ffe3d4");}
+  else{box(x,y,132,54,12,"rgba(29,13,37,.8)","#78536c",1);words(String(n),x+66,y+16,22,"#a88a9c");words("LOCKED",x+66,y+39,11,"#a88a9c");}
+  const rating=stageStars[n]||0;for(let j=0;j<rating;j++)starIcon(x+66+(j-(rating-1)/2)*15,y+63,5);
  }
- drawButton("BACK",381,391,198,44,()=>phase="menu");
+ drawButton("BACK",381,402,198,44,()=>phase="menu");
 }
 function helpScreen(){scenery();floorArt();vesper();darkOverlay();words("THE ART OF THE FLING",480,150,39,"#ffe0b5");words("Pull the heart back, then release to launch.",480,202,19,"#ffe9df");words("Classic is precise. Bloom bursts on impact.",480,238,19,"#ffe9df");words("Choose Split, then tap during flight to divide it.",480,274,19,"#ffe9df");words("Bloom and Split have limited uses each night.",480,310,19,"#ffe9df");words("Classic is always available while hearts remain.",480,346,19,"#ffe9df");drawButton("LET'S PLAY",345,398,268,52,()=>start(1),true)}
 function pauseScreen(){gameplay();darkOverlay();words("A MOMENT, DARLING",480,133,37,"#ffe3c0");drawButton("CONTINUE",346,171,268,47,()=>{phase="play";AfterHoursAudio.setPaused(false)},true);drawButton("RESTART",346,227,268,43,()=>start(stage));drawButton("MUSIC "+(AfterHoursAudio.isMusicOn()?"ON":"OFF"),268,285,135,43,()=>AfterHoursAudio.toggleMusic());drawButton("SFX "+(AfterHoursAudio.isSfxOn()?"ON":"OFF"),413,285,135,43,()=>AfterHoursAudio.toggleSfx());drawButton("HAPTIC "+(hapticsOn?"ON":"OFF"),558,285,135,43,()=>toggleHaptics());drawButton("MAIN MENU",346,368,268,47,()=>{phase="menu";AfterHoursAudio.setPaused(false)})}
