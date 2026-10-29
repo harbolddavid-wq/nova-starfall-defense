@@ -2,6 +2,16 @@
 
 The following original project assets were generated using the built-in image-generation tool, then resized and encoded as WebP for in-game use. The original generated PNGs are retained separately by the image-generation workflow. The references below were used for cohesive visual style, not as artwork substituted for actual game rendering.
 
+## Masquerade opponent — `app/src/main/assets/art/masked-phantom.webp` (0.4.0)
+
+Generated with the built-in image-generation tool using the two existing opponents as visual references, then resized with transparency preserved. The in-game floating, flinch, idle and exit motion is implemented by the canvas renderer. Prompt:
+
+> Use case: stylized-concept. Asset type: transparent full-body 2D game enemy sprite. Input images: both existing characters are style references only, not designs to copy. Create ONE new adult female masquerade phantom for the same mischievous gothic slingshot game: an elegant floating moonlit enchantress with a half-mask lifted beside her expressive face, long flowing dark violet hair, an intricate plum-and-silver cabaret costume and wispy veil-like sleeves. Her confident, playful expression and floating dancer silhouette must look very different from the crouching stone gargoyle and the standing bat-winged rival. Attractive, tasteful, fully clothed and non-explicit. Three-quarter view facing left, head and feet fully inside the image; compact readable silhouette at tiny game scale, separate arms and clear facial expression. Polished hand-painted 2D animation-film finish, violet, burgundy, antique silver and subtle moonlight matching the references. Truly transparent background, no floor or scenery, no ground shadow, no text, letters, logo, watermark, interface or frame.
+
+## Shield glint — `app/src/main/assets/art/shield-glint.png` (0.4.0)
+
+A resized 128×128 copy of `Particles/Complex/star/star_9.png` from David's Kronbits 1000 Free Game Assets particle pack. The original 512×512 source SHA-256 is `c53275c57047abdfdba62086fb1b5eb23eded4e22c98dd86234cb96d724e55ea`; the pack is CC0 per its source listing, https://kronbits.itch.io/particle-pack. The texture is actually animated for shield-break glints and subtle chapter atmosphere in game; the original archive stays in the shared asset collection.
+
 ## Midnight rival — `app/src/main/assets/art/midnight-rival.webp` (0.3.0)
 
 Generated with the built-in image-generation tool using the existing gargoyle and Vesper art as visual references, then resized with transparency preserved for gameplay. Prompt:

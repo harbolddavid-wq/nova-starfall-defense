@@ -1,5 +1,11 @@
 # After Hours audio provenance
 
+## Masquerade chapter — 0.4.0 work-in-progress
+
+The new opponent uses distinct short recorded hit and idle reactions, separately routed from the earlier gargoyle/rival voices. The hit cues use CC0 clipped performances from [martian's female grunts and breaths](https://freesound.org/people/martian/sounds/218908/); the idle cues use [threadzz's woman sigh](https://freesound.org/people/threadzz/sounds/384992/), CC0. Source Git blob IDs and SHA-256 hashes appear in `tools/samples/sfx/SOURCE_MANIFEST.json`; `tools/render_phantom_sounds.py` filters, fades and renders them. These are separate performances; suitability and mix remain a human listening decision.
+
+The private playable build preserves the previous 0.3.1 family soundtrack and action sounds byte for byte. The five new nights use edited Tomality loops: `The Fox LOOP 6`, `Overtime LOOP 1`, `Conspiracies LOOP 2`, `Spinner LOOP 4`, and `Anexodus LOOP 3`. The selections were made using the available track family, signal measurements and a warmth preference; no human audition or suitability judgment is claimed. Loop seams and levels are processed by `tools/build_private_audio_overlay.py`, and Tomality is credited in-game. These are licensed recordings, not original compositions by this project. Source archives and derived private audio remain out of the public repository; public builds contain original synthesized fallback files. David and Desi should judge the actual sound and balance on a phone.
+
 ## Five encore tracks — 0.3.1 test
 
 The private family build retains the exact music and voices from the 0.3.0 APK and adds five related Tomality loops for Nights 15–19: `Lights on the Bridge LOOP 2` and `The Fox LOOP 1`, `LOOP 2`, `LOOP 4`, and `LOOP 5`. The game level-matches and softens their treble, and blends the loop boundary. These are edited recordings by Tomality, not new original compositions. They are used only inside this private game under the supplied license, with credit in the help screen; no raw asset pack is published. The public repository uses original synthesized fallback tracks. The new audio has been checked for decoding and level but needs David and Desi's listening for musical fit and phone-speaker balance.

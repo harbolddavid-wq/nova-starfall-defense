@@ -7,7 +7,7 @@ let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null
 let crates=[],enemies=[],particles=[],bloomWaves=[],roseCharges=[],popups=[],buttons=[],finishClock=0,shake=0;
 let hapticsOn=true,shotMode="direct",powerCharges={bloom:0,split:0},simTime=0,actorReact=0;
 let soundClock=0,idleVoiceAt=0,lastHitVoice=-10,lastShotAt=-10,idleVoiceIndex=0,hitVoiceIndex=0;
-let rivalIdleIndex=0,rivalHitIndex=0,shotSerial=0,levelPage=0;
+let rivalIdleIndex=0,rivalHitIndex=0,phantomIdleIndex=0,phantomHitIndex=0,shotSerial=0,levelPage=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try {
@@ -32,17 +32,21 @@ try {
  if(LEVELS.length>14 && stageStars[14]>0 && unlocked<15){
   unlocked=15;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
  }
+ if(LEVELS.length>19 && stageStars[19]>0 && unlocked<20){
+  unlocked=20;localStorage.setItem("velvet_ah_unlocked",String(unlocked));
+ }
 } catch(e) {}
 function haptic(){
  if(!hapticsOn)return;
  try{if(window.NativeBridge)window.NativeBridge.haptic();else if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
 }
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
-function quietIdleVoice(){for(const name of ['voiceIdleA','voiceIdleB','rivalIdleA','rivalIdleB'])AfterHoursAudio.stopCue(name)}
+function quietIdleVoice(){for(const name of ['voiceIdleA','voiceIdleB','rivalIdleA','rivalIdleB','phantomIdleA','phantomIdleB'])AfterHoursAudio.stopCue(name)}
 function gargoyleHitVoice(t){
  if(phase!=="play"||soundClock-lastHitVoice<.38)return;
  quietIdleVoice();
- if(t && t.type==='rival')sfx(rivalHitIndex++%2?'rivalHitB':'rivalHitA',.88);
+ if(t && t.type==='phantom')sfx(phantomHitIndex++%2?'phantomHitB':'phantomHitA',.78);
+ else if(t && t.type==='rival')sfx(rivalHitIndex++%2?'rivalHitB':'rivalHitA',.88);
  else sfx(hitVoiceIndex++%2?'voiceHitB':'voiceHitA',.92);
  lastHitVoice=soundClock;
  idleVoiceAt=Math.max(idleVoiceAt,soundClock+5);
@@ -51,33 +55,49 @@ function updateGargoyleIdle(){
  if(soundClock<idleVoiceAt||ball||aiming||roseCharges.length||soundClock-lastShotAt<1.4||soundClock-lastHitVoice<3)return;
  const present=enemies.filter(t=>!t.dead);if(!present.length)return;
  const t=present[Math.floor(Math.random()*present.length)];t.voicePulse=.7;
- if(t.type==='rival')sfx(rivalIdleIndex++%2?'rivalIdleB':'rivalIdleA',.48);
+ if(t.type==='phantom')sfx(phantomIdleIndex++%2?'phantomIdleB':'phantomIdleA',.42);
+ else if(t.type==='rival')sfx(rivalIdleIndex++%2?'rivalIdleB':'rivalIdleA',.48);
  else sfx(idleVoiceIndex++%2?'voiceIdleB':'voiceIdleA',.48);
  idleVoiceAt=soundClock+rnd(7.5,12);
 }
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
-function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:type==="iron"?Infinity:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
-function addEnemy(x,y,kind,ward=null,type='gargoyle'){enemies.push({id:enemies.length,x,y,kind,ward,type,hp:type==='rival'?3:1,damageKeys:{},react:0,wardFlash:0,voicePulse:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
+function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:type==="iron"?Infinity:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0,sourceShot:null})}
+function addEnemy(x,y,kind,ward=null,type='gargoyle',options={}){
+ enemies.push({id:enemies.length,x,y,kind,ward,type,hp:type==='rival'?3:1,damageKeys:{},react:0,wardFlash:0,voicePulse:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25,
+  shielded:type==='rival'&&options.shield===true,shieldFlash:0,shieldRemovedByShot:null,originX:x,motionTime:0,
+  motionRange:type==='phantom'?clamp(Number(options.range)||24,0,38):0,
+  motionRate:type==='phantom'?clamp(Number(options.rate)||.85,.3,1.5):0});
+}
 function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward)}
 function start(l){
  stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
  const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
  powerCharges={bloom:level.powers.bloom,split:level.powers.split};shotMode="direct";
  crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
- soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;rivalIdleIndex=0;rivalHitIndex=0;shotSerial=0;quietIdleVoice();
+ soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;rivalIdleIndex=0;rivalHitIndex=0;phantomIdleIndex=0;phantomHitIndex=0;shotSerial=0;quietIdleVoice();
  for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
- level.targets.forEach(([x,y,ward,type],i)=>addEnemy(x,y,i+1,ward||null,type||'gargoyle'));
+ level.targets.forEach(([x,y,ward,type,options],i)=>addEnemy(x,y,i+1,ward||null,type||'gargoyle',options||{}));
  AfterHoursAudio.setScene(stage);AfterHoursAudio.setPaused(false);
 }
 function charm(t,hit={}){
  if(t.dead)return false;
+ const sourceShot=Number.isInteger(hit.shotId)?hit.shotId:(typeof hit.key==='string'&&hit.key.startsWith('shot:')?Number(hit.key.slice(5)):null);
  if(isWarded(t)){
   t.wardFlash=.25;
   if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55);gargoyleHitVoice(t)}
   return false;
  }
+ // A shield consumes this source's impact. In particular the follow-up
+ // Bloom area and split fragments share a shot key and cannot damage health
+ // on the very same shot that removed the shield.
+ if(t.shielded){
+  t.shielded=false;t.shieldFlash=.35;t.react=.38;t.shieldRemovedByShot=sourceShot;
+  if(hit.key)t.damageKeys[hit.key]=true;
+  shake=Math.max(shake,2.4);burst(t.x,t.y,'#c8e8ff',14);popup(t.x,t.y-58,'SHIELD BROKEN','#ddf5ff');sfx('glass',.72);gargoyleHitVoice(t);haptic(8);return false;
+ }
  if(t.type==='rival'){
+  if(sourceShot!==null&&sourceShot===t.shieldRemovedByShot)return false;
   if(hit.key && t.damageKeys[hit.key])return false;
   if(hit.key)t.damageKeys[hit.key]=true;
   t.hp=hit.bloom?0:Math.max(0,t.hp-1);t.react=.38;
@@ -88,9 +108,10 @@ function charm(t,hit={}){
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
  if(b.type==="iron"){shake=Math.max(shake,1.2);burst(p.x,p.y,"#d7c5ed",5);sfx("iron",.8);return}
+ if(Number.isInteger(p.shotId))b.sourceShot=p.shotId;
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
  score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,(b.type==="crystal"||b.type==="ward")?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx((b.type==="crystal"||b.type==="ward")?"glass":"wood",(b.type==="crystal"||b.type==="ward")?1:1.25);
- if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18})}
+ if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18,shotId:b.sourceShot})}
 }
 function bloom(p){
  if(p.bloomed || p.mode!=="bloom")return;p.bloomed=true;
@@ -98,8 +119,8 @@ function bloom(p){
  burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);sfx("power");haptic(12);
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
- for(const b of crates){if(b.dead||b.type==="iron")continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},b.type==="ward"?1:.8)}}
- for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t,{bloom:true,key:'shot:'+p.shotId});
+ for(const b of crates){if(b.dead||b.type==="iron")continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220,shotId:p.shotId},b.type==="ward"?1:.8)}}
+ for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t,{bloom:true,key:'shot:'+p.shotId,shotId:p.shotId});
  p.life=99;
 }
 function explodeRose(q){
@@ -109,9 +130,9 @@ function explodeRose(q){
   if(b.dead||b.type==="iron")continue;const px=clamp(q.x,b.x-b.w/2,b.x+b.w/2),py=clamp(q.y,b.y-b.h/2,b.y+b.h/2);
   if(Math.hypot(px-q.x,py-q.y)>=radius)continue;
   const dx=b.x-q.x,dy=b.y-q.y,d=Math.max(1,Math.hypot(dx,dy));
-  damageBlock(b,{x:q.x,y:q.y,vx:dx/d*260,vy:dy/d*180},1);
+  damageBlock(b,{x:q.x,y:q.y,vx:dx/d*260,vy:dy/d*180,shotId:q.shotId},1);
  }
- for(const t of enemies)if(!t.dead&&Math.hypot(t.x-q.x,t.y-q.y)<radius+t.r)charm(t);
+ for(const t of enemies)if(!t.dead&&Math.hypot(t.x-q.x,t.y-q.y)<radius+t.r)charm(t,{shotId:q.shotId});
 }
 function updateRoseCharges(dt){
  // Remove a charge before exploding it: an adjacent rose may safely enqueue
@@ -151,13 +172,13 @@ function moveCrates(dt){
  for(const b of crates){if(b.dead||!b.moving)continue;b.vy+=780*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.rot+=b.spin*dt;b.vx*=Math.pow(.45,dt);
   if(b.y+b.h/2>=G){b.y=G-b.h/2;if(b.vy>35)b.vy*=-.18;else b.vy=0;b.vx*=Math.pow(.06,dt);b.spin*=Math.pow(.05,dt)}
   if(Math.hypot(b.vx,b.vy)>28){
-   for(const t of enemies){if(t.dead)continue;const qx=clamp(t.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(t.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-t.x,qy-t.y)<t.r)charm(t,{key:'block:'+b.id})}
+   for(const t of enemies){if(t.dead)continue;const qx=clamp(t.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(t.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-t.x,qy-t.y)<t.r)charm(t,{key:'block:'+b.id,shotId:b.sourceShot})}
    if(simTime>=b.transferAfter){for(const other of crates){if(other===b||other.dead||other.moving)continue;if(Math.abs(b.x-other.x)<(b.w+other.w)/2 && Math.abs(b.y-other.y)<(b.h+other.h)/2){
     if(other.type==="iron"){
      const dx=b.x-other.x,dy=b.y-other.y,overX=(b.w+other.w)/2-Math.abs(dx),overY=(b.h+other.h)/2-Math.abs(dy);
      if(overX<overY){b.x+=(Math.sign(dx)||-Math.sign(b.vx)||1)*(overX+.1);b.vx*=-.3}
      else{b.y+=(Math.sign(dy)||-Math.sign(b.vy)||-1)*(overY+.1);b.vy*=-.2}
-    }else{other.moving=true;other.vx+=b.vx*.5;other.vy-=45;other.spin+=b.spin*.35;b.vx*=.7}
+    }else{other.moving=true;other.sourceShot=b.sourceShot;other.vx+=b.vx*.5;other.vy-=45;other.spin+=b.spin*.35;b.vx*=.7}
     b.transferAfter=simTime+.18;break
    }}}
   }
@@ -170,7 +191,7 @@ function moveBall(p,dt){
  for(const b of crates){if(b.dead || (p.cooldowns[b.id]||0)>simTime)continue;const h=Physics.sweepBox(x,y,dx,dy,p.r,b);if(h && (!hit || h.t<hit.t))hit={...h,block:b}}
  if(hit){p.x=x+dx*hit.t;p.y=y+dy*hit.t;
   if(hit.target){
-   if(charm(hit.target,{bloom:p.mode==='bloom',key:'shot:'+p.shotId})){p.vx*=.74;p.vy*=.82;}
+   if(charm(hit.target,{bloom:p.mode==='bloom',key:'shot:'+p.shotId,shotId:p.shotId})){p.vx*=.74;p.vy*=.82;}
    else{let nx=p.x-hit.target.x,ny=p.y-hit.target.y,d=Math.hypot(nx,ny);if(d<.001){nx=-p.vx;ny=-p.vy;d=Math.max(.001,Math.hypot(nx,ny))}nx/=d;ny/=d;let v=Physics.reflect(p.vx,p.vy,nx,ny,.45);p.vx=v.x*.85;p.vy=v.y*.85;p.x+=nx*.3;p.y+=ny*.3;p.targetCooldowns[hit.target.id]=simTime+.12;}
    bloom(p);
   }
@@ -181,7 +202,7 @@ function moveBall(p,dt){
 }
 function sim(dt){
  frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
- for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt);if(phase==="play"&&t.voicePulse>0)t.voicePulse=Math.max(0,t.voicePulse-dt);if(phase==="play"&&t.react>0)t.react=Math.max(0,t.react-dt)}
+ for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt);if(phase==="play"&&t.voicePulse>0)t.voicePulse=Math.max(0,t.voicePulse-dt);if(phase==="play"&&t.react>0)t.react=Math.max(0,t.react-dt);if(phase==="play"&&t.shieldFlash>0)t.shieldFlash=Math.max(0,t.shieldFlash-dt);if(phase==="play"&&!t.dead&&t.type==='phantom'){t.motionTime+=dt;t.x=t.originX+Math.sin(t.motionTime*t.motionRate)*t.motionRange}}
  if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}

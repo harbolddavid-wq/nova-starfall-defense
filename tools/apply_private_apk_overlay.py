@@ -13,7 +13,7 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
     replacements = {p.relative_to(a.overlay).as_posix(): p for p in a.overlay.rglob("*") if p.is_file()}
-    allowed = {"assets/asset-credits.js", *(f"assets/audio/evening-{i:02}.ogg" for i in (1, 2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)),
+    allowed = {"assets/asset-credits.js", *(f"assets/audio/evening-{i:02}.ogg" for i in (1, 2, 3, 4, *range(10, 25))),
                "assets/audio/sling.ogg", "assets/audio/wood.ogg", "assets/audio/iron.ogg"}
     if set(replacements) != allowed:
         raise SystemExit("Unexpected overlay assets; refusing to produce an APK.")

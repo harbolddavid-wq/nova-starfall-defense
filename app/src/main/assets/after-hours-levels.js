@@ -60,5 +60,21 @@ const AFTER_HOURS_LEVELS = Object.freeze([
   targets:[[548,397,null,'rival'],[628,382],[711,389],[876,346,'rose','rival'],[928,410,'rose']]},
  {name:'VELVET ENCORE', hint:'Give the seals and Blooms their own moment to shine.', shots:8, powers:{bloom:2,split:1},
   blocks:[[495,423,18,54,'iron'],[557,301,28,28,'ward','encore'],[613,420,18,60,'wood'],[682,433,32,32,'rose'],[757,433,32,32,'rose'],[823,410,20,80,'iron'],[880,372,100,16,'crystal'],[925,421,18,58,'wood']],
-  targets:[[551,359,'encore','rival'],[635,398,'encore'],[720,382],[801,393],[880,339,null,'rival'],[929,405]]}
+  targets:[[551,359,'encore','rival'],[635,398,'encore'],[720,382],[801,393],[880,339,null,'rival'],[929,405]]},
+ // Masquerade opening: readable introductions before the set piece.
+ {name:'MASKED ARRIVAL', hint:'Some guests will not keep still. Lead your shot.', shots:7, powers:{bloom:1,split:1},
+  blocks:[[495,424,18,52,'wood'],[596,420,18,60,'wood'],[733,383,90,16,'crystal'],[788,423,18,54,'wood'],[850,434,32,32,'rose']],
+  targets:[[549,400],[682,340,null,'phantom',{range:24,rate:.8}],[790,399],[905,405]]},
+ {name:'BEHIND THE MASK', hint:'Break her shield before working on her hearts.', shots:8, powers:{bloom:1,split:1},
+  blocks:[[500,422,18,56,'iron'],[615,423,18,54,'wood'],[718,379,96,16,'crystal'],[806,434,32,32,'rose']],
+  targets:[[548,403],[671,395,null,'rival',{shield:true}],[788,345,null,'phantom',{range:20,rate:.75}],[915,405]]},
+ {name:'MOONLIT VEILS', hint:'A moving guest can be reached from more than one angle.', shots:8, powers:{bloom:1,split:2},
+  blocks:[[490,424,18,52,'wood'],[600,415,18,70,'wood'],[675,415,18,70,'wood'],[638,376,92,16,'crystal'],[762,423,20,54,'iron'],[851,434,32,32,'rose'],[907,295,28,28,'ward','veil']],
+  targets:[[548,403],[638,343,null,'phantom',{range:22,rate:.7}],[711,395],[851,357,'veil','rival'],[923,410,'veil']]},
+ {name:'SHATTERED SILK', hint:'A shield takes a whole shot; Bloom has its own moment.', shots:8, powers:{bloom:2,split:1},
+  blocks:[[495,423,18,54,'iron'],[578,434,32,32,'rose'],[665,422,18,56,'wood'],[755,378,95,16,'crystal'],[839,421,18,58,'wood'],[902,434,32,32,'rose']],
+  targets:[[550,400,null,'rival',{shield:true}],[638,395],[755,345,null,'phantom',{range:20,rate:.8}],[861,397,null,'rival',{shield:true}],[927,407]]},
+ {name:'MIDNIGHT MASQUE', hint:'Watch their movement and give each shield its own shot.', shots:8, powers:{bloom:2,split:1},
+  blocks:[[492,423,18,54,'iron'],[562,300,28,28,'ward','masque'],[625,421,18,58,'wood'],[700,434,32,32,'rose'],[778,434,32,32,'rose'],[842,412,20,76,'iron'],[897,376,90,16,'crystal']],
+  targets:[[550,356,'masque'],[641,398,null,'rival',{shield:true}],[731,379,null,'phantom',{range:18,rate:.65}],[808,398],[885,303,null,'phantom',{range:14,rate:.7}],[926,411]]}
 ]);

@@ -31,12 +31,12 @@ for(let n=15;n<=19;n++){
  run('for(let i=0;i<150&&phase==="play";i++)sim(1/120)');assert.strictEqual(run('phase'),'win',`night ${n} wins`);
  tap(586,425);
  if(n<19)assert.strictEqual(run('stage'),n+1,'next night becomes available');
- else assert.strictEqual(run('phase'),'menu','finale returns to the menu');
+ else assert.strictEqual(run('stage'),20,'the former finale opens the next chapter');
 }
-const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),19,'all completed progress survives reload');
+const reopened=makeGame(g.store);assert.strictEqual(reopened.run('unlocked'),20,'all completed progress survives reload');
 for(let n=15;n<=19;n++)assert(reopened.run(`stageStars[${n}]`)>0,`night ${n} completion persists`);
-tap(400,464);assert.strictEqual(run('levelPage'),2,'latest unlocked night opens its selector page');
-run('paint()');assert.strictEqual(run('buttons.filter(b=>b.w===132).length'),1,'last page contains the nineteenth night');
+run('phase="menu"');tap(400,464);assert.strictEqual(run('levelPage'),2,'latest unlocked night opens its selector page');
+run('paint()');assert.strictEqual(run('buttons.filter(b=>b.w===132).length'),2,'last page contains nights nineteen and twenty');
 tap(300,423);run('paint()');assert.strictEqual(run('levelPage'),1,'previous page opens');
 assert.strictEqual(run('buttons.filter(b=>b.w===132).length'),9,'middle page contains nine playable nights');
 tap(650,423);tap(330,190);assert.strictEqual(run('stage'),19,'nineteenth night can be replayed from the selector');

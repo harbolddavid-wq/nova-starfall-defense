@@ -24,6 +24,15 @@ function scenery(){
   c.drawImage(terraceArt,(W-iw)/2,(H-ih)/2,iw,ih);
   // Lanterns breathe very slightly; static art remains the principal scene.
   for(const [i,x] of [20,98,297,528,758,942].entries())glow(x,289,20,"#ffb36e",.025+.015*(1+Math.sin(frame*.035+i*1.7)));
+  // The masquerade chapter has its own restrained moonlit atmosphere. The
+  // earlier nineteen nights and all menus retain their accepted appearance.
+  if(stage>=20&&(phase==='play'||phase==='pause'||phase==='win'||phase==='lose')){
+   fill(0,0,W,G,'rgba(48,28,82,.13)');glow(745,140,220,'#c2b6ff',.075);
+   if(shieldGlint.complete&&shieldGlint.naturalWidth){
+    for(let i=0;i<5;i++){const x=430+i*115+Math.sin(frame*.01+i)*9,y=180+i*28+Math.sin(frame*.014+i*1.5)*10,size=9+i%3*3;
+     c.save();c.globalAlpha=.12+.04*Math.sin(frame*.02+i);c.drawImage(shieldGlint,x-size/2,y-size/2,size,size);c.restore()}
+   }
+  }
   return;
  }
  let sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#0b0820");sky.addColorStop(.44,"#3c174b");sky.addColorStop(.8,"#853957");sky.addColorStop(1,"#2c152d");fill(0,0,W,H,sky);
@@ -71,21 +80,35 @@ const gargoyleArt=new Image();
 gargoyleArt.src="art/gargoyle-after-hours.webp";
 const rivalArt=new Image();
 rivalArt.src="art/midnight-rival.webp";
+const phantomArt=new Image();
+phantomArt.src="art/masked-phantom.webp";
+// One small CC0 Kronbits texture is animated only for the shield-break moment.
+const shieldGlint=new Image();
+shieldGlint.src="art/shield-glint.png";
 function gargoyle(t){
  if(t.dead && !(t.vanish>0))return;
- const art=t.type==='rival'?rivalArt:gargoyleArt;
+ const art=t.type==='phantom'?phantomArt:t.type==='rival'?rivalArt:gargoyleArt;
  if(!art.complete||!art.naturalWidth)return;
  const exit=t.dead ? 1-t.vanish/.55 : 0;
  const flinch=t.react>0?Math.sin(t.react*26)*t.react*8:0;
- c.save();c.translate(t.x+flinch,t.y+Math.sin(frame*.035+t.seed)*1.2-exit*10);
+ c.save();c.translate(t.x+flinch,t.y+Math.sin(frame*.035+t.seed)*(t.type==='phantom'?3:1.2)-exit*10);
  c.globalAlpha=t.dead ? Math.max(0,1-exit) : 1;
  c.rotate(t.dead ? exit*.17 : Math.sin(frame*.017+t.seed)*.012);
  if(isWarded(t)){c.save();c.globalAlpha=t.wardFlash>0?.95:.52;c.beginPath();c.arc(0,0,34,0,TAU);c.lineWidth=t.wardFlash>0?4:2;c.strokeStyle="#ffe3a1";c.shadowColor="#eab75e";c.shadowBlur=9;c.stroke();c.restore()}
  const squash=t.dead ? 1+.12*Math.sin(exit*Math.PI) : 1+.008*Math.sin(frame*.03+t.seed)+(t.voicePulse>0?.025*Math.sin(t.voicePulse*16):0);
  c.scale(1/squash,squash);
- if(t.type==='rival')c.drawImage(art,-35,-53,70,106);
+ if(t.type==='phantom')c.drawImage(art,-38,-55,76,110);
+ else if(t.type==='rival')c.drawImage(art,-35,-53,70,106);
  else c.drawImage(art,-32,-48,64,96);
  c.restore();
+ if(t.shielded&&!t.dead){
+  c.save();c.translate(t.x,t.y);c.globalAlpha=.7+.08*Math.sin(frame*.045);c.beginPath();c.ellipse(0,0,37,49,0,0,TAU);c.strokeStyle='#b3e6ff';c.lineWidth=2.4;c.shadowColor='#8ddcff';c.shadowBlur=9;c.stroke();
+  c.globalAlpha=.9;c.beginPath();c.moveTo(-7,-3);c.lineTo(0,-9);c.lineTo(7,-3);c.lineTo(5,5);c.lineTo(0,9);c.lineTo(-5,5);c.closePath();c.fillStyle='#a7dcf2';c.fill();c.strokeStyle='#f4f9ff';c.lineWidth=1;c.stroke();c.restore();
+ }
+ if(t.shieldFlash>0&&!t.dead){
+  const u=1-t.shieldFlash/.35;glow(t.x,t.y,50,'#d2f3ff',t.shieldFlash*.65);
+  if(shieldGlint.complete&&shieldGlint.naturalWidth){c.save();c.translate(t.x,t.y);c.rotate(u*.5);c.globalAlpha=(1-u)*.8;const size=35+35*u;c.drawImage(shieldGlint,-size/2,-size/2,size,size);c.restore()}
+ }
  if(t.type==='rival'&&!t.dead){for(let i=0;i<3;i++){c.globalAlpha=i<t.hp?.95:.18;heart(t.x+(i-1)*12,t.y-60,.23,'#ffb7df')}c.globalAlpha=1}
 }
 function drawCrate(b){if(b.dead)return;c.save();c.translate(b.x,b.y);c.rotate(b.rot);let x=-b.w/2,y=-b.h/2,gl=c.createLinearGradient(x,y,x+b.w,y+b.h);

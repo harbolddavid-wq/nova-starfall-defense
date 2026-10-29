@@ -94,6 +94,30 @@
       "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
       "git_blob_sha1": "685b158ae32975073803c66cb460e741ebbf85af",
       "sha256": "bd5ee0431ac7ea4c9b9f3c30534fd4a4f85f00632fb7984835c89f941f539e30"
+    },
+    {
+      "file": "218908__martian__female-grunts-breaths_a.wav",
+      "source": "https://freesound.org/people/martian/sounds/218908/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "767efbe9d629e5ac00aad6808497c1ceb7b62361",
+      "sha256": "6450934e8b4698e238bf0f22cc60b54be703b32151d7902b513bd26c439ef1a7"
+    },
+    {
+      "file": "218908__martian__female-grunts-breaths_b.wav",
+      "source": "https://freesound.org/people/martian/sounds/218908/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "a6d41dee2e0fe489e729b42a092e8eda7769e150",
+      "sha256": "67c1f0864ab5e1b27daf4369257d550296705748c8df0c8bfb95e866de0fdd23"
+    },
+    {
+      "file": "384992__threadzz__woman-sigh.wav",
+      "source": "https://freesound.org/people/threadzz/sounds/384992/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "72ab9577a8c3e05acf10e939063e37ee00768106",
+      "sha256": "4030cd665b5b78c528a064411d72d8d57d99b7aa71431ab5435e6b4399d71021"
     }
   ]
 }
