@@ -1,0 +1,6 @@
+# Art and playback credits
+
+- David's Neptune cutout (`vecteezy_stylish-isolated-neptune-cut-outs-high-quality-images_45979587.png`), a 2D image, used as an animated Now Playing visual in the private family build. Artist/source license was not supplied; keep the original and adapted image private. It is decorative artwork, not the application logo.
+- HumblePixel, Paper UI System 1.1, `Sprites/Book Desk/1.png`, is a subtle tinted frame behind the visual. The supplied license permits use and modification in projects but prohibits standalone redistribution of original or modified assets. The original archive and license are retained privately. Credit: HumblePixel, https://humblepixel.itch.io/.
+- Kronbits, 1000 Free Game Assets particle pack, `Particles/Complex/flare/flare_3.png` and `Particles/Color/energyball/energyball_1.png`, CC0, provide restrained light and glow around the artwork. Credits appreciated: https://kronbits.itch.io/particle-pack.
+- LibVLC for Android 3.6.5 by VideoLAN, LGPL 2.1, is used as a dynamic native playback library. Official source and notices: https://github.com/videolan/vlc-android and https://www.videolan.org/vlc/libvlc.html. Formats supported in practice vary by codec, file integrity, DRM and device; tests and real phone behavior take priority over a list of claimed formats.

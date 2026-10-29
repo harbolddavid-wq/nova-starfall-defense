@@ -1,0 +1,5 @@
+# Nova Afterglow — work checkpoint
+
+David paused Velvet Fling after its saved 0.2.4 audio checkpoint and commissioned a useful music and video player. He specifically wants many common and uncommon file formats, and asked to see the new shared assets used creatively in an actual app. Design for his BLU B1680V, Android 16, arm64, 720x1600 at 260 dpi. Private family use, no ads or forced sign-in.
+
+The first implementation is an offline Android player using LibVLC, a persistent selected-file queue, optional folder selection, resume positions, repeat/shuffle, background audio with a media notification, sound-focus handling and a landscape video screen. An optional private artwork overlay uses his Neptune, HumblePixel and Kronbits assets. Source code and private assets are kept separately for provenance and reuse. This is an early test: build, emulator, source-tree and phone validation must be inspected before claiming any feature or codec works; no actual BLU or subjective listening test has been performed yet.

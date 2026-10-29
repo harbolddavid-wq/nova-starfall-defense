@@ -1,0 +1,58 @@
+name: Build and check Nova Afterglow
+on:
+  push:
+    branches: [work/nova-afterglow-2026-10-29]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: android-actions/setup-android@v4
+        with: {packages: 'platform-tools platforms;android-36 build-tools;35.0.0'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Check media classification
+        run: |
+          mkdir -p /tmp/afterglow-tests
+          javac -d /tmp/afterglow-tests app/src/main/java/com/novasky/afterglow/MediaKind.java tests/MediaKindTest.java
+          java -cp /tmp/afterglow-tests MediaKindTest
+      - name: Build debug and unsigned release
+        run: gradle --no-daemon :app:assembleDebug :app:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with: {name: Afterglow-unsigned-release, path: app/build/outputs/apk/release/app-release-unsigned.apk, if-no-files-found: error, retention-days: 7}
+      - uses: actions/upload-artifact@v4
+        with: {name: Afterglow-debug-test, path: app/build/outputs/apk/debug/app-debug.apk, if-no-files-found: error, retention-days: 7}
+  android16:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: Afterglow-debug-test, path: app/build/outputs/apk/debug}
+      - name: Enable hardware virtualization
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android 16 format and launch test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash tools/android16_media_smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: Afterglow-Android16-Evidence, path: phone-lab-evidence/, if-no-files-found: warn, retention-days: 7}
