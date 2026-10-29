@@ -77,7 +77,7 @@ function gargoyle(t){
  c.globalAlpha=t.dead ? Math.max(0,1-exit) : 1;
  c.rotate(t.dead ? exit*.17 : Math.sin(frame*.017+t.seed)*.012);
  if(isWarded(t)){c.save();c.globalAlpha=t.wardFlash>0?.95:.52;c.beginPath();c.arc(0,0,34,0,TAU);c.lineWidth=t.wardFlash>0?4:2;c.strokeStyle="#ffe3a1";c.shadowColor="#eab75e";c.shadowBlur=9;c.stroke();c.restore()}
- const squash=t.dead ? 1+.12*Math.sin(exit*Math.PI) : 1+.008*Math.sin(frame*.03+t.seed);
+ const squash=t.dead ? 1+.12*Math.sin(exit*Math.PI) : 1+.008*Math.sin(frame*.03+t.seed)+(t.voicePulse>0?.025*Math.sin(t.voicePulse*16):0);
  c.scale(1/squash,squash);
  c.drawImage(gargoyleArt,-32,-48,64,96);c.restore();
 }

@@ -35,7 +35,9 @@ public class VelvetActivity extends Activity {
   WebSettings s = web.getSettings();
   s.setJavaScriptEnabled(true);
   s.setDomStorageEnabled(true);
-  s.setMediaPlaybackRequiresUserGesture(true);
+  // The game starts audio only after its own player gesture. Allow the later
+  // asynchronous impact/idle cues to play without another tap for each sound.
+  s.setMediaPlaybackRequiresUserGesture(false);
   s.setAllowFileAccess(false);
   s.setAllowContentAccess(false);
   s.setCacheMode(WebSettings.LOAD_NO_CACHE);

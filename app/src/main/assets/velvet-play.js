@@ -6,6 +6,7 @@ let stageStars={},stageScores={};
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
 let crates=[],enemies=[],particles=[],bloomWaves=[],roseCharges=[],popups=[],buttons=[],finishClock=0,shake=0;
 let hapticsOn=true,shotMode="direct",powerCharges={bloom:0,split:0},simTime=0,actorReact=0;
+let soundClock=0,idleVoiceAt=0,lastHitVoice=-10,lastShotAt=-10,idleVoiceIndex=0,hitVoiceIndex=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
 try {
@@ -30,16 +31,29 @@ function haptic(){
  try{if(window.NativeBridge)window.NativeBridge.haptic();else if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
 }
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
+function quietIdleVoice(){AfterHoursAudio.stopCue('voiceIdleA');AfterHoursAudio.stopCue('voiceIdleB')}
+function gargoyleHitVoice(){
+ if(phase!=="play"||soundClock-lastHitVoice<.38)return;
+ quietIdleVoice();sfx(hitVoiceIndex++%2?'voiceHitB':'voiceHitA',.92);lastHitVoice=soundClock;
+ idleVoiceAt=Math.max(idleVoiceAt,soundClock+5);
+}
+function updateGargoyleIdle(){
+ if(soundClock<idleVoiceAt||ball||aiming||roseCharges.length||soundClock-lastShotAt<1.4||soundClock-lastHitVoice<3)return;
+ const present=enemies.filter(t=>!t.dead);if(!present.length)return;
+ const t=present[Math.floor(Math.random()*present.length)];t.voicePulse=.7;
+ sfx(idleVoiceIndex++%2?'voiceIdleB':'voiceIdleA',.48);idleVoiceAt=soundClock+rnd(7.5,12);
+}
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
 function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:type==="iron"?Infinity:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
-function addEnemy(x,y,kind,ward=null){enemies.push({id:enemies.length,x,y,kind,ward,wardFlash:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
+function addEnemy(x,y,kind,ward=null){enemies.push({id:enemies.length,x,y,kind,ward,wardFlash:0,voicePulse:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
 function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward)}
 function start(l){
  stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
  const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
  powerCharges={bloom:level.powers.bloom,split:level.powers.split};shotMode="direct";
  crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
+ soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;quietIdleVoice();
  for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
  level.targets.forEach(([x,y,ward],i)=>addEnemy(x,y,i+1,ward||null));
  AfterHoursAudio.setPaused(false);
@@ -48,16 +62,16 @@ function charm(t){
  if(t.dead)return false;
  if(isWarded(t)){
   t.wardFlash=.25;
-  if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55)}
+  if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55);gargoyleHitVoice()}
   return false;
  }
- t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8);return true;
+ t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm",.5);gargoyleHitVoice();haptic(8);return true;
 }
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
- if(b.type==="iron"){shake=Math.max(shake,1.2);burst(p.x,p.y,"#d7c5ed",5);sfx("glass",.5);return}
+ if(b.type==="iron"){shake=Math.max(shake,1.2);burst(p.x,p.y,"#d7c5ed",5);sfx("iron",.8);return}
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
- score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,(b.type==="crystal"||b.type==="ward")?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx((b.type==="crystal"||b.type==="ward")?"glass":"wood");
+ score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,(b.type==="crystal"||b.type==="ward")?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx((b.type==="crystal"||b.type==="ward")?"glass":"wood",(b.type==="crystal"||b.type==="ward")?1:1.25);
  if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18})}
 }
 function bloom(p){
@@ -99,7 +113,7 @@ function shot(){
  const mode=shotMode==="direct"||powerCharges[shotMode]>0?shotMode:"direct";
  const v=Physics.velocity(launcher,drag);balls=[newBall(drag.x,drag.y,v.x,v.y,mode)];ball=balls[0];shots--;
  if(mode!=="direct"){powerCharges[mode]--;if(powerCharges[mode]===0)shotMode="direct"}
- drag=null;actorReact=1;shake=1.4;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
+ drag=null;actorReact=1;shake=1.4;quietIdleVoice();lastShotAt=soundClock;burst(ball.x,ball.y,"#ff8ec1",8);sfx("sling");haptic(12)
 }
 function splitShot(){
  if(balls.length!==1)return false;const p=balls[0];if(p.mode!=="split" || p.splitUsed || p.life<.08)return false;
@@ -149,11 +163,11 @@ function moveBall(p,dt){
 }
 function sim(dt){
  frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
- for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt)}
+ for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt);if(phase==="play"&&t.voicePulse>0)t.voicePulse=Math.max(0,t.voicePulse-dt)}
  if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}
- if(phase!=="play")return;updateRoseCharges(dt);moveCrates(dt);
+ if(phase!=="play")return;soundClock+=dt;updateGargoyleIdle();updateRoseCharges(dt);moveCrates(dt);
  for(const p of balls)moveBall(p,dt);
  balls=balls.filter(p=>p.x<=1030 && p.x>=-50 && p.y<=580 && p.life<=6 && !(p.bounces>=3 && Math.abs(p.vx)<70));ball=balls[0]||null;
  if(enemies.every(t=>t.dead)&&!roseCharges.length){finishClock+=dt;if(finishClock>.85)finished(true)}

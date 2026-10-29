@@ -1,0 +1,75 @@
+{
+  "sources": [
+    {
+      "file": "323707__reitanna__ooh.wav",
+      "source": "https://freesound.org/people/Reitanna/sounds/323707/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "cccf07b609838fbb5a4a0a2cbdf6b645c04b45af",
+      "sha256": "822d7eef0cd47273c3387edc15ee8658d621a09245cdcac637a29ef63219f7eb"
+    },
+    {
+      "file": "343878__reitanna__big-gasp.wav",
+      "source": "https://freesound.org/people/Reitanna/sounds/343878/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "065833e56767d0f49257115b6653a23d6858f4e3",
+      "sha256": "2ec1647e4633eaaa510c85bb83525b24bf75cdbceadef8f76d62b8571c6f0624"
+    },
+    {
+      "file": "343944__reitanna__laugh87.wav",
+      "source": "https://freesound.org/people/Reitanna/sounds/343944/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "a1e8497d584419eb40d9d20f2495a0a779892da7",
+      "sha256": "ae35d56e8237b6f73bc5b1f0fd8c1245cb5d0f75e4a29cde3e5a7fbd3b56110d"
+    },
+    {
+      "file": "343991__reitanna__giggle8.wav",
+      "source": "https://freesound.org/people/Reitanna/sounds/343991/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "3f4b06a09c0168770631d5e93426cf6cca18c2fd",
+      "sha256": "64ba2bb62c9fbfbbf21fc7eb3f2cfacdb1a8bbcc886008b0d9a60670c81834ee"
+    },
+    {
+      "file": "420668__sypherzent__basic-melee-swing-miss-whoosh.wav",
+      "source": "https://freesound.org/people/SypherZent/sounds/420668/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "78c825484f3f6663233e8ad2874e2672ecf2605f",
+      "sha256": "713b11a648895c1bb4f06f635ca73455d0a22949e3225fb65358e5ff97386c77"
+    },
+    {
+      "file": "421929__micahlg__chopping-wood-02.wav",
+      "source": "https://freesound.org/people/micahlg/sounds/421929/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "6227a43e4118f415e4c3d477018a494a50ffb0d3",
+      "sha256": "01dbabe2692df18ac5e42116d0670dca1488c4265008b3531ea079b026adbaa5"
+    },
+    {
+      "file": "371091__mccormick_iain__glass-break-4.wav",
+      "source": "https://freesound.org/people/mccormick_iain/sounds/371091/",
+      "license": "CC0-1.0",
+      "github_mirror": "https://github.com/Wh1teDuke/WilhelmSFX/tree/master/Samples",
+      "git_blob_sha1": "9c86b1c0b8692f9de0ea1b3a2d108a118f1b0da2",
+      "sha256": "c93d2e39a97f85d1aabfa654cbcc448a907e23284a435667ba1672cd725d8194"
+    },
+    {
+      "file": "sling-original.ogg",
+      "source": "Earlier After Hours cues created from CC0 instrumental samples; see AUDIO_CREDITS.md",
+      "sha256": "fc55167d6917894678a2884a2ea0a6115ec12d4d7b394fd8a012822f60a41e3f"
+    },
+    {
+      "file": "wood-original.ogg",
+      "source": "Earlier After Hours cues created from CC0 instrumental samples; see AUDIO_CREDITS.md",
+      "sha256": "6c6accad96e933d33c7977f52032fd673b9cbc4c79b619d110a47811189171e6"
+    },
+    {
+      "file": "glass-original.ogg",
+      "source": "Earlier After Hours cues created from CC0 instrumental samples; see AUDIO_CREDITS.md",
+      "sha256": "cd33d5a19bece29bea57aa10a09a8b98fb08d09245f7f2ec1491cae6696fb8a4"
+    }
+  ]
+}
