@@ -21,7 +21,8 @@ def hierarchy():
 
 def match(node, text, partial=False):
     values=(node.attrib.get("text",""),node.attrib.get("content-desc",""))
-    return any((text in value if partial else text==value) for value in values)
+    wanted=text.casefold()
+    return any((wanted in value.casefold() if partial else wanted==value.casefold()) for value in values)
 
 def wait_for(text,partial=False,timeout=30):
     end=time.monotonic()+timeout
