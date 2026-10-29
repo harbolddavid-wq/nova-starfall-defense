@@ -1,13 +1,14 @@
 'use strict';
 const assert=require('assert'),vm=require('vm'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const root=path.join(__dirname,'../app/src/main/assets');
-const names=['menu',...Array.from({length:9},(_,i)=>String(i+1).padStart(2,'0'))];
+const {makeGame}=require('./campaign.test.js'),levelCount=makeGame().run('LEVELS.length');
+const names=['menu',...Array.from({length:levelCount},(_,i)=>String(i+1).padStart(2,'0'))];
 const hashes=new Set();for(const n of names){
  const data=fs.readFileSync(path.join(root,'audio',`evening-${n}.ogg`));
  assert(data.length>5000&&data.subarray(0,4).toString()==='OggS',`music ${n} is packaged`);
  hashes.add(crypto.createHash('sha256').update(data).digest('hex'));
 }
-assert.strictEqual(hashes.size,10,'menu and all nine levels have distinct music files');
+assert.strictEqual(hashes.size,levelCount+1,'menu and every level have distinct music files');
 const instances=[],storage={};
 class FakeAudio{constructor(src){this.src=src;this.paused=true;this.ended=false;this.volume=1;this.currentTime=0;instances.push(this)}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
 const env={Audio:FakeAudio,Date,document:{hidden:false},localStorage:{getItem:k=>storage[k]??null,setItem:(k,v)=>storage[k]=String(v)}};env.window=env;vm.createContext(env);
@@ -32,9 +33,9 @@ async function main(){
  assert(playing[0].src.endsWith('evening-07.ogg'),'the most recent level keeps playing');
  A.cue('voiceHitA');const voice=instances.find(a=>a.src.endsWith('voice-hit-a.ogg'));assert(voice&&!voice.paused,'voice effects still work with the new score system');
  A.toggleSfx();assert(voice.paused&&storage.ah_sfx==='off','effects mute still stops character voice');
- const {makeGame}=require('./campaign.test.js'),g=makeGame();
- g.run(`let observedScenes=[];AfterHoursAudio.setScene=n=>observedScenes.push(n);unlocked=9;for(let n=1;n<=9;n++)start(n);`);
- assert.deepStrictEqual(JSON.parse(g.run('JSON.stringify(observedScenes)')),[1,2,3,4,5,6,7,8,9],'every level selects its own score');
+ const g=makeGame();
+ g.run(`let observedScenes=[];AfterHoursAudio.setScene=n=>observedScenes.push(n);unlocked=LEVELS.length;for(let n=1;n<=LEVELS.length;n++)start(n);`);
+ assert.deepStrictEqual(JSON.parse(g.run('JSON.stringify(observedScenes)')),Array.from({length:levelCount},(_,i)=>i+1),'every level selects its own score');
  g.run('phase="menu";tick(1000)');assert.strictEqual(g.run('observedScenes[observedScenes.length-1]'),0,'returning to menu selects its score');
  console.log('Music: distinct level files, scene routing, crossfade, rapid switching, pause and independent mute passed.');
 }

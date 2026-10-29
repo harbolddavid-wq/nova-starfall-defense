@@ -28,7 +28,7 @@
   started=true;sync();
  }
  function setScene(n){
-  n=Number.isFinite(Number(n))?Math.max(0,Math.min(9,Math.floor(Number(n)))):0;
+  n=Number.isFinite(Number(n))?Math.max(0,Math.min(999,Math.floor(Number(n)))):0;
   if(n===scene)return;scene=n;
   if(!music)return;
   // If another transition is already in progress, retain its audible side.
