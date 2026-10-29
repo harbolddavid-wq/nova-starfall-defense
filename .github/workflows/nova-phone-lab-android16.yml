@@ -55,6 +55,8 @@ jobs:
           node tests/pause-regression.test.js
           node tests/bloom-impact.test.js
           node tests/campaign.test.js
+          node tests/campaign-playthrough.test.js
+          node tests/first-level-compat.test.js
           node tools/find_campaign_solutions.js
 
       - name: Build isolated Velvet Fling test APK

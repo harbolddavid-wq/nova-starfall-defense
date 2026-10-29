@@ -4,11 +4,11 @@ const base=path.join(__dirname,'../app/src/main/assets');
 function makeGame(store={}){
  const gradient={addColorStop(){}};
  const ctx=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>(o[k]=v,true)});
- const canvas={width:960,height:540,getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener(){},setPointerCapture(){}};
+ const events={};const canvas={width:960,height:540,getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:960,height:540}),addEventListener:(name,fn)=>events[name]=fn,setPointerCapture(){}};
  class AudioFake{constructor(){this.paused=true;this.ended=false;this.currentTime=0}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}}
  const env={console,Math,Date,Audio:AudioFake,requestAnimationFrame:()=>{},innerWidth:960,innerHeight:540,devicePixelRatio:1,navigator:{vibrate(){}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>store[k]=String(v)},Image:class{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=768}},document:{hidden:false,getElementById:()=>canvas,addEventListener(){}}};env.window=env;env.addEventListener=()=>{};vm.createContext(env);
  for(const f of ['velvet-art.js','after-hours-levels.js','after-hours-physics.js','after-hours-audio.js','velvet-play.js'])vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),env,{filename:f});
- return {run:s=>vm.runInContext(s,env),store};
+ return {run:s=>vm.runInContext(s,env),store,events};
 }
 const game=makeGame(),run=game.run;
 assert.strictEqual(run('LEVELS.length'),6,'six separately authored stages');
@@ -38,5 +38,20 @@ assert.strictEqual(run('enemies[1].dead'),false,'distant target remains safe');
 assert.strictEqual(run('roseCharges.length'),0,'chain terminates');
 run(`unlocked=6;start(3);enemies=[];crates=[];addEnemy(900,100,1);shots=0;ball=null;balls=[];roseCharges=[{x:100,y:100,remaining:1.5}]`);
 run('for(let i=0;i<130;i++)sim(1/120)');assert.strictEqual(run('phase'),'play','do not declare failure while a delayed reaction remains');
-console.log('Campaign: unlocks, save migration, replay, bounded data and delayed rose chains passed.');
+
+run(`unlocked=6;start(4);enemies=[];crates=[];addCrate(240,100,28,28,"ward","a");addCrate(800,100,28,28,"ward","b");addEnemy(200,100,1,"a");addEnemy(760,100,2,"b");`);
+assert.strictEqual(run('isWarded(enemies[0])'),true,'intact seal guards its linked target');
+run('charm(enemies[0])');assert.strictEqual(run('enemies[0].dead'),false,'a warded target cannot be charmed');
+run('damageBlock(crates[0],{x:240,y:100,vx:200,vy:0})');
+assert.strictEqual(run('isWarded(enemies[0])'),false,'breaking the seal frees its linked target');
+assert.strictEqual(run('isWarded(enemies[1])'),true,'another seal remains independent');
+run('charm(enemies[0])');assert.strictEqual(run('enemies[0].dead'),true,'freed target can be charmed');
+run(`unlocked=6;start(4);enemies=[];crates=[];addCrate(230,110,28,28,"ward","a");addEnemy(200,110,1,"a");addEnemy(800,50,2);let rose=newBall(190,110,0,0,"bloom");bloom(rose);`);
+assert.strictEqual(run('crates[0].dead'),true,'Bloom can break a seal in its radius');
+assert.strictEqual(run('enemies[0].dead'),true,'Bloom affects a target after opening its nearby seal');
+assert.strictEqual(run('enemies[1].dead'),false,'Bloom does not affect distant targets');
+run(`unlocked=6;start(4);enemies=[];crates=[];addCrate(500,100,28,28,"ward","a");addEnemy(200,100,1,"a");addEnemy(800,50,2);balls=[newBall(140,100,400,0,'direct')];ball=balls[0];for(let i=0;i<30;i++)sim(1/120);`);
+assert.strictEqual(run('enemies[0].dead'),false,'impact cannot pass through a ward');
+assert(run('ball && ball.vx<0'),'a shot bounces away rather than sticking to a warded target');
+console.log('Campaign: unlocks, save migration, replay, bounded data and delayed rose chains and ward interactions passed.');
 module.exports={makeGame};

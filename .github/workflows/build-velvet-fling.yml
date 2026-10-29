@@ -31,12 +31,14 @@ jobs:
           node tests/pause-regression.test.js
           node tests/bloom-impact.test.js
           node tests/campaign.test.js
+          node tests/campaign-playthrough.test.js
+          node tests/first-level-compat.test.js
           node tools/find_campaign_solutions.js
       - name: Compile Android debug APK
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Velvet-After-Hours-BloomFix-Test
+          name: Velvet-After-Hours-Nights-Test
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7

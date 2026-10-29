@@ -27,21 +27,30 @@ function haptic(){
 function sfx(name,volume=1){AfterHoursAudio.cue(name,volume)}
 function burst(x,y,color="#ff70b6",n=16){for(let i=0;i<n;i++){let a=rnd(0,TAU),v=rnd(40,175);particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-rnd(0,70),life:rnd(.4,.85),max:.85,size:rnd(2,6),color,heart:Math.random()<.35})}}
 function popup(x,y,text,color="#ffe7b7"){popups.push({x,y,text,color,life:1.1})}
-function addCrate(x,y,w,h,type="wood"){crates.push({id:crates.length,x,y,w,h,type,hp:(type==="crystal"||type==="rose")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
-function addEnemy(x,y,kind){enemies.push({x,y,kind,seed:rnd(0,TAU),dead:false,r:25})}
+function addCrate(x,y,w,h,type="wood",tag=null){crates.push({id:crates.length,x,y,w,h,type,tag,hp:(type==="crystal"||type==="rose"||type==="ward")?1:2,vx:0,vy:0,rot:0,spin:0,moving:false,dead:false,transferAfter:0})}
+function addEnemy(x,y,kind,ward=null){enemies.push({id:enemies.length,x,y,kind,ward,wardFlash:0,noticeAt:0,seed:rnd(0,TAU),dead:false,r:25})}
+function isWarded(t){return !!t.ward && crates.some(b=>!b.dead&&b.type==="ward"&&b.tag===t.ward)}
 function start(l){
  stage=clamp(Math.floor(Number(l)||1),1,Math.min(unlocked,LEVELS.length));
  const level=LEVELS[stage-1];phase="play";score=0;shotBudget=level.shots;shots=shotBudget;balls=[];ball=null;drag=null;aiming=false;activePointer=null;
  crates=[];enemies=[];particles=[];bloomWaves=[];roseCharges=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
- for(const [x,y,w,h,type] of level.blocks)addCrate(x,y,w,h,type);
- level.targets.forEach(([x,y],i)=>addEnemy(x,y,i+1));
+ for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
+ level.targets.forEach(([x,y,ward],i)=>addEnemy(x,y,i+1,ward||null));
  AfterHoursAudio.setPaused(false);
 }
-function charm(t){if(t.dead)return;t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8)}
+function charm(t){
+ if(t.dead)return false;
+ if(isWarded(t)){
+  t.wardFlash=.25;
+  if(simTime>=t.noticeAt){t.noticeAt=simTime+.5;popup(t.x,t.y-48,"BREAK THE SEAL","#ffe0a6");sfx("glass",.55)}
+  return false;
+ }
+ t.dead=true;t.vanish=.55;score+=750;shake=Math.max(shake,3.5);burst(t.x,t.y,"#fa80c1",18);burst(t.x,t.y,"#ffdc92",7);popup(t.x,t.y-45,"+750 CHARM!");sfx("charm");haptic(8);return true;
+}
 function damageBlock(b,p,damage=1){
  if(b.dead)return;
  b.hp-=damage;b.moving=true;b.vx+=p.vx*.18;b.vy+=Math.min(0,p.vy*.10)-105;b.spin+=clamp(p.vx/500,-1.5,1.5);
- score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,b.type==="crystal"?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx(b.type==="crystal"?"glass":"wood");
+ score+=95;shake=Math.max(shake,2.5);popup(b.x,b.y-20,"+95");burst(p.x,p.y,(b.type==="crystal"||b.type==="ward")?"#adf1fb":"#ffbaac",b.type==="crystal"?12:8);sfx((b.type==="crystal"||b.type==="ward")?"glass":"wood");
  if(b.hp<=0){b.dead=true;burst(b.x,b.y,b.type==="crystal"?"#d2eaff":"#e8b496",10);if(b.type==="rose")roseCharges.push({x:b.x,y:b.y,remaining:.18})}
 }
 function bloom(p){
@@ -50,20 +59,20 @@ function bloom(p){
  burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);sfx("power");haptic(12);
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
+ for(const b of crates){if(b.dead)continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},b.type==="ward"?1:.8)}}
  for(const t of enemies)if(!t.dead && Math.hypot(t.x-p.x,t.y-p.y) < 86+t.r)charm(t);
- for(const b of crates){if(b.dead)continue;const qx=clamp(p.x,b.x-b.w/2,b.x+b.w/2),qy=clamp(p.y,b.y-b.h/2,b.y+b.h/2);if(Math.hypot(qx-p.x,qy-p.y)<86){const dx=b.x-p.x,dy=b.y-p.y,d=Math.max(1,Math.hypot(dx,dy));damageBlock(b,{x:p.x,y:p.y,vx:dx/d*320,vy:dy/d*220},.8)}}
  p.life=99;
 }
 function explodeRose(q){
  const radius=76;bloomWaves.push({x:q.x,y:q.y,age:0,duration:.55,radius});
  burst(q.x,q.y,"#f77ba9",20);burst(q.x,q.y,"#ffe1a4",8);sfx("power");haptic(10);
- for(const t of enemies)if(!t.dead&&Math.hypot(t.x-q.x,t.y-q.y)<radius+t.r)charm(t);
  for(const b of crates){
   if(b.dead)continue;const px=clamp(q.x,b.x-b.w/2,b.x+b.w/2),py=clamp(q.y,b.y-b.h/2,b.y+b.h/2);
   if(Math.hypot(px-q.x,py-q.y)>=radius)continue;
   const dx=b.x-q.x,dy=b.y-q.y,d=Math.max(1,Math.hypot(dx,dy));
   damageBlock(b,{x:q.x,y:q.y,vx:dx/d*260,vy:dy/d*180},1);
  }
+ for(const t of enemies)if(!t.dead&&Math.hypot(t.x-q.x,t.y-q.y)<radius+t.r)charm(t);
 }
 function updateRoseCharges(dt){
  // Remove a charge before exploding it: an adjacent rose may safely enqueue
@@ -71,7 +80,7 @@ function updateRoseCharges(dt){
  for(let i=roseCharges.length-1;i>=0;i--){const q=roseCharges[i];q.remaining-=dt;if(q.remaining<=0){roseCharges.splice(i,1);explodeRose(q)}}
 }
 
-function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{}}}
+function newBall(x,y,vx,vy,mode=shotMode,r=17){return{x,y,px:x,py:y,vx,vy,r,life:0,bounces:0,trail:[],mode,bloomed:false,splitUsed:false,cooldowns:{},targetCooldowns:{}}}
 function shot(){
  if(!drag)return;const d=Math.hypot(launcher.x-drag.x,launcher.y-drag.y);
  if(d<16){drag=null;return}
@@ -103,10 +112,14 @@ function moveCrates(dt){
 function moveBall(p,dt){
  p.px=p.x;p.py=p.y;p.life+=dt;
  const x=p.x,y=p.y;Physics.move(p,dt);const dx=p.x-x,dy=p.y-y;let hit=null;
- for(const t of enemies){if(t.dead)continue;const at=Physics.sweepCircle(x,y,dx,dy,t.x,t.y,p.r+t.r);if(at!==null && (!hit || at<hit.t))hit={t:at,target:t}}
+ for(const t of enemies){if(t.dead||(p.targetCooldowns[t.id]||0)>simTime)continue;const at=Physics.sweepCircle(x,y,dx,dy,t.x,t.y,p.r+t.r);if(at!==null && (!hit || at<hit.t))hit={t:at,target:t}}
  for(const b of crates){if(b.dead || (p.cooldowns[b.id]||0)>simTime)continue;const h=Physics.sweepBox(x,y,dx,dy,p.r,b);if(h && (!hit || h.t<hit.t))hit={...h,block:b}}
  if(hit){p.x=x+dx*hit.t;p.y=y+dy*hit.t;
-  if(hit.target){charm(hit.target);p.vx*=.74;p.vy*=.82;bloom(p)}
+  if(hit.target){
+   if(charm(hit.target)){p.vx*=.74;p.vy*=.82;}
+   else{let nx=p.x-hit.target.x,ny=p.y-hit.target.y,d=Math.hypot(nx,ny);if(d<.001){nx=-p.vx;ny=-p.vy;d=Math.max(.001,Math.hypot(nx,ny))}nx/=d;ny/=d;let v=Physics.reflect(p.vx,p.vy,nx,ny,.45);p.vx=v.x*.85;p.vy=v.y*.85;p.x+=nx*.3;p.y+=ny*.3;p.targetCooldowns[hit.target.id]=simTime+.12;}
+   bloom(p);
+  }
   else{p.cooldowns[hit.block.id]=simTime+.12;damageBlock(hit.block,p,p.mode==="fragment"?.65:1);let v=Physics.reflect(p.vx,p.vy,hit.nx,hit.ny,.42);p.vx=v.x*.82;p.vy=v.y*.82;p.x+=hit.nx*.3;p.y+=hit.ny*.3;bloom(p)}
  }
  if(p.y+p.r>G){p.y=G-p.r;if(p.vy>0){p.vy*=-.4;p.vx*=.72;p.bounces++;sfx("wood",.42);bloom(p)}}
@@ -114,7 +127,7 @@ function moveBall(p,dt){
 }
 function sim(dt){
  frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
- for(const t of enemies)if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);
+ for(const t of enemies){if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);if(t.wardFlash>0)t.wardFlash=Math.max(0,t.wardFlash-dt)}
  if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}
