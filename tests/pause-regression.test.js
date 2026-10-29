@@ -21,7 +21,7 @@ const run=s=>vm.runInContext(s,env);
 run('start(1); AfterHoursAudio.gesture()');
 assert.strictEqual(run('phase'),'play','Starting music must not force the pause screen');
 assert.strictEqual(focusRequests,0,'A second native focus owner must not compete with WebView playback');
-const music=instances.find(a=>a.src.includes('waltz'));
+const music=instances.find(a=>a.src.includes('evening-01'));
 assert(music&&!music.paused,'music starts during foreground play');
 for(let i=0;i<20;i++)if(typeof env.onNativeAudioFocus==='function')env.onNativeAudioFocus(false);
 assert.strictEqual(run('phase'),'play','Audio focus changes alone must not interrupt gameplay');

@@ -56,7 +56,7 @@ function start(l){
  soundClock=0;idleVoiceAt=rnd(4.5,7);lastHitVoice=-10;lastShotAt=-10;idleVoiceIndex=0;hitVoiceIndex=0;quietIdleVoice();
  for(const [x,y,w,h,type,tag] of level.blocks)addCrate(x,y,w,h,type,tag||null);
  level.targets.forEach(([x,y,ward],i)=>addEnemy(x,y,i+1,ward||null));
- AfterHoursAudio.setPaused(false);
+ AfterHoursAudio.setScene(stage);AfterHoursAudio.setPaused(false);
 }
 function charm(t){
  if(t.dead)return false;
@@ -189,7 +189,7 @@ cv.addEventListener("pointercancel",cancelAim);cv.addEventListener("lostpointerc
 document.addEventListener("visibilitychange",()=>{if(document.hidden){cancelAim();if(phase==="play")phase="pause";AfterHoursAudio.setPaused(true)}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"||e.key==="Backspace"){cancelAim();if(phase==="play")phase="pause";else if(phase==="pause")phase="play";else phase="menu"}});
 let last=0,lag=0,renderAlpha=0;
-function tick(now){let dt=last?Math.min(.05,Math.max(0,(now-last)/1000)):0;last=now;lag+=dt;let k=0;const step=1/120;while(lag>=step&&k<6){sim(step);lag-=step;k++}if(k===6 && lag>=step)lag=0;renderAlpha=lag/step;AfterHoursAudio.setPaused(phase==="pause"||document.hidden);paint();requestAnimationFrame(tick)}
+function tick(now){let dt=last?Math.min(.05,Math.max(0,(now-last)/1000)):0;last=now;lag+=dt;let k=0;const step=1/120;while(lag>=step&&k<6){sim(step);lag-=step;k++}if(k===6 && lag>=step)lag=0;renderAlpha=lag/step;AfterHoursAudio.setScene(phase==="menu"||phase==="levels"||phase==="help"?0:stage);AfterHoursAudio.setPaused(phase==="pause"||document.hidden);AfterHoursAudio.advance(dt);paint();requestAnimationFrame(tick)}
 requestAnimationFrame(tick);
 
 // A real activity pause (not a change in audio focus) pauses gameplay and audio.

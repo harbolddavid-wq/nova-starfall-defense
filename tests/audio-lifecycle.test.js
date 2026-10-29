@@ -7,7 +7,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/src/main/assets/afte
 const A=env.AfterHoursAudio;
 assert.strictEqual(instances.length,0,'no sound before interaction');
 A.cue('voiceHitA');assert.strictEqual(instances.length,0,'effects also wait for the first gesture');
-A.gesture();const music=instances.find(a=>a.src.includes('waltz'));assert(music&&!music.paused,'music starts on gesture');
+A.gesture();const music=instances.find(a=>a.src.includes('evening-menu'));assert(music&&!music.paused,'music starts on gesture');
 assert.strictEqual(focusRequests,0,'WebView must not compete with a native focus request');
 A.setPaused(true);assert(music.paused,'pause stops music');
 A.setPaused(false);assert(!music.paused,'continue resumes music');

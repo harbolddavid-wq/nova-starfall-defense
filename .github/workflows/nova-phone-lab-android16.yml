@@ -52,6 +52,7 @@ jobs:
           node tests/physics.test.js
           node tests/game-flow.test.js
           node tests/audio-lifecycle.test.js
+          node tests/music-scores.test.js
           node tests/character-sounds.test.js
           node tests/pause-regression.test.js
           node tests/bloom-impact.test.js
