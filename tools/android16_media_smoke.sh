@@ -13,6 +13,11 @@ adb shell am start -n "$PKG/.PlayerActivity"
 sleep 8
 adb exec-out screencap -p > "$OUT/home.png"
 adb shell pidof "$PKG" | grep -Eq '[0-9]'
+adb shell input tap 194 1131
+sleep 3
+adb exec-out screencap -p > "$OUT/file-picker.png"
+adb shell input keyevent 4
+sleep 2
 ffmpeg -v error -y -f lavfi -i 'testsrc2=size=320x180:rate=12' -f lavfi -i 'sine=frequency=440:sample_rate=48000' -t 4 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest /tmp/afterglow-fixtures/sample.mp4
 ffmpeg -v error -y -i /tmp/afterglow-fixtures/sample.mp4 -vn -c:a libmp3lame /tmp/afterglow-fixtures/sample.mp3
 ffmpeg -v error -y -i /tmp/afterglow-fixtures/sample.mp4 -vn -c:a flac /tmp/afterglow-fixtures/sample.flac
@@ -37,5 +42,6 @@ done
 cat "$OUT/playback.txt"
 test "$ok" = 1
 test "$(grep -c 'PASS sample\.' "$OUT/playback.txt")" = 8
+grep -q 'PASS controls pause/resume/seek' "$OUT/playback.txt"
 adb shell pidof "$PKG" | grep -Eq '[0-9]'
 echo 'Eight generated files advanced in the debug player; this is not a BLU or an audible listening test.'

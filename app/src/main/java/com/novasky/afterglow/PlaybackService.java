@@ -123,9 +123,10 @@ public final class PlaybackService extends Service {
     public void toggleShuffle(){shuffle=!shuffle;persist();update();}
     public void addItems(List<Item> incoming,boolean playFirst){
         if(incoming==null||incoming.isEmpty())return;
-        int first=-1;
-        for(Item item:incoming){if(item==null||item.uri==null)continue;int existing=-1;for(int j=0;j<queue.size();j++)if(queue.get(j).uri.equals(item.uri)){existing=j;break;}
-            if(existing<0){queue.add(item);existing=queue.size()-1;}if(first<0)first=existing;}
+        int first=-1;HashMap<Uri,Integer> positions=new HashMap<>();
+        for(int j=0;j<queue.size();j++)positions.put(queue.get(j).uri,j);
+        for(Item item:incoming){if(item==null||item.uri==null)continue;Integer existing=positions.get(item.uri);
+            if(existing==null){queue.add(item);existing=queue.size()-1;positions.put(item.uri,existing);}if(first<0)first=existing;}
         persist(); if(playFirst&&first>=0)playIndex(first,true);else update();
     }
     public void removeAt(int n){
