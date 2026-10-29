@@ -3,6 +3,10 @@ package com.novasky.starlightthemes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.role.RoleManager;
+import android.appwidget.AppWidgetHost;
+import android.appwidget.AppWidgetHostView;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProviderInfo;
 import android.animation.ValueAnimator;
 import android.content.ClipData;
 import android.content.ComponentName;
@@ -62,6 +66,7 @@ import java.util.concurrent.Executors;
 /** A separate, preview-first Home. Widget hosting and advanced studio are future work. */
 public final class MainActivity extends Activity {
     private static final String PREFS = "starlight_home_v1";
+    private static final int WIDGET_HOST_ID=18331, REQUEST_WIDGET_BIND=501, REQUEST_WIDGET_CONFIG=502;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ArrayList<App> apps = new ArrayList<>();
@@ -82,6 +87,9 @@ public final class MainActivity extends Activity {
     private EditText search;
     private float downX, downY;
     private Runnable edgeTask;
+    private AppWidgetHost widgetHost;
+    private AppWidgetManager widgetManager;
+    private int pendingWidgetId=-1, pendingPage, pendingSlot, pendingWidth, pendingHeight;
     private ImageView ambient;
     private ValueAnimator ambientAnimator;
     private static final String[] ICON_KEYS={"original","notes","dream","atlas","video","reader","camera","music","files","settings","messages","calendar","browser","phone","gallery","weather","clock","search","apps"};
@@ -113,10 +121,15 @@ public final class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(0xff171527);
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        widgetHost=new AppWidgetHost(this,WIDGET_HOST_ID);widgetManager=AppWidgetManager.getInstance(this);
+        pendingWidgetId=prefs.getInt("pending_widget_id",-1);pendingPage=prefs.getInt("pending_widget_page",0);
+        pendingSlot=prefs.getInt("pending_widget_slot",0);pendingWidth=prefs.getInt("pending_widget_width",1);pendingHeight=prefs.getInt("pending_widget_height",1);
         themeId = theme(prefs.getString("theme", "moonflower")).id;
         model = readLayout(); currentPage = Math.max(0, Math.min(prefs.getInt("page", 0), model.pages.size()-1));
         showHome(); loadApps();
     }
+    @Override protected void onStart() {super.onStart();try{widgetHost.startListening();}catch(Exception ignored){}}
+    @Override protected void onStop() {try{widgetHost.stopListening();}catch(Exception ignored){}super.onStop();}
     @Override protected void onResume() { super.onResume(); resumed=true; startAmbient(); if (prefs != null) loadApps(); }
     @Override protected void onPause() { resumed=false; stopAmbient(); super.onPause(); }
     @Override protected void onDestroy() { destroyed=true; stopAmbient(); ui.removeCallbacksAndMessages(null); worker.shutdownNow(); super.onDestroy(); }
@@ -143,6 +156,7 @@ public final class MainActivity extends Activity {
             JSONArray dock = root.getJSONArray("dock");
             if (dock.length()!=WorkspaceModel.DOCK) throw new IllegalArgumentException("dock");
             for (int i=0; i<m.dock.length; i++) m.dock[i]=readItem(dock.optJSONObject(i));
+            if(!m.validLayout())throw new IllegalArgumentException("overlapping items");
             return m;
         } catch (Exception e) {
             prefs.edit().putString("layout_recovery", raw).remove("layout").apply();
@@ -153,6 +167,7 @@ public final class MainActivity extends Activity {
         if (o == null) return null;
         String type=o.getString("type");
         if (type.equals("app")) return WorkspaceModel.Item.app(o.getString("component"));
+        if (type.equals("widget")) return WorkspaceModel.Item.widget(o.getInt("id"),o.getInt("width"),o.getInt("height"));
         if (!type.equals("folder")) throw new IllegalArgumentException("type");
         JSONArray members=o.getJSONArray("children"); ArrayList<String> children=new ArrayList<>();
         for (int i=0; i<members.length(); i++) children.add(members.getString(i));
@@ -161,7 +176,8 @@ public final class MainActivity extends Activity {
     private JSONObject writeItem(WorkspaceModel.Item item) throws Exception {
         if (item == null) return null;
         JSONObject o=new JSONObject();
-        if (!item.isFolder()) { o.put("type", "app"); o.put("component", item.component); }
+        if (item.isWidget()) { o.put("type","widget");o.put("id",item.widgetId);o.put("width",item.spanX);o.put("height",item.spanY); }
+        else if (!item.isFolder()) { o.put("type", "app"); o.put("component", item.component); }
         else { o.put("type", "folder"); o.put("title", item.title); o.put("children", new JSONArray(item.children)); }
         return o;
     }
@@ -287,7 +303,7 @@ public final class MainActivity extends Activity {
         dropRemove=button("Remove shortcut",()->{}); dropRemove.setVisibility(View.GONE); dropRemove.setBackground(rounded(0xee492e43,0xffedbad5,18));
         dropRemove.setOnDragListener((view,event)->{
             if(event.getAction()==DragEvent.ACTION_DRAG_STARTED) return event.getLocalState() instanceof WorkspaceModel.Pos;
-            if(event.getAction()==DragEvent.ACTION_DROP) { WorkspaceModel.Pos p=(WorkspaceModel.Pos)event.getLocalState(); if(model.valid(p)){model.put(p,null); saveLayout();} return true; }
+            if(event.getAction()==DragEvent.ACTION_DROP) { WorkspaceModel.Pos p=(WorkspaceModel.Pos)event.getLocalState(); if(model.valid(p)){WorkspaceModel.Item item=model.get(p);if(item!=null && item.isWidget())widgetHost.deleteAppWidgetId(item.widgetId);model.put(p,null); saveLayout();} return true; }
             return true;
         });
         FrameLayout.LayoutParams removeParams=new FrameLayout.LayoutParams(-1,dp(52),Gravity.TOP);
@@ -334,7 +350,11 @@ public final class MainActivity extends Activity {
         final int page;
         PageView(Context c,int page) {
             super(c); this.page=page; setClipChildren(false); setLongClickable(true); setOnLongClickListener(v->{homeMenu();return true;});
-            for(int i=0;i<WorkspaceModel.CELLS;i++){WorkspaceModel.Pos p=new WorkspaceModel.Pos(page,i); addView(itemView(model.get(p),p,false));}
+            for(int i=0;i<WorkspaceModel.CELLS;i++){WorkspaceModel.Pos p=new WorkspaceModel.Pos(page,i); WorkspaceModel.Item item=model.get(p);addView(itemView(item!=null && item.isWidget()?null:item,p,false));}
+            for(int i=0;i<WorkspaceModel.CELLS;i++){
+                WorkspaceModel.Pos pos=new WorkspaceModel.Pos(page,i);WorkspaceModel.Item item=model.get(pos);
+                if(item!=null && item.isWidget()){View widget=widgetView(item);widget.setTag(pos);addView(widget);}
+            }
             setOnDragListener((v,e)->{
                 if(e.getAction()==DragEvent.ACTION_DRAG_STARTED)return e.getLocalState() instanceof WorkspaceModel.Pos;
                 if(e.getAction()==DragEvent.ACTION_DRAG_LOCATION){ maybeEdge(page,e.getX(),v.getWidth()); return true; }
@@ -345,10 +365,19 @@ public final class MainActivity extends Activity {
         }
         @Override protected void onMeasure(int w,int h) {
             int width=MeasureSpec.getSize(w),height=MeasureSpec.getSize(h); setMeasuredDimension(width,height);
-            for(int i=0;i<getChildCount();i++)getChildAt(i).measure(MeasureSpec.makeMeasureSpec(width/4,MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec(height/5,MeasureSpec.EXACTLY));
+            for(int i=0;i<getChildCount();i++){
+                View child=getChildAt(i);int sx=1,sy=1;
+                if(i>=WorkspaceModel.CELLS){WorkspaceModel.Item item=model.get((WorkspaceModel.Pos)child.getTag());if(item!=null){sx=item.spanX;sy=item.spanY;}}
+                child.measure(MeasureSpec.makeMeasureSpec((width/4)*sx,MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec((height/5)*sy,MeasureSpec.EXACTLY));
+            }
         }
         @Override protected void onLayout(boolean c,int l,int t,int r,int b) {
-            int cw=(r-l)/4,ch=(b-t)/5; for(int i=0;i<getChildCount();i++){int x=(i%4)*cw,y=(i/4)*ch;getChildAt(i).layout(x,y,x+cw,y+ch);}
+            int cw=(r-l)/4,ch=(b-t)/5;
+            for(int i=0;i<getChildCount();i++){
+                View child=getChildAt(i);int slot=i,sx=1,sy=1;
+                if(i>=WorkspaceModel.CELLS){WorkspaceModel.Pos p=(WorkspaceModel.Pos)child.getTag();slot=p.slot;WorkspaceModel.Item item=model.get(p);if(item!=null){sx=item.spanX;sy=item.spanY;}}
+                int x=(slot%4)*cw,y=(slot/4)*ch;child.layout(x,y,x+cw*sx,y+ch*sy);
+            }
         }
     }
     private void maybeEdge(int page,float x,int width) {
@@ -412,10 +441,100 @@ public final class MainActivity extends Activity {
         }).show();
     }
     private void homeMenu() {
-        new AlertDialog.Builder(this).setTitle("Home options").setItems(new String[]{"Themes","Add a home page","Remove this empty page","Choose default Home","Home settings"},(d,n)->{
+        new AlertDialog.Builder(this).setTitle("Home options").setItems(new String[]{"Themes","Add a home page","Remove this empty page","Widgets","Choose default Home","Home settings"},(d,n)->{
             switch(n){case 0:showThemes();break;case 1:if(model.addPage()){currentPage=model.pages.size()-1;saveLayout();showHome();}else toast("Maximum of eight pages");break;
             case 2:if(model.removePage(currentPage)){currentPage=Math.min(currentPage,model.pages.size()-1);saveLayout();showHome();}else toast("Keep one page and remove its shortcuts first");break;
-            case 3:homeChoice();break;case 4:showSettings();break;}
+            case 3:widgetMenu();break;case 4:homeChoice();break;case 5:showSettings();break;}
+        }).show();
+    }
+    private View widgetView(WorkspaceModel.Item item) {
+        FrameLayout frame=new FrameLayout(this);
+        try {
+            AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);
+            if(info==null)throw new IllegalStateException("Provider missing");
+            AppWidgetHostView view=widgetHost.createView(this,item.widgetId,info);
+            frame.addView(view,new FrameLayout.LayoutParams(-1,-1));
+            view.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,oright,ob)->{
+                if((r-l)!=(oright-ol) || (b-t)!=(ob-ot)){
+                    int w=Math.round((r-l)/getResources().getDisplayMetrics().density),h=Math.round((b-t)/getResources().getDisplayMetrics().density);
+                    if(w>0 && h>0)try{view.updateAppWidgetSize(null,w,h,w,h);}catch(Exception ignored){}
+                }
+            });
+        }catch(Exception e){TextView missing=text("Widget unavailable\nRemove in Home options",13);missing.setGravity(Gravity.CENTER);missing.setBackground(rounded(0xbb242034,0x88dfc6e7,18));frame.addView(missing,new FrameLayout.LayoutParams(-1,-1));}
+        return frame;
+    }
+    private void widgetMenu() {
+        new AlertDialog.Builder(this).setTitle("Widgets").setItems(new String[]{"Add a widget","Remove a widget"},(d,n)->{if(n==0)chooseWidget();else removeWidget();}).show();
+    }
+    private void chooseWidget() {
+        if(pendingWidgetId>0){toast("Finish the current widget setup first");return;}
+        ArrayList<AppWidgetProviderInfo> providers=new ArrayList<>();
+        try{for(AppWidgetProviderInfo info:widgetManager.getInstalledProviders())if((info.widgetCategory & AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)!=0)providers.add(info);}catch(Exception e){toast("Android couldn't list widgets");return;}
+        Collections.sort(providers,(a,b)->widgetLabel(a).compareToIgnoreCase(widgetLabel(b)));
+        if(providers.isEmpty()){toast("No available Home widgets found");return;}
+        String[] labels=new String[providers.size()];for(int i=0;i<labels.length;i++)labels[i]=widgetLabel(providers.get(i));
+        new AlertDialog.Builder(this).setTitle("Add widget").setItems(labels,(d,n)->beginWidget(providers.get(n))).setNegativeButton("Cancel",null).show();
+    }
+    private String widgetLabel(AppWidgetProviderInfo info) {
+        try{CharSequence s=info.loadLabel(getPackageManager());return s==null?"Widget":s.toString();}catch(Exception e){return "Widget";}
+    }
+    private void beginWidget(AppWidgetProviderInfo info) {
+        if(workspace==null || workspace.getChildCount()==0){toast("Home is not ready yet");return;}
+        ViewGroup strip=(ViewGroup)workspace.getChildAt(0);View page=strip.getChildAt(currentPage);
+        int cw=page.getWidth()/WorkspaceModel.COLS,ch=page.getHeight()/WorkspaceModel.ROWS;
+        if(cw<1 || ch<1){toast("Home is not ready yet");return;}
+        int x=Math.max(1,(info.minWidth+cw-1)/cw),y=Math.max(1,(info.minHeight+ch-1)/ch);
+        if(Build.VERSION.SDK_INT>=31){x=Math.max(x,info.targetCellWidth);y=Math.max(y,info.targetCellHeight);}
+        WorkspaceModel.Pos free=model.firstRegion(currentPage,x,y);
+        if(free==null){toast("This widget needs more free space on this page");return;}
+        try {
+            pendingWidgetId=widgetHost.allocateAppWidgetId();pendingPage=currentPage;pendingSlot=free.slot;pendingWidth=x;pendingHeight=y;savePendingWidget();
+            if(widgetManager.bindAppWidgetIdIfAllowed(pendingWidgetId,info.provider))configureWidget();
+            else {Intent bind=new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,pendingWidgetId);bind.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,info.provider);startActivityForResult(bind,REQUEST_WIDGET_BIND);}
+        }catch(Exception e){cancelPendingWidget();toast("Couldn't start widget setup");}
+    }
+    private void savePendingWidget() {
+        prefs.edit().putInt("pending_widget_id",pendingWidgetId).putInt("pending_widget_page",pendingPage).putInt("pending_widget_slot",pendingSlot).putInt("pending_widget_width",pendingWidth).putInt("pending_widget_height",pendingHeight).apply();
+    }
+    private void clearPendingWidget() {
+        pendingWidgetId=-1;prefs.edit().remove("pending_widget_id").remove("pending_widget_page").remove("pending_widget_slot").remove("pending_widget_width").remove("pending_widget_height").apply();
+    }
+    private void cancelPendingWidget() {
+        if(pendingWidgetId>0)try{widgetHost.deleteAppWidgetId(pendingWidgetId);}catch(Exception ignored){}clearPendingWidget();
+    }
+    private void configureWidget() {
+        AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(pendingWidgetId);
+        if(info==null){cancelPendingWidget();toast("Widget setup was cancelled");return;}
+        if(info.configure!=null){try{widgetHost.startAppWidgetConfigureActivityForResult(this,pendingWidgetId,0,REQUEST_WIDGET_CONFIG,null);}catch(Exception e){cancelPendingWidget();toast("Couldn't open widget setup");}}
+        else finishWidget();
+    }
+    private void finishWidget() {
+        if(pendingWidgetId<1)return;
+        WorkspaceModel.Pos p=new WorkspaceModel.Pos(pendingPage,pendingSlot);
+        if(!model.regionFree(p,pendingWidth,pendingHeight,null))p=model.firstRegion(pendingPage,pendingWidth,pendingHeight);
+        if(p==null){cancelPendingWidget();toast("There is no longer room for that widget");return;}
+        model.put(p,WorkspaceModel.Item.widget(pendingWidgetId,pendingWidth,pendingHeight));currentPage=p.page;saveLayout();clearPendingWidget();showHome();
+    }
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==REQUEST_WIDGET_BIND || requestCode==REQUEST_WIDGET_CONFIG){
+            if(pendingWidgetId<1)return;
+            if(resultCode!=RESULT_OK){cancelPendingWidget();toast("Widget not added");}
+            else if(requestCode==REQUEST_WIDGET_BIND)configureWidget();else finishWidget();
+        }
+    }
+    private void removeWidget() {
+        ArrayList<WorkspaceModel.Pos> positions=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();
+        for(int p=0;p<model.pages.size();p++)for(int i=0;i<WorkspaceModel.CELLS;i++){
+            WorkspaceModel.Pos pos=new WorkspaceModel.Pos(p,i);WorkspaceModel.Item item=model.get(pos);
+            if(item!=null && item.isWidget()){AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);positions.add(pos);labels.add((info==null?"Unavailable widget":widgetLabel(info))+" · page "+(p+1));}
+        }
+        if(positions.isEmpty()){toast("There are no widgets to remove");return;}
+        new AlertDialog.Builder(this).setTitle("Remove widget").setItems(labels.toArray(new String[0]),(d,n)->{
+            WorkspaceModel.Pos p=positions.get(n);WorkspaceModel.Item item=model.get(p);if(item==null || !item.isWidget())return;
+            new AlertDialog.Builder(this).setMessage("Remove this widget from Starlight Home?").setPositiveButton("Remove",(dialog,which)->{
+                try{widgetHost.deleteAppWidgetId(item.widgetId);}catch(Exception ignored){}model.put(p,null);saveLayout();showHome();
+            }).setNegativeButton("Cancel",null).show();
         }).show();
     }
     private void showDrawer() {
@@ -511,7 +630,7 @@ public final class MainActivity extends Activity {
         add(content,button("Undo last theme",()->{String prev=prefs.getString("previous_theme",themeId);prefs.edit().putString("previous_theme",themeId).putString("theme",prev).apply();themeId=theme(prev).id;showHome();}),8);
         add(content,button(prefs.getBoolean("ambient",true)?"Ambient effect: on":"Ambient effect: off",()->{prefs.edit().putBoolean("ambient",!prefs.getBoolean("ambient",true)).apply();showSettings();}),8);
         add(content,text("Touch and hold an icon to move it. Drop it onto another icon to make a folder. Swipe up for all apps. Long-press an app in the drawer to add it to Home. Your Samsung Home and its layout stay separate.",14),18);
-        add(content,text("Widgets, detailed appearance controls, layout backup and more themes are still being developed.",13),18);
+        add(content,text("Widget placement is an early feature; resizing, detailed appearance controls, layout backup and more themes are still being developed.",13),18);
     }
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
         if(e.getAction()==MotionEvent.ACTION_DOWN){downX=e.getX();downY=e.getY();}

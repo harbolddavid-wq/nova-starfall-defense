@@ -8,7 +8,7 @@ public class WorkspaceModelTest {
         List<String> v = new ArrayList<>();
         for (int p = -1; p < m.pages.size(); p++) for (int i = 0; i < (p == -1 ? m.DOCK : m.CELLS); i++) {
             Item x = m.get(new Pos(p, i));
-            if (x != null) { if (x.isFolder()) v.addAll(x.children); else v.add(x.component); }
+            if (x != null) { if (x.isWidget()) v.add("widget/"+x.widgetId); else if (x.isFolder()) v.addAll(x.children); else v.add(x.component); }
         }
         Collections.sort(v); return v;
     }
@@ -25,6 +25,14 @@ public class WorkspaceModelTest {
         m.put(new Pos(-1, 0), Item.app("c/C"));
         check(m.move(new Pos(0, 0), new Pos(-1, 0)), "dock folder");
         check(all(m).equals(Arrays.asList("b/B", "c/C")), "no item lost");
+        Pos widget=m.firstRegion(1,2,2);check(widget!=null,"find widget space");
+        m.put(widget,Item.widget(123,2,2));
+        check(m.occupant(new Pos(1,widget.slot+5)).equals(widget),"covered cell identifies widget");
+        check(!m.move(new Pos(-1,0),new Pos(1,widget.slot+5)),"cannot drop icons into widget");
+        check(!m.regionFree(new Pos(1,widget.slot+1),2,2,null),"no overlapping widgets");
+        check(!m.move(widget,new Pos(-1,1)),"widgets cannot enter dock");
+        check(m.move(widget,new Pos(1,2)),"move widget within page");
+        check(m.validLayout(),"valid widget layout");
         Random random = new Random(82);
         for (int i = 0; i < 15; i++) m.addToPage("x/" + i, 0);
         List<String> before = all(m);
@@ -32,8 +40,8 @@ public class WorkspaceModelTest {
             int ap = random.nextInt(3) - 1, bp = random.nextInt(3) - 1;
             Pos a = new Pos(ap, random.nextInt(ap == -1 ? m.DOCK : m.CELLS));
             Pos b = new Pos(bp, random.nextInt(bp == -1 ? m.DOCK : m.CELLS));
-            m.move(a, b); check(before.equals(all(m)), "drag preserved all shortcuts at " + i);
+            m.move(a, b); check(before.equals(all(m)) && m.validLayout(), "drag preserved all shortcuts and occupancy at " + i);
         }
-        System.out.println("PASS: pages, dock, folder creation/collapse, and 3000 lossless moves");
+        System.out.println("PASS: pages, dock, folders, widget occupancy and 3000 lossless moves");
     }
 }
