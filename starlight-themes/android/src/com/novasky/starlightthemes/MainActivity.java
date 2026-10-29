@@ -16,6 +16,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,6 +78,8 @@ public final class MainActivity extends Activity {
     private Runnable edgeTask;
     private ImageView ambient;
     private ValueAnimator ambientAnimator;
+    private static final String[] ICON_KEYS={"original","notes","dream","atlas","video","reader","camera","music","files","settings","messages","calendar","browser","phone","gallery","weather","clock","search","apps"};
+    private static final String[] ICON_LABELS={"Original app icon","Notes","Art / Dream","Atlas","Video","Reader","Camera","Music","Files","Settings","Messages","Calendar","Browser","Phone","Gallery","Weather","Clock","Search","App drawer"};
     private static final class App {
         final ResolveInfo info; final ComponentName component; final String key, label;
         App(ResolveInfo info, String label) {
@@ -221,6 +225,15 @@ public final class MainActivity extends Activity {
             BitmapFactory.Options opts=new BitmapFactory.Options(); opts.inSampleSize=2; Bitmap b=BitmapFactory.decodeStream(s,null,opts); walls.put(id,b); return b;
         } catch (Exception e) { return null; }
     }
+    private Bitmap chosenIcon(String key) {
+        String choice=prefs.getString("icon:"+key,"original"); boolean valid=false;
+        for(String candidate:ICON_KEYS)if(candidate.equals(choice))valid=true;
+        if(!valid || choice.equals("original"))return null;
+        String palette=themeId.equals("moonflower")?"petal":"midnight";
+        try(InputStream in=getAssets().open("icons/"+palette+"_"+choice+".png")){
+            BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;return BitmapFactory.decodeStream(in,null,opts);
+        }catch(Exception ignored){return null;}
+    }
     private void base(String which,ThemeSpec t,boolean dim) {
         stopAmbient(); ambient=null;
         screen=which; workspace=null; dropRemove=null; pageDots=null; drawerGrid=null; search=null;
@@ -270,7 +283,8 @@ public final class MainActivity extends Activity {
             if(event.getAction()==DragEvent.ACTION_DROP) { WorkspaceModel.Pos p=(WorkspaceModel.Pos)event.getLocalState(); if(model.valid(p)){model.put(p,null); saveLayout();} return true; }
             return true;
         });
-        add(content,dropRemove,0);
+        FrameLayout.LayoutParams removeParams=new FrameLayout.LayoutParams(-1,dp(52),Gravity.TOP);
+        removeParams.setMargins(dp(14),dp(58),dp(14),0); root.addView(dropRemove,removeParams);
         workspace=new PageScroll(this); workspace.setFillViewport(false); workspace.setHorizontalScrollBarEnabled(false);
         LinearLayout strip=row(); strip.setGravity(Gravity.FILL); int width=getResources().getDisplayMetrics().widthPixels-dp(28);
         for(int p=0;p<model.pages.size();p++) strip.addView(new PageView(this,p),new LinearLayout.LayoutParams(width,-1));
@@ -349,8 +363,11 @@ public final class MainActivity extends Activity {
             for(int r=0;r<2;r++){LinearLayout line=row();for(int c=0;c<2;c++){int n=r*2+c;ImageView icon=new ImageView(this);if(n<item.children.size()){App a=byKey.get(item.children.get(n));if(a!=null)try{icon.setImageDrawable(a.info.loadIcon(getPackageManager()));}catch(Exception ignored){}}line.addView(icon,new LinearLayout.LayoutParams(0,dp(19),1));}preview.addView(line);} iconFrame.addView(preview,new FrameLayout.LayoutParams(-1,-1));
         } else {
             ImageView icon=new ImageView(this); icon.setScaleType(ImageView.ScaleType.FIT_CENTER); App a=byKey.get(item.component);
-            if(a!=null)try{icon.setImageDrawable(a.info.loadIcon(getPackageManager()));}catch(Exception ignored){}
-            FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(dp(dock?38:42),dp(dock?38:42),Gravity.CENTER); iconFrame.addView(icon,ip);
+            Bitmap custom=chosenIcon(item.component);
+            if(custom!=null){iconFrame.setBackgroundColor(Color.TRANSPARENT);icon.setImageBitmap(custom);}
+            else if(a!=null)try{icon.setImageDrawable(a.info.loadIcon(getPackageManager()));}catch(Exception ignored){}
+            int inner=custom!=null?iconSize:dp(dock?38:42);
+            FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(inner,inner,Gravity.CENTER); iconFrame.addView(icon,ip);
         }
         tile.addView(iconFrame,new LinearLayout.LayoutParams(iconSize,iconSize));
         String label=item.isFolder()?item.title:(byKey.containsKey(item.component)?byKey.get(item.component).label:"Unavailable");
@@ -411,11 +428,31 @@ public final class MainActivity extends Activity {
     private View drawerTile(WorkspaceModel.Item item,App app) {
         LinearLayout tile=col();tile.setGravity(Gravity.CENTER);ImageView icon=new ImageView(this);icon.setImageDrawable(app.info.loadIcon(getPackageManager()));tile.addView(icon,new LinearLayout.LayoutParams(dp(48),dp(48)));
         TextView label=text(app.label,11);label.setGravity(Gravity.CENTER);label.setMaxLines(1);label.setEllipsize(TextUtils.TruncateAt.END);tile.addView(label,new LinearLayout.LayoutParams(-1,-2));tile.setFocusable(true);tile.setContentDescription(app.label);tile.setOnClickListener(v->launch(app.key));
-        tile.setOnLongClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);new AlertDialog.Builder(this).setTitle(app.label).setItems(new String[]{"Add to Home","Add to dock","App info"},(d,n)->{
+        tile.setOnLongClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);new AlertDialog.Builder(this).setTitle(app.label).setItems(new String[]{"Add to Home","Add to dock","Customize icon","App info"},(d,n)->{
             if(n==0){if(model.addToPage(app.key,currentPage)){saveLayout();hideKeyboard();showHome();}else toast("No free space on this page");}
             else if(n==1){int i=0;while(i<model.dock.length && model.dock[i]!=null)i++;if(i==model.dock.length){toast("The dock is full");return;}model.dock[i]=item;saveLayout();hideKeyboard();showHome();}
+            else if(n==2)customizeIcon(app);
             else try{startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+app.component.getPackageName())));}catch(Exception e){toast("App info unavailable");}
         }).show();return true;});return tile;
+    }
+    private void customizeIcon(App app) {
+        String old=prefs.getString("icon:"+app.key,"original");int selected=0;
+        for(int i=0;i<ICON_KEYS.length;i++)if(ICON_KEYS[i].equals(old))selected=i;
+        new AlertDialog.Builder(this).setTitle("Icon for "+app.label).setSingleChoiceItems(ICON_LABELS,selected,(d,which)->{
+            prefs.edit().putString("icon:"+app.key,ICON_KEYS[which]).apply();d.dismiss();toast("Icon saved for "+app.label);
+        }).setNegativeButton("Cancel",null).show();
+    }
+    private void themeFlourish() {
+        if(root==null || !prefs.getBoolean("ambient",true) || !ValueAnimator.areAnimatorsEnabled())return;
+        AnimationDrawable frames=new AnimationDrawable();frames.setOneShot(true);
+        try {
+            for(int i=0;i<16;i++)try(InputStream in=getAssets().open(String.format(Locale.ROOT,"moth/moth_%02d.png",i))){
+                Bitmap b=BitmapFactory.decodeStream(in);if(b==null)return;frames.addFrame(new BitmapDrawable(getResources(),b),80);
+            }
+        }catch(Exception e){return;}
+        FrameLayout host=root;ImageView moth=new ImageView(this);moth.setImageDrawable(frames);
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(dp(84),dp(84),Gravity.BOTTOM|Gravity.END);lp.setMargins(0,0,dp(18),dp(145));host.addView(moth,lp);
+        moth.post(frames::start);moth.animate().translationYBy(-dp(72)).alpha(0).setDuration(1400).withEndAction(()->host.removeView(moth)).start();
     }
     private void showThemes() {
         base("themes",theme(themeId),true);header("Themes"); TextView intro=text("Choose a look, then preview it on your Home.",15);add(content,intro,12);
@@ -434,7 +471,7 @@ public final class MainActivity extends Activity {
         TextView title=text(t.name,26);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));panel.addView(title);add(panel,text(t.subtitle,14),7);
         LinearLayout sample=row();for(int i=0;i<Math.min(4,apps.size());i++){App a=apps.get(i);ImageView icon=new ImageView(this);icon.setImageDrawable(a.info.loadIcon(getPackageManager()));icon.setPadding(dp(6),dp(6),dp(6),dp(6));icon.setBackground(rounded(0xcc302b48,t.accent,16));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.rightMargin=dp(9);sample.addView(icon,lp);}add(panel,sample,16);
         add(panel,text("Your shortcuts stay exactly where you placed them.",13),12);
-        TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();toast("Theme applied to Starlight Home");});apply.setTextColor(0xff282136);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
+        TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();themeFlourish();toast("Theme applied to Starlight Home");});apply.setTextColor(0xff282136);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
     }
     private boolean isHome() {
         if(Build.VERSION.SDK_INT>=29){RoleManager role=getSystemService(RoleManager.class);if(role!=null&&role.isRoleAvailable(RoleManager.ROLE_HOME))return role.isRoleHeld(RoleManager.ROLE_HOME);}

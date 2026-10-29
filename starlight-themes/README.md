@@ -1,7 +1,9 @@
-# Starlight Themes for Desi — work in progress
+# Starlight Themes for Desi — early launcher work
 
-A separate offline Android launcher for Desi's Samsung Galaxy A17 5G. Keep familiar home-screen behavior first: multiple pages, ordinary drag-to-place, dock, folders, conventional drawer and, when properly implemented, Android widgets. Theme changes must never rearrange shortcuts. Provide preview-first, voluntary system Home selection and an easy route back to Samsung Home. No dependence on David's Nova Themes layout, package or signing key.
+This is a separate offline Android Home project for Desi's Samsung Galaxy A17 5G. The core goals are familiar multi-page navigation, draggable shortcuts, folders and a fixed dock, a conventional searchable app drawer, optional individual icon styles and preview-first theme selection. Choosing Android Home is voluntary; Samsung Home's existing layout is not modified. Theme selection is stored independently from the layout.
 
-This source checkpoint is an early work in progress, not a tested launcher or a release. The package, UI, widgets, real-device interaction and accessibility are unfinished. `WorkspaceModel.java` is the first pure-Java layout and folder foundation; `WorkspaceModelTest` verifies page boundaries and that drags preserve shortcuts.
+The current source is an early preview, not a finished launcher. App widgets, page reordering, configurable grid, backup/restore, launcher shortcuts, richer appearance options, accessibility and real-phone usability/performance validation remain unfinished. See the current handoff in `/App Ideas/Starlight_Themes_Desi_Familiar_Android_Launcher_Concept.md`.
 
-The user's personal artwork is maintained separately from this public source branch, and original asset licenses must remain attached. Do not edit or resume the paused Velvet Fling project.
+Package: `com.novasky.starlightthemes`, min API 26, target API 35. The source has no internet permission and never changes the system wallpaper. `scripts/build-android.py` creates an unsigned APK with the Android SDK, while `scripts/apply_private_art.py` adds only selected personal artwork; sign locally with the dedicated private key. The private key and personal artwork never belong in this public source branch. `ART_CREDITS.md` records the source and prompts. Run `WorkspaceModelTest` on Java 17 for page/folder/drag invariants; this does not replace Android runtime or Desi's playtesting.
+
+Velvet Fling is paused by David: do not change or build it until he asks.
