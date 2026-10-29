@@ -3,7 +3,7 @@
 const Physics=AfterHoursPhysics;
 let frame=0,phase="menu",stage=1,unlocked=1,score=0,best=0,shots=5;
 let ball=null,balls=[],drag=null,aiming=false,activePointer=null,dragOrigin=null;
-let crates=[],enemies=[],particles=[],popups=[],buttons=[],finishClock=0,shake=0;
+let crates=[],enemies=[],particles=[],bloomWaves=[],popups=[],buttons=[],finishClock=0,shake=0;
 let hapticsOn=true,shotMode="direct",simTime=0,actorReact=0;
 try{hapticsOn=localStorage.getItem('ah_haptics')!=='off'}catch(e){}
 function toggleHaptics(){hapticsOn=!hapticsOn;try{localStorage.setItem('ah_haptics',hapticsOn?'on':'off')}catch(e){}}
@@ -20,7 +20,7 @@ function addEnemy(x,y,kind){enemies.push({x,y,kind,seed:rnd(0,TAU),dead:false,r:
 function start(l){
  // One authored opening arena is the current quality target. The old five
  // prototype stages remain safe on the original branch, not sold as a campaign.
- stage=1;phase="play";score=0;shots=5;balls=[];ball=null;drag=null;aiming=false;activePointer=null;crates=[];enemies=[];particles=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
+ stage=1;phase="play";score=0;shots=5;balls=[];ball=null;drag=null;aiming=false;activePointer=null;crates=[];enemies=[];particles=[];bloomWaves=[];popups=[];finishClock=0;shake=0;simTime=0;actorReact=0;
  // Low cover, an elevated crystal shelf and a more distant target create
  // different choices for precision, an impact burst, and an airborne split.
  addCrate(520,420,24,60,"wood");
@@ -42,6 +42,7 @@ function damageBlock(b,p,damage=1){
 }
 function bloom(p){
  if(p.bloomed || p.mode!=="bloom")return;p.bloomed=true;
+ bloomWaves.push({x:p.x,y:p.y,age:0,duration:.55,radius:86});
  burst(p.x,p.y,"#f75f9e",24);burst(p.x,p.y,"#ffdc92",12);sfx("power");haptic(12);
  // Area damage and movement use distance to the actual object, not the old
  // blanket rule that charmed every enemy merely near a hit block.
@@ -87,6 +88,7 @@ function moveBall(p,dt){
 function sim(dt){
  frame+=dt*60;simTime+=dt;shake*=Math.pow(.004,dt);actorReact=Math.max(0,actorReact-dt*2.4);
  for(const t of enemies)if(t.vanish>0)t.vanish=Math.max(0,t.vanish-dt);
+ if(phase!=="pause")for(let i=bloomWaves.length-1;i>=0;i--){bloomWaves[i].age+=dt;if(bloomWaves[i].age>=bloomWaves[i].duration)bloomWaves.splice(i,1)}
  for(let i=particles.length-1;i>=0;i--){let a=particles[i];a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=180*dt;a.life-=dt;if(a.life<=0)particles.splice(i,1)}
  for(let i=popups.length-1;i>=0;i--){let p=popups[i];p.y-=22*dt;p.life-=dt;if(p.life<=0)popups.splice(i,1)}
  if(phase!=="play")return;moveCrates(dt);

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Nova Phone Lab: Android 16 APK smoke test in disposable GitHub Actions AVD.
-# An emulator approximates display/RAM; it does NOT reproduce BLU chipset, GPU or audio.
+# Android 16 software emulator. It is not David's physical BLU hardware.
 set -Eeuo pipefail
-
 PKG="com.novasky.velvetfling.afterhours.test"
 APK="app/build/outputs/apk/debug/app-debug.apk"
 OUT="$PWD/phone-lab-evidence"
@@ -18,83 +16,79 @@ collect_evidence() {
   adb shell wm density > "$OUT/display-density.txt" 2>&1
   adb exec-out screencap -p > "$OUT/final-screen.png" 2>/dev/null
   if [ "$rc" -ne 0 ]; then
-    echo "Phone Lab smoke test failed (exit $rc). Inspect logcat and screenshots." | tee "$OUT/RESULT.txt"
+    echo "Phone Lab test failed (exit $rc). Inspect screenshots and logcat." | tee "$OUT/RESULT.txt"
   else
-    echo "Phone Lab smoke test passed: install, launch, basic tap/swipe, no observed process exit." | tee "$OUT/RESULT.txt"
+    echo "Phone Lab passed install, launch, selected Bloom and one aim/release swipe. Inspect impact frames separately." | tee "$OUT/RESULT.txt"
   fi
 }
 trap collect_evidence EXIT
 
-echo "Android 16 emulator smoke test of $PKG" | tee "$OUT/README.txt"
+echo "Android 16 emulator test of $PKG" | tee "$OUT/README.txt"
 test -s "$APK"
-
 SDK="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
 echo "Device API: $SDK" | tee -a "$OUT/README.txt"
 test "$SDK" = "36" || { echo "Expected Android API 36"; exit 1; }
-
-# The runner supplies 4096M guest RAM. Set a BLU-like logical display.
 adb shell wm size 720x1600
 adb shell wm density 260
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
+# Suppress the one-time immersive-mode tutorial in this disposable emulator.
+adb shell settings put secure immersive_mode_confirmations confirmed || true
 echo "Resolution: $(adb shell wm size | tr -d '\r')" >> "$OUT/README.txt"
 echo "Density: $(adb shell wm density | tr -d '\r')" >> "$OUT/README.txt"
-echo "Memory profile (AVD): 4096M" >> "$OUT/README.txt"
-echo "Physical BLU touch latency, GPU, speakers and haptics NOT replicated." >> "$OUT/README.txt"
+echo "AVD RAM requested: 4096M; generic virtual CPU/GPU, audio disabled." >> "$OUT/README.txt"
+echo "BLU touch latency, hardware GPU, speakers and haptics are not reproduced." >> "$OUT/README.txt"
 
-# Install fresh on the disposable emulator; do not touch David's phone.
 adb install -r "$APK" | tee "$OUT/install.txt"
 adb shell pm path "$PKG" | tee "$OUT/package-path.txt"
 grep -q 'package:' "$OUT/package-path.txt"
-
 adb logcat -c
 adb shell am force-stop "$PKG"
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 | tee "$OUT/launch.txt"
 sleep 13
 adb exec-out screencap -p > "$OUT/01-launched.png"
 test -s "$OUT/01-launched.png"
-
-if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then
-  echo "App process not running after launch"; exit 1
-fi
-
-# Android can rotate the 720x1600 AVD into 1600x720 landscape for games.
-# Use ACTUAL screenshot coordinates; the first run's portrait y=1150 tap was offscreen.
+if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then echo "App did not launch";exit 1;fi
 read -r SCREEN_W SCREEN_H < <(python3 -c 'import sys,struct; f=open(sys.argv[1],"rb"); f.read(16); print(*struct.unpack(">II",f.read(8)))' "$OUT/01-launched.png")
-echo "Visible screenshot resolution: ${SCREEN_W}x${SCREEN_H}" | tee -a "$OUT/README.txt"
+echo "Visible resolution: ${SCREEN_W}x${SCREEN_H}" | tee -a "$OUT/README.txt"
+test "$SCREEN_W" -gt "$SCREEN_H" || { echo "Expected forced landscape game"; exit 1; }
 
-if [ "$SCREEN_W" -gt "$SCREEN_H" ]; then
-  # Velvet Fling landscape main menu: Play Theater button in right central panel.
-  TAP_X=$(( SCREEN_W * 70 / 100 ))
-  TAP_Y=$(( SCREEN_H * 40 / 100 ))
-  SWIPE_X1=$(( SCREEN_W * 21 / 100 ))
-  SWIPE_Y1=$(( SCREEN_H * 62 / 100 ))
-  SWIPE_X2=$(( SCREEN_W * 32 / 100 ))
-  SWIPE_Y2=$(( SCREEN_H * 52 / 100 ))
-else
-  TAP_X=$(( SCREEN_W / 2 ))
-  TAP_Y=$(( SCREEN_H * 40 / 100 ))
-  SWIPE_X1=$(( SCREEN_W * 20 / 100 ))
-  SWIPE_Y1=$(( SCREEN_H * 68 / 100 ))
-  SWIPE_X2=$(( SCREEN_W * 42 / 100 ))
-  SWIPE_Y2=$(( SCREEN_H * 55 / 100 ))
-fi
+# Game canvas is 960x540, letterboxed in the current screen. Map world units
+# rather than percentages of the whole screen so taps land on actual controls.
+VIEW_W=$((SCREEN_H * 960 / 540))
+LEFT=$(((SCREEN_W - VIEW_W) / 2))
+world_x(){ echo $((LEFT + $1 * SCREEN_H / 540)); }
+world_y(){ echo $(($1 * SCREEN_H / 540)); }
 
-echo "Tapping screen at $TAP_X,$TAP_Y and swiping onscreen" | tee "$OUT/inputs.txt"
-adb shell input tap "$TAP_X" "$TAP_Y"
-sleep 5
-adb exec-out screencap -p > "$OUT/02-after-play-tap.png"
-adb shell input swipe "$SWIPE_X1" "$SWIPE_Y1" "$SWIPE_X2" "$SWIPE_Y2" 600
-sleep 3
-adb exec-out screencap -p > "$OUT/03-after-game-swipe.png"
+# A first touch can still raise the platform's fullscreen notice on a fresh AVD.
+# Its "Got it" location is over the noninteractive title, so these are harmless
+# if the notice was already suppressed.
+DISMISS_X=$((SCREEN_W * 693 / 1000));DISMISS_Y=$((SCREEN_H * 430 / 1000))
+adb shell input tap "$DISMISS_X" "$DISMISS_Y";sleep 1
+adb shell input tap "$DISMISS_X" "$DISMISS_Y";sleep 1
+adb shell input tap "$(world_x 507)" "$(world_y 392)"
+sleep 2
+adb exec-out screencap -p > "$OUT/02-arena.png"
+adb shell input tap "$(world_x 500)" "$(world_y 505)"
+sleep 1
+adb exec-out screencap -p > "$OUT/03-bloom-selected.png"
+# Fail the run if Android's overlay or the title screen intercepted input.
+python3 tools/verify_phone_lab_screen.py "$OUT/03-bloom-selected.png" | tee "$OUT/selection-check.txt"
 
-if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then
-  echo "App process exited during smoke interactions"; exit 1
-fi
+# Pull the launcher back; this trajectory strikes a structure in the opening
+# arena. Capture several frames because the Bloom effect lasts half a second.
+adb shell input swipe "$(world_x 158)" "$(world_y 368)" "$(world_x 90)" "$(world_y 400)" 350
+sleep .68
+adb exec-out screencap -p > "$OUT/04-impact-a.png"
+sleep .10
+adb exec-out screencap -p > "$OUT/05-impact-b.png"
+sleep .10
+adb exec-out screencap -p > "$OUT/06-impact-c.png"
+sleep .80
+adb exec-out screencap -p > "$OUT/07-after-shot.png"
+python3 tools/verify_phone_lab_screen.py --shot "$OUT/03-bloom-selected.png" "$OUT/07-after-shot.png" | tee "$OUT/shot-check.txt"
 
-# Look for an app-scoped fatal exception. Other Android services may log crashes.
+if ! adb shell pidof "$PKG" | grep -Eq '[0-9]'; then echo "App process exited during play";exit 1;fi
 adb logcat -d -v time | grep -A 15 -E 'FATAL EXCEPTION|AndroidRuntime' > "$OUT/fatals-candidate.txt" || true
-if grep -q "Process: $PKG" "$OUT/fatals-candidate.txt"; then
-  echo "Detected app-scoped fatal exception"; exit 1
-fi
-echo "On-screen smoke interactions completed; real touch smoothness/Bloom explosion remain phone-playtest questions."
+if grep -q "Process: $PKG" "$OUT/fatals-candidate.txt"; then echo "App-scoped fatal exception";exit 1;fi
+echo "Selected Bloom and released one shot; inspect impact frames for visual evidence."

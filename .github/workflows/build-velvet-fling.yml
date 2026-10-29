@@ -29,11 +29,12 @@ jobs:
           node tests/game-flow.test.js
           node tests/audio-lifecycle.test.js
           node tests/pause-regression.test.js
+          node tests/bloom-impact.test.js
       - name: Compile Android debug APK
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Velvet-After-Hours-PauseFix-Test
+          name: Velvet-After-Hours-BloomFix-Test
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7

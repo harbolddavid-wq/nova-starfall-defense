@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/nova-phone-lab-android16.yml'
       - 'tools/android16_smoke_test.sh'
+      - 'tools/verify_phone_lab_screen.py'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -52,6 +53,7 @@ jobs:
           node tests/game-flow.test.js
           node tests/audio-lifecycle.test.js
           node tests/pause-regression.test.js
+          node tests/bloom-impact.test.js
 
       - name: Build isolated Velvet Fling test APK
         run: gradle --no-daemon :app:assembleDebug
