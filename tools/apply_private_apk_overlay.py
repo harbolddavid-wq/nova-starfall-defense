@@ -22,8 +22,11 @@ def main():
         if len(names) != len(set(names)) or not allowed.issubset(names):
             raise SystemExit("Input APK has duplicate or missing entries.")
         for item in src.infolist():
-            # Discard the debug signature; the caller signs the finished APK.
-            if item.filename.startswith("META-INF/"):
+            # Discard only signature records, retaining other app metadata.
+            name = item.filename.upper()
+            leaf = name.rsplit("/", 1)[-1]
+            if name.startswith("META-INF/") and (leaf == "MANIFEST.MF" or
+                    leaf.endswith((".SF", ".RSA", ".DSA", ".EC")) or leaf.startswith("SIG-")):
                 continue
             data = replacements[item.filename].read_bytes() if item.filename in replacements else src.read(item.filename)
             info = copy.copy(item)
