@@ -1,0 +1,55 @@
+name: Nova Themes Local Build Toolchain Courier
+on:
+  push:
+    branches: [experiment/nova-themes-pale-horse-20261030]
+    paths: ['.github/workflows/nova-themes-toolchain-courier.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  courier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Install Android SDK build essentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"
+          echo "Using $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+          mkdir -p courier/sdk/platforms/android-35 courier/sdk/build-tools/35.0.0/lib courier/artwork
+          cp "$ANDROID_HOME/platforms/android-35/android.jar" courier/sdk/platforms/android-35/android.jar
+          for tool in aapt2 zipalign; do cp "$ANDROID_HOME/build-tools/35.0.0/$tool" courier/sdk/build-tools/35.0.0/; done
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/d8.jar" courier/sdk/build-tools/35.0.0/lib/
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" courier/sdk/build-tools/35.0.0/lib/
+          chmod +x courier/sdk/build-tools/35.0.0/{aapt2,zipalign}
+      - name: Retrieve independent public-domain gothic art from Wikimedia
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request, urllib.parse, pathlib, hashlib
+          title="File:Gustave Dore - Death on the Pale Horse resized.png"
+          api="https://commons.wikimedia.org/w/api.php?"+urllib.parse.urlencode({"action":"query","titles":title,"prop":"imageinfo","iiprop":"url|size","format":"json"})
+          headers={"User-Agent":"NovaThemesPersonalApp/1.0 (personal non-commercial design; citation: Wikimedia Commons)"}
+          request=urllib.request.Request(api,headers=headers)
+          with urllib.request.urlopen(request,timeout=40) as resp: info=json.load(resp)
+          page=next(iter(info["query"]["pages"].values()))
+          src=page["imageinfo"][0]["url"]
+          out=pathlib.Path("courier/artwork/dore_death_on_pale_horse_original.png")
+          with urllib.request.urlopen(urllib.request.Request(src,headers=headers),timeout=90) as resp: out.write_bytes(resp.read())
+          assert out.stat().st_size>100000
+          metadata={"artist":"Gustave Doré","title":"Death on the Pale Horse","year":1865,"rights":"Public domain / Public Domain Mark","description_page":"https://commons.wikimedia.org/wiki/File:Gustave_Dore_-_Death_on_the_Pale_Horse_resized.png","source_file_url":src,"sha256":hashlib.sha256(out.read_bytes()).hexdigest(),"bytes":out.stat().st_size}
+          pathlib.Path("courier/artwork/ASSET_PROVENANCE.json").write_text(json.dumps(metadata,indent=2))
+          print(metadata)
+          PY
+      - name: Package SDK and public domain artwork for local signing only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Themes-Local-Toolchain-And-Art
+          path: courier/
+          if-no-files-found: error
+          retention-days: 1
