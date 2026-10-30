@@ -91,7 +91,7 @@ def choose_fixture():
         time.sleep(1)
     raise AssertionError("Widget bind/configuration screen did not appear")
 
-def verify_picker():
+def verify_picker(expect_generated):
     menu()
     tap("Add a widget")
     tap("Music & audio")
@@ -102,20 +102,29 @@ def verify_picker():
     wait_for("Choice 1 of 4 · 2 × 2 cells on Home · Music & audio")
     wait_for("A sample music control with a generated preview.")
     wait_for("Preview provided by Starlight QA Widget")
-    with (evidence/"widget-picker-generated.png").open("wb") as f:
+    screenshot="widget-picker-generated.png" if expect_generated else "widget-picker-layout-fallback.png"
+    with (evidence/screenshot).open("wb") as f:
         subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
     raw=subprocess.run(["adb","exec-out","screencap"],stdout=subprocess.PIPE,check=True).stdout
-    colors=(bytes.fromhex("dab5e7ff"),bytes.fromhex("e7b5daff"))
+    colors=(bytes.fromhex("dab5e7ff"),bytes.fromhex("e7b5daff")) if expect_generated else (bytes.fromhex("b5dce7ff"),bytes.fromhex("e7dcb5ff"))
     if max(raw.count(color) for color in colors)<1000:
-        raise AssertionError("Generated preview was not visible; a fallback may have been shown")
-    find_scrolling("No preview supplied by this app")
+        raise AssertionError("The expected generated preview or permission fallback was not visible")
+    find_scrolling("Preview unavailable")
     find_scrolling("A different music control with a layout preview.")
     with (evidence/"widget-picker-layout.png").open("wb") as f:
         subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
     find_scrolling("A wide music control with an image preview.")
     find_scrolling("Add Starlight QA Widget choice 4 of 4")
     tap("Close")
-    print("PASS: grouped audio choices, descriptions, sizes, search and missing-preview fallback")
+    print("PASS: grouped audio choices, descriptions, sizes, search and "+("generated preview with bind access" if expect_generated else "layout fallback without bind access"))
+
+def verify_picker_permissions():
+    verify_picker(False)
+    adb("shell","appwidget","grantbind","--package","com.novasky.starlightthemes","--user","0")
+    try:
+        verify_picker(True)
+    finally:
+        adb("shell","appwidget","revokebind","--package","com.novasky.starlightthemes","--user","0")
 
 def edit_fixture(action):
     menu()
@@ -183,8 +192,8 @@ try:
     wait_for("Choose your favorite apps")
     time.sleep(2)
     if "--picker-only" in sys.argv:
-        verify_picker()
-        print("PASS: generated preview rendered, and layout/image/missing fallbacks are available")
+        verify_picker_permissions()
+        print("PASS: generated previews with access and provider fallbacks without access")
         sys.exit(0)
     initial=hierarchy()
     existing={node.attrib.get("content-desc","") for node in initial.iter() if node.attrib.get("content-desc")}
@@ -213,7 +222,7 @@ try:
     adb("shell","input","keyevent","4")
     print("PASS: create and open the library-style folder with both apps")
 
-    verify_picker()
+    verify_picker_permissions()
     choose_fixture()
     tap("Finish setup")
     wait_for("Starlight QA widget ready")

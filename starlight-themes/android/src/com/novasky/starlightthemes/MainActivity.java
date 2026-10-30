@@ -797,7 +797,7 @@ public final class MainActivity extends Activity {
         TextView label=text(option.label,16);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);add(card,label,0);
         int[] size=widgetSize(option.info);String number=option.sameLabelCount>1?"Choice "+option.ordinal+" of "+option.sameLabelCount+" · ":"";
         TextView sizeText=text(number+(size[0]>0?size[0]+" × "+size[1]+" cells on Home":"Size depends on Home grid")+(option.audio?" · Music & audio":""),13);sizeText.setTextColor(0xffead9e8);add(card,sizeText,3);
-        String description=option.description.isEmpty() || option.description.equalsIgnoreCase(option.label)?"No description provided by this app.":option.description;
+        String description=option.description.isEmpty() || option.description.equalsIgnoreCase(option.label)?"No description available from this app.":option.description;
         TextView detail=text(description,13);detail.setTextColor(0xffe4d8e5);add(card,detail,6);
         add(card,widgetPreview(option),8);
         String addLabel=option.label+(option.sameLabelCount>1?" choice "+option.ordinal+" of "+option.sameLabelCount:"");
@@ -821,7 +821,7 @@ public final class MainActivity extends Activity {
             Drawable drawable=info.loadPreviewImage(this,0);if(drawable!=null){ImageView image=new ImageView(this);image.setImageDrawable(drawable);image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setContentDescription("App-supplied preview image");preview.addView(image,new FrameLayout.LayoutParams(-1,-1));loaded=true;}
         }catch(Exception ignored){}
         if(loaded){preview.setContentDescription("Preview provided by "+option.group.name);preview.setFocusable(true);View shield=new View(this);shield.setOnTouchListener((v,event)->true);shield.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);preview.addView(shield,new FrameLayout.LayoutParams(-1,-1));}
-        else{TextView empty=text("No preview supplied by this app",13);empty.setTextColor(0xffd8cadc);empty.setGravity(Gravity.CENTER);preview.addView(empty,new FrameLayout.LayoutParams(-1,-1));}
+        else{TextView empty=text("Preview unavailable",13);empty.setTextColor(0xffd8cadc);empty.setGravity(Gravity.CENTER);preview.addView(empty,new FrameLayout.LayoutParams(-1,-1));}
         return preview;
     }
     private String widgetLabel(AppWidgetProviderInfo info) {
