@@ -15,6 +15,12 @@ expected={'assets/wallpapers/moonflower.png','assets/wallpapers/conservatory.png
 keys=['notes','dream','atlas','video','reader','camera','music','files','settings','messages','calendar','browser','phone','gallery','weather','clock','search','apps']
 expected.update('assets/icons/'+palette+'_'+key+'.png' for palette in ('midnight','petal') for key in keys)
 expected.update('assets/moth/moth_%02d.png' % i for i in range(16))
+# Three private pilot themes: no personal artwork is checked into the public repository.
+for theme in ('lanternwood','astralclock','velvetmasque'):
+    expected.add('assets/wallpapers/'+theme+'.png')
+    expected.update('assets/icons/'+theme+'_'+key+'.png' for key in keys)
+    expected.add('assets/folders/'+theme+'.png')
+    expected.add('assets/widgets/'+theme+'.png')
 if set(art)!=expected: raise SystemExit('Private art files differ from the expected set')
 with zipfile.ZipFile(a.apk) as source, zipfile.ZipFile(a.output,'w') as target:
     for old in source.infolist():
