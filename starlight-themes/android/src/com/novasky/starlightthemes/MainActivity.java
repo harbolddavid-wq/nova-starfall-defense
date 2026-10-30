@@ -1071,7 +1071,7 @@ public final class MainActivity extends Activity {
             if(b!=null){ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setImageBitmap(b);card.addView(image,new FrameLayout.LayoutParams(-1,-1));}
             View shade=new View(this);shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0x00000000,0xdd141323}));card.addView(shade,new FrameLayout.LayoutParams(-1,-1));
             TextView name=text(t.name+(themeId.equals(t.id)?"  ·  Current":""),22);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);name.setPadding(dp(18),0,dp(18),dp(17));name.setShadowLayer(dp(5),0,dp(1),Color.BLACK);card.addView(name,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
-            card.setContentDescription("Preview "+t.name);card.setOnClickListener(v->preview(t));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(195));lp.topMargin=dp(14);list.addView(card,lp);
+            card.setContentDescription("Preview "+t.name+(themeId.equals(t.id)?" current theme":""));card.setOnClickListener(v->preview(t));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(195));lp.topMargin=dp(14);list.addView(card,lp);
         }
         scroll.addView(list);content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
     }
