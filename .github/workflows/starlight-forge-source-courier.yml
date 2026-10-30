@@ -1,0 +1,24 @@
+name: Starlight Theme Forge source courier
+permissions:
+  contents: read
+on:
+  push:
+    branches: ['experiment/starlight-theme-forge-pilot-20261030']
+    paths: ['.github/workflows/starlight-forge-source-courier.yml']
+  workflow_dispatch:
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive public launcher source only
+        run: |
+          test -f starlight-themes/android/src/com/novasky/starlightthemes/MainActivity.java
+          test ! -d starlight-themes/private
+          zip -q -r starlight-theme-forge-baseline.zip starlight-themes .github/workflows/starlight-themes.yml -x '*/build/*' '*/output/*'
+          unzip -t starlight-theme-forge-baseline.zip | tail -n 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: starlight-theme-forge-public-source
+          path: starlight-theme-forge-baseline.zip
+          retention-days: 3
