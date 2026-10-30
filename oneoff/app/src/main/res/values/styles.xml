@@ -1,0 +1,7 @@
+<resources>
+    <style name="ArcadeTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#050919</item>
+        <item name="android:colorAccent">#7cece9</item>
+    </style>
+</resources>
