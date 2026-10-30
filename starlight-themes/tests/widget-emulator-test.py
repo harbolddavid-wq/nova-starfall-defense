@@ -181,9 +181,21 @@ try:
     adb("logcat","-c")
     adb("install","-r",build/"fixture.apk")
     adb("install","-r",build/"launcher.apk")
-    adb("shell","am","start","-n","com.novasky.widgetfixture/.ConfigActivity")
-    wait_for("Starlight QA widget configuration")
-    if "published=true" not in adb("logcat","-d","-s","StarlightFixturePreview:I"):
+    end=time.monotonic()+45
+    while time.monotonic()<end:
+        if "com.novasky.widgetfixture.FixtureWidget" in adb("shell","dumpsys","appwidget"): break
+        time.sleep(2)
+    else: raise AssertionError("Synthetic provider was not registered after install")
+    for attempt in range(3):
+        adb("shell","am","start","-W","-n","com.novasky.widgetfixture/.ConfigActivity")
+        try:
+            wait_for("Starlight QA widget configuration",timeout=15)
+            break
+        except AssertionError:
+            if attempt==2: raise
+    startup_logs=adb("logcat","-d","-s","AndroidRuntime:E","StarlightFixturePreview:I")
+    (evidence/"fixture-startup-logcat.txt").write_text(startup_logs)
+    if "published=true" not in startup_logs:
         raise AssertionError("Synthetic provider could not publish its generated preview")
     adb("shell","input","keyevent","4")
     (evidence/"providers.txt").write_text(adb("shell","dumpsys","appwidget"))
