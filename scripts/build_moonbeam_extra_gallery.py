@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.request import urlopen,Request
 from PIL import Image,ImageOps,ImageDraw,ImageChops
 import cairosvg,io,json,hashlib
+from collections import deque
 ROOT=Path(__file__).resolve().parent.parent
 SRC=ROOT/"art_sources"/"public_domain_coloring"
 OUT=ROOT/"coloringbook"/"src"/"main"/"assets"/"pages"
@@ -11,8 +12,21 @@ SRC.mkdir(parents=True,exist_ok=True);OUT.mkdir(parents=True,exist_ok=True)
 PIN="c5f2dcae9a583dcd841122a1d32bc7b40f5746c0"
 BASE=f"https://raw.githubusercontent.com/pavelkukov/coloring-pages/{PIN}/"
 ITEMS=[
-(53,"Knight of the Moon","knight_on_horse.svg","Nata Silina","http://www.supercoloring.com/coloring-pages/cartoon-knight-on-horse"),
-(54,"Fairy of Briars","fairy_tattoo.svg","Bianca Vola","http://www.supercoloring.com/coloring-pages/fairy-tattoo?tag=58516")]
+(53,"The Book of Kells","celtic_ornament_book_of_kells.svg","Artsashina","http://www.supercoloring.com/coloring-pages/celtic-ornament-design-from-book-of-kells?tag=58516"),
+(54,"The Enchanted Chalice","zentangle_fruits_and_chalice.svg","Zentangle Food","http://www.supercoloring.com/coloring-pages/zentangle-fruits-and-chalice")]
+def closed_regions(im):
+    small=im.resize((360,450),Image.Resampling.LANCZOS)
+    alpha=small.getchannel("A").tobytes();seen=bytearray(len(alpha));count=0
+    for start,a in enumerate(alpha):
+        if a>=140 or seen[start]:continue
+        seen[start]=1;queue=deque([start]);area=0;edge=False
+        while queue:
+            k=queue.popleft();area+=1;x=k%360;y=k//360
+            if x in (0,359) or y in (0,449):edge=True
+            for n in (k-1 if x else -1,k+1 if x<359 else -1,k-360 if y else -1,k+360 if y<449 else -1):
+                if n>=0 and not seen[n] and alpha[n]<140:seen[n]=1;queue.append(n)
+        if not edge and area>=16:count+=1
+    return count
 records=[]
 for idx,title,filename,creator,upstream in ITEMS:
     path=SRC/filename;url=BASE+"images/"+filename
@@ -32,12 +46,14 @@ for idx,title,filename,creator,upstream in ITEMS:
     d=ImageDraw.Draw(page);d.rounded_rectangle((19,20,700,880),radius=22,outline=(45,37,54,255),width=3)
     d.rounded_rectangle((29,30,690,870),radius=18,outline=(45,37,54,255),width=1)
     output=OUT/f"page_{idx}.png";page.save(output,optimize=True)
+    regions=closed_regions(page)
+    if regions<15:raise RuntimeError(f"Insufficient closed coloring regions: {title}: {regions}")
     records.append(dict(index=idx,title=title,creator=creator,upstream_source=upstream,
         source_url=url,source_page=f"https://github.com/pavelkukov/coloring-pages/blob/{PIN}/images/{filename}",
         license="CC BY-SA 4.0 (collection adaptations; upstream identified in Acknowledgments.md)",
         license_url=f"https://github.com/pavelkukov/coloring-pages/blob/{PIN}/LICENSE",
         original_file=str(path.relative_to(ROOT)),source_sha256=hashlib.sha256(raw).hexdigest(),
-        derived_file=str(output.relative_to(ROOT)),derived_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),
+        derived_file=str(output.relative_to(ROOT)),derived_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),closed_regions_half_resolution=regions,
         adaptation="SVG rendered as transparent line art at 720x900, subtle double frame"))
 manifest={"version":"0.1.3","collection":"Pavel Kukov coloring-pages",
     "license":"CC BY-SA 4.0 for adapted collection works; preserve LICENSE and Acknowledgments.md",
