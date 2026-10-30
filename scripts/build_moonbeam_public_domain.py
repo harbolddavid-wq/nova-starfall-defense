@@ -17,13 +17,13 @@ ITEMS=[
 (41,"Dragon of the Hollow","creazilla_dragon.svg","Public domain / SuperColoring"),
 (42,"Hand of the Oracle","hasma.svg","Public domain / SuperColoring"),
 (43,"The Watchful Owl","owl.svg","Public domain / publicdomainpictures.net"),
-(44,"The Elephant Mandala","elephant_mandala.svg","Public domain / SuperColoring"),
+(44,"The Mystic Lotus","elephant_mandala.svg","Public domain / SuperColoring"),
 (45,"Night Butterfly Tattoo","butterfly_tattoo.svg","Public domain / SuperColoring"),
 (46,"The Locked Heart","locked_heart.svg","Public domain / SuperColoring"),
 (47,"Moon Poppies","poppies_coloring_page.svg","Public domain / SuperColoring"),
 (48,"The Octopus Carnival","octo.svg","Public domain / MomJunction"),
-(49,"The Abyss Stares Back","shark_jaws.svg","Public domain / publicdomainvectors.org"),
-(50,"The Little Midnight Pony","little_pony.svg","Public domain / Flickr source"),
+(49,"The Moonstruck Horse","horse_caricature.svg","Public domain / publicdomainvectors.org"),
+(50,"The Unimpressed Donkey","donkey.svg","Public domain / publicdomainvectors.org"),
 (51,"Deepwater Dream","fishing_fish.svg","Public domain / publicdomainvectors.org")]
 for name in ("LICENSE","Acknowledgments.md"):
     dest=SRC/name
