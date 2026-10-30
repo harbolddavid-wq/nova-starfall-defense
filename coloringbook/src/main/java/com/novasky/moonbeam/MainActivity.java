@@ -95,10 +95,11 @@ public class MainActivity extends Activity {
         tip=text("Draw on the page • choose a tool below",12,false);tip.setTextColor(0xff756b7c);tip.setGravity(Gravity.CENTER);root.addView(tip,new LinearLayout.LayoutParams(-1,dp(28)));
         paper.setInk(chosenColor);paper.setSize(chosenSize);paper.setPage(0);loadPage();refreshTip();
     }
-    private Bitmap readAsset(String name){try(InputStream in=getAssets().open(name)){return BitmapFactory.decodeStream(in);}catch(Exception e){return null;}}    private int dp(float n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
+    private Bitmap readAsset(String name){try(InputStream in=getAssets().open(name)){return BitmapFactory.decodeStream(in);}catch(Exception e){return null;}}
+    private int dp(float n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
     private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.HORIZONTAL);return l;}
     private TextView text(String t,int sp,boolean bold){TextView v=new TextView(this);v.setText(t);v.setTextSize(sp);v.setTextColor(INK);v.setGravity(Gravity.CENTER_VERTICAL);if(bold)v.setTypeface(null,1);return v;}
-    private Button button(String s,View.OnClickListener listener){Button b=new Button(this);b.setText(s);b.setTextAllCaps(false);b.setTextSize(12);b.setPadding(dp(3),0,dp(3),0);b.setOnClickListener(listener);return b;}
+    private Button button(String s,View.OnClickListener listener){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setTextSize(12);b.setPadding(dp(3),0,dp(3),0);b.setOnClickListener(listener);return b;}
     private void rebuildTools(){toolStrip.removeAllViews();addTool("✎ Brush",Tool.BRUSH);addTool("⌫ Erase",Tool.ERASER);addTool("▧ Fill",Tool.FILL);addTool("★ Stamps",Tool.STAMP);addTool("✦ Sparkle",Tool.SPARKLE);}
     private void addTool(String name,Tool tool){Button b=button(name,v->{activeTool=tool;paper.setTool(tool);rebuildTools();if(tool==Tool.STAMP)selectStamp();else if(tool==Tool.SPARKLE)selectSparkle();refreshTip();});b.setTextColor(activeTool==tool?Color.WHITE:INK);b.setBackgroundTintList(ColorStateList.valueOf(activeTool==tool?PURPLE:0xffe6dbe8));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(94),dp(46));lp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(b,lp);}
     private void choosePage(){new AlertDialog.Builder(this).setTitle("Choose a coloring page").setSingleChoiceItems(PAGES,pageIndex,(d,which)->{if(which!=pageIndex){savePage();pageIndex=which;paper.setPage(which);loadPage();pageTitle.setText(PAGES[which]);refreshTip();}d.dismiss();}).setNegativeButton("Cancel",null).show();}
@@ -128,7 +129,8 @@ public class MainActivity extends Activity {
         void setTool(Tool t){tool=t;}
         void setStamp(int i){stamp=i;}
         void setSparkle(int i){sparkle=i;}
-        void setPage(int page){paintLayer.eraseColor(Color.TRANSPARENT);lineLayer.eraseColor(Color.TRANSPARENT);buildPage(page);clearHistory();invalidate();}        void restorePaint(Bitmap b){if(b.getWidth()!=W||b.getHeight()!=H)return;paintLayer.eraseColor(Color.TRANSPARENT);paintCanvas.drawBitmap(b,0,0,null);invalidate();}
+        void setPage(int page){paintLayer.eraseColor(Color.TRANSPARENT);lineLayer.eraseColor(Color.TRANSPARENT);buildPage(page);clearHistory();invalidate();}
+        void restorePaint(Bitmap b){if(b.getWidth()!=W||b.getHeight()!=H)return;paintLayer.eraseColor(Color.TRANSPARENT);paintCanvas.drawBitmap(b,0,0,null);invalidate();}
         void clearHistory(){for(Bitmap b:undo)b.recycle();for(Bitmap b:redo)b.recycle();undo.clear();redo.clear();}
         void snapshot(ArrayDeque<Bitmap> dst){dst.addLast(paintLayer.copy(Bitmap.Config.ARGB_8888,false));while(dst.size()>12)dst.removeFirst().recycle();}
         void begin(){snapshot(undo);for(Bitmap b:redo)b.recycle();redo.clear();}
@@ -167,7 +169,8 @@ public class MainActivity extends Activity {
           c.drawRect(195,402,525,800,p);c.drawRect(113,331,224,800,p);c.drawRect(496,331,607,800,p);
           path(c,p,105,331,168,225,231,331);path(c,p,489,331,552,225,615,331);
           for(int i=0;i<5;i++){float xx=206+i*62;c.drawRect(xx,365,xx+34,406,p);}
-          for(int i=0;i<3;i++){float xx=133+i*29;c.drawRect(xx,302,xx+20,330,p);c.drawRect(526+i*22,302,542+i*22,330,p);}          c.drawRoundRect(new RectF(299,591,421,800),55,55,p);c.drawCircle(398,701,7,p);
+          for(int i=0;i<3;i++){float xx=133+i*29;c.drawRect(xx,302,xx+20,330,p);c.drawRect(526+i*22,302,542+i*22,330,p);}
+          c.drawRoundRect(new RectF(299,591,421,800),55,55,p);c.drawCircle(398,701,7,p);
           for(int x:new int[]{251,466})for(int y:new int[]{472,579}){c.drawRoundRect(new RectF(x-23,y-32,x+23,y+32),22,22,p);c.drawLine(x-23,y,x+23,y,p);}
           c.drawLine(76,800,644,800,p);star(c,p,90,137,33);star(c,p,312,146,26);break;
         case 3: // Magic garden
