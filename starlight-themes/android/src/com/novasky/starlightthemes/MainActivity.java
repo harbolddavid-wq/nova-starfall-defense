@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.novasky.starlightthemes.ThemeCatalog.ThemeSpec;
 
 /** A separate, preview-first Home with an early native widget host. */
 public final class MainActivity extends Activity {
@@ -115,17 +116,10 @@ public final class MainActivity extends Activity {
             this.key = component.flattenToString();
         }
     }
-    private static final class ThemeSpec {
-        final String id, name, subtitle; final int accent, tint;
-        ThemeSpec(String id, String name, String subtitle, int accent, int tint) {
-            this.id=id; this.name=name; this.subtitle=subtitle; this.accent=accent; this.tint=tint;
-        }
-    }
-    private final ThemeSpec[] themes = {
-        new ThemeSpec("moonflower", "Moonflower", "Moths, moonlight and a little magic", 0xffe8c8ed, 0xff29213f),
-        new ThemeSpec("conservatory", "Starlit Conservatory", "A quiet garden under the stars", 0xffc5dded, 0xff1e3446)
-    };
-    private ThemeSpec theme(String id) { for (ThemeSpec t : themes) if (t.id.equals(id)) return t; return themes[0]; }
+    // Stable IDs and a single palette model preserve saved layouts and theme preferences.
+    private final ThemeSpec[] themes = ThemeCatalog.ALL;
+    private ThemeSpec theme(String id) { return ThemeCatalog.find(id); }
+    private int translucent(int color,int alpha) { return (alpha<<24) | (color & 0x00ffffff); }
     private int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
 
@@ -262,7 +256,7 @@ public final class MainActivity extends Activity {
     }
     private TextView button(String label,Runnable action) {
         TextView v=text(label,14); v.setGravity(Gravity.CENTER); v.setMinHeight(dp(48)); v.setPadding(dp(14),0,dp(14),0);
-        v.setBackground(rounded(0xbb201d30,0x668c7ca4,18)); v.setClickable(true); v.setFocusable(true); v.setOnClickListener(w->action.run()); return v;
+        ThemeSpec t=theme(themeId);v.setBackground(rounded(translucent(t.tint,214),translucent(t.accent,136),18)); v.setClickable(true); v.setFocusable(true); v.setOnClickListener(w->action.run()); return v;
     }
     private void add(LinearLayout parent,View child,int top) { LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.topMargin=dp(top); parent.addView(child,lp); }
     private Bitmap wall(String id) {
@@ -282,7 +276,7 @@ public final class MainActivity extends Activity {
     }
     private Bitmap illustratedIcon(String choice,String selectedTheme) {
         if(choice.equals("original") || choice.equals("frame"))return null;
-        String palette=selectedTheme.equals("moonflower")?"petal":"midnight";
+        String palette=theme(selectedTheme).iconPalette;
         String cacheKey=palette+"_"+choice; Bitmap cached=iconArt.get(cacheKey);if(cached!=null)return cached;
         try(InputStream in=getAssets().open("icons/"+palette+"_"+choice+".png")){
             BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;Bitmap image=BitmapFactory.decodeStream(in,null,opts);if(image!=null)iconArt.put(cacheKey,image);return image;
@@ -295,11 +289,11 @@ public final class MainActivity extends Activity {
             ImageView image=new ImageView(this);image.setImageBitmap(art);image.setScaleType(ImageView.ScaleType.FIT_CENTER);
             frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
         } else if(!choice.equals("original")) {
-            int[] colors=selectedTheme.equals("moonflower")?new int[]{0xfff2deed,0xffd5c0df}:new int[]{0xff382453,0xff241a40};
-            GradientDrawable background=new GradientDrawable(GradientDrawable.Orientation.TL_BR,colors);
-            background.setCornerRadius(size*.24f);background.setStroke(dp(1),selectedTheme.equals("moonflower")?0xffaa8eba:0xff8b78a5);
+            ThemeSpec spec=theme(selectedTheme);
+            GradientDrawable background=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{spec.iconTop,spec.iconBottom});
+            background.setCornerRadius(size*.24f);background.setStroke(dp(1),spec.iconStroke);
             frame.setBackground(background);
-            TextView star=text("✦",8);star.setTextColor(selectedTheme.equals("moonflower")?0xffa96287:0xffe8c8ed);
+            TextView star=text("✦",8);star.setTextColor(spec.glyph);
             FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);sp.setMargins(0,dp(1),dp(3),0);frame.addView(star,sp);
         }
         if(app!=null)try{
@@ -329,7 +323,7 @@ public final class MainActivity extends Activity {
             } catch (Exception ignored) { }
         }
         View shade=new View(this);
-        shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{dim?0xcc151425:0x44131120,dim?0xd9191729:0x22131120,dim?0xee171526:0x99100e1b}));
+        shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{translucent(t.tint,dim?202:65),translucent(t.tint,dim?216:42),translucent(t.tint,dim?232:155)}));
         root.addView(shade,new FrameLayout.LayoutParams(-1,-1));
         content=col(); root.addView(content,new FrameLayout.LayoutParams(-1,-1));
         root.setOnApplyWindowInsetsListener((v,insets)->{
@@ -357,7 +351,7 @@ public final class MainActivity extends Activity {
         TextView date=text(android.text.format.DateFormat.getDateFormat(this).format(new java.util.Date()),14); date.setShadowLayer(dp(4),0,dp(1),Color.BLACK); top.addView(date,new LinearLayout.LayoutParams(0,-2,1));
         top.addView(button("Themes",this::showThemes));
         TextView menu=button("⋯",this::homeMenu); menu.setContentDescription("Home options"); LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(52),dp(48)); mp.leftMargin=dp(6); top.addView(menu,mp); add(content,top,0);
-        TextView status=text(isHome()?"":"Preview · Choose Home when you're ready",12); status.setTextColor(0xfff1dff6); status.setShadowLayer(dp(3),0,dp(1),Color.BLACK); status.setMinHeight(dp(30)); status.setGravity(Gravity.CENTER_VERTICAL); status.setOnClickListener(v->homeChoice()); add(content,status,0);
+        TextView status=text(isHome()?"":"Preview · Choose Home when you're ready",12); status.setTextColor(t.accent); status.setShadowLayer(dp(3),0,dp(1),Color.BLACK); status.setMinHeight(dp(30)); status.setGravity(Gravity.CENTER_VERTICAL); status.setOnClickListener(v->homeChoice()); add(content,status,0);
         boolean emptyPage=true;for(WorkspaceModel.Item entry:model.pages.get(currentPage))if(entry!=null){emptyPage=false;break;}
         if(emptyPage)add(content,button("Choose your favorite apps",this::chooseFavorites),4);
         dropRemove=button("Remove shortcut",()->{}); dropRemove.setVisibility(View.GONE); dropRemove.setBackground(rounded(0xee492e43,0xffedbad5,18));
@@ -389,8 +383,8 @@ public final class MainActivity extends Activity {
         content.addView(workspace,new LinearLayout.LayoutParams(-1,0,1));
         workspace.post(()->{ if(workspace==null)return; int actual=workspace.getWidth(); if(actual>0){for(int i=0;i<strip.getChildCount();i++){View v=strip.getChildAt(i); ViewGroup.LayoutParams lp=v.getLayoutParams();lp.width=actual;v.setLayoutParams(lp);}workspace.post(()->{if(workspace!=null)workspace.scrollTo(currentPage*workspace.getWidth(),0);});} });
         pageDots=text("",14); pageDots.setGravity(Gravity.CENTER); pageDots.setShadowLayer(dp(4),0,0,Color.BLACK); updateDots(); add(content,pageDots,2);
-        TextView drawer=button("⌃   All apps",this::showDrawer); drawer.setBackground(rounded(0x99221d32,0x669e8cae,18)); add(content,drawer,4);
-        LinearLayout dock=row(); dock.setGravity(Gravity.CENTER); dock.setBackground(rounded(0x99302a40,0x77d8c4dc,24));
+        TextView drawer=button("⌃   All apps",this::showDrawer); drawer.setBackground(rounded(translucent(t.tint,180),translucent(t.accent,160),18)); add(content,drawer,4);
+        LinearLayout dock=row(); dock.setGravity(Gravity.CENTER); dock.setBackground(rounded(translucent(t.tint,195),translucent(t.accent,175),24));
         for(int i=0;i<WorkspaceModel.DOCK;i++){ WorkspaceModel.Pos pos=new WorkspaceModel.Pos(-1,i); View v=itemView(model.dock[i],pos,true); dock.addView(v,new LinearLayout.LayoutParams(0,dp(78),1)); }
         dock.setOnDragListener((v,e)->{
             if(e.getAction()==DragEvent.ACTION_DRAG_STARTED) return e.getLocalState() instanceof WorkspaceModel.Pos;
@@ -525,14 +519,14 @@ public final class MainActivity extends Activity {
     private View itemView(WorkspaceModel.Item item, WorkspaceModel.Pos pos, boolean dock) {
         LinearLayout tile=col(); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(2),dp(2),dp(2),dp(2));
         if(item==null){tile.setContentDescription("Empty position");return tile;}
-        FrameLayout iconFrame=new FrameLayout(this); iconFrame.setBackground(rounded(0xcc302b48,0xbbddc9e6,20));
+        FrameLayout iconFrame=new FrameLayout(this); iconFrame.setBackground(rounded(translucent(theme(themeId).tint,215),translucent(theme(themeId).accent,170),20));
         int iconSize=dp(dock?51:56);
         if(item.isFolder()) {
             iconFrame.setBackground(libraryBackground());
             LinearLayout preview=col(); preview.setPadding(dp(6),dp(5),dp(6),dp(3));
             for(int r=0;r<2;r++){
                 LinearLayout line=row();for(int c=0;c<2;c++){int n=r*2+c;App a=n<item.children.size()?byKey.get(item.children.get(n)):null;View icon=n<item.children.size()?appIcon(a,themeId,dp(17),false):new View(this);line.addView(icon,new LinearLayout.LayoutParams(0,dp(17),1));}
-                preview.addView(line);View shelf=new View(this);shelf.setBackgroundColor(themeId.equals("moonflower")?0xffcb9e9d:0xffbba0aa);preview.addView(shelf,new LinearLayout.LayoutParams(-1,dp(2)));
+                preview.addView(line);View shelf=new View(this);shelf.setBackgroundColor(theme(themeId).shelf);preview.addView(shelf,new LinearLayout.LayoutParams(-1,dp(2)));
             }
             iconFrame.addView(preview,new FrameLayout.LayoutParams(-1,-1));
         } else {
@@ -550,21 +544,21 @@ public final class MainActivity extends Activity {
     private void openFolder(WorkspaceModel.Pos pos) {
         WorkspaceModel.Item folder=model.get(pos); if(folder==null || !folder.isFolder())return;
         LinearLayout shelves=col();shelves.setPadding(dp(10),dp(12),dp(10),dp(12));shelves.setBackground(libraryBackground());
-        TextView hint=text("Hold a book for more options",12);hint.setTextColor(0xffead8e6);add(shelves,hint,0);
+        TextView hint=text("Hold a book for more options",12);hint.setTextColor(theme(themeId).accent);add(shelves,hint,0);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(shelves);
         LinearLayout titleRow=row();titleRow.setPadding(dp(22),dp(18),dp(22),dp(12));
         TextView heading=text(folder.title,21);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);titleRow.addView(heading,new LinearLayout.LayoutParams(0,-2,1));
-        TextView sparkle=text("✦",18);sparkle.setTextColor(0xffeac5d8);titleRow.addView(sparkle);
+        TextView sparkle=text("✦",18);sparkle.setTextColor(theme(themeId).accent);titleRow.addView(sparkle);
         AlertDialog dialog=new AlertDialog.Builder(this).setCustomTitle(titleRow).setView(scroll).setNegativeButton("Close",null).setNeutralButton("Rename",(d,w)->renameFolder(pos)).create();
-        int[] bookColors=themeId.equals("moonflower")?new int[]{0xff79526a,0xff745773,0xff705666,0xff805768}:new int[]{0xff49415f,0xff514362,0xff3d4b62,0xff58455b};
+        int[] bookColors=theme(themeId).bookColors;
         for(int start=0;start<folder.children.size();start+=4){
             LinearLayout row=row();row.setGravity(Gravity.BOTTOM);
             for(int offset=0;offset<4;offset++){
                 int index=start+offset;LinearLayout shelfSlot=col();shelfSlot.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
                 if(index<folder.children.size()){
                     String key=folder.children.get(index);App app=byKey.get(key);
-                    FrameLayout book=new FrameLayout(this);book.setBackground(rounded(bookColors[index%bookColors.length],0xffd7b8c4,6));
-                    View spine=new View(this);spine.setBackgroundColor(0x66f0cdd2);FrameLayout.LayoutParams stripe=new FrameLayout.LayoutParams(dp(3),-1,Gravity.START);stripe.leftMargin=dp(4);book.addView(spine,stripe);
+                    FrameLayout book=new FrameLayout(this);book.setBackground(rounded(bookColors[index%bookColors.length],theme(themeId).accent,6));
+                    View spine=new View(this);spine.setBackgroundColor(translucent(theme(themeId).accent,95));FrameLayout.LayoutParams stripe=new FrameLayout.LayoutParams(dp(3),-1,Gravity.START);stripe.leftMargin=dp(4);book.addView(spine,stripe);
                     FrameLayout.LayoutParams image=new FrameLayout.LayoutParams(dp(43),dp(43),Gravity.CENTER);image.leftMargin=dp(3);book.addView(appIcon(app,themeId,dp(43),true),image);
                     shelfSlot.addView(book,new LinearLayout.LayoutParams(dp(58),dp(63)));
                     String label=app==null?"Unavailable":app.label;TextView name=text(label,10);name.setGravity(Gravity.CENTER);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);shelfSlot.addView(name,new LinearLayout.LayoutParams(-1,dp(30)));
@@ -575,17 +569,17 @@ public final class MainActivity extends Activity {
                 row.addView(shelfSlot,new LinearLayout.LayoutParams(0,dp(97),1));
             }
             add(shelves,row,8);
-            View shelf=new View(this);shelf.setBackground(rounded(themeId.equals("moonflower")?0xffc59591:0xffa78e9e,0xffdfc1be,3));shelves.addView(shelf,new LinearLayout.LayoutParams(-1,dp(5)));
+            View shelf=new View(this);shelf.setBackground(rounded(theme(themeId).shelf,theme(themeId).accent,3));shelves.addView(shelf,new LinearLayout.LayoutParams(-1,dp(5)));
         }
         dialog.show();
-        if(dialog.getWindow()!=null)dialog.getWindow().setBackgroundDrawable(rounded(0xff292337,0xffb798ac,20));
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xffe8cce5);
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(0xffe8cce5);
+        if(dialog.getWindow()!=null)dialog.getWindow().setBackgroundDrawable(rounded(theme(themeId).woodBottom,theme(themeId).accent,20));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(theme(themeId).accent);
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(theme(themeId).accent);
     }
     private GradientDrawable libraryBackground() {
-        int[] colors=themeId.equals("moonflower")?new int[]{0xff5d354c,0xff322339}:new int[]{0xff393047,0xff211c32};
-        GradientDrawable wood=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,colors);
-        wood.setCornerRadius(dp(15));wood.setStroke(dp(2),themeId.equals("moonflower")?0xffc397a1:0xffad97a8);return wood;
+        ThemeSpec t=theme(themeId);
+        GradientDrawable wood=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{t.woodTop,t.woodBottom});
+        wood.setCornerRadius(dp(15));wood.setStroke(dp(2),t.accent);return wood;
     }
     private void renameFolder(WorkspaceModel.Pos pos) {
         WorkspaceModel.Item f=model.get(pos);if(f==null || !f.isFolder())return;
@@ -681,6 +675,9 @@ public final class MainActivity extends Activity {
     }
     private View widgetView(WorkspaceModel.Item item,WorkspaceModel.Pos pos) {
         FrameLayout frame=new WidgetFrame(this,pos);
+        // Launcher-owned widget border only; provider-owned widget content remains untouched.
+        ThemeSpec chrome=theme(themeId);
+        frame.setBackground(rounded(translucent(chrome.tint,110),translucent(chrome.accent,160),14));
         try {
             AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);
             if(info==null)throw new IllegalStateException("Provider missing");
@@ -776,8 +773,8 @@ public final class MainActivity extends Activity {
         audio.setOnClickListener(v->{audioOnly[0]=true;render.run();scroll.scrollTo(0,0);});
         query.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();scroll.scrollTo(0,0);}public void afterTextChanged(Editable e){}});
         render.run();dialog.show();
-        if(dialog.getWindow()!=null){dialog.getWindow().setBackgroundDrawable(rounded(0xff292337,0xffb798ac,20));dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);}
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xffe8cce5);
+        if(dialog.getWindow()!=null){dialog.getWindow().setBackgroundDrawable(rounded(theme(themeId).woodBottom,theme(themeId).accent,20));dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);}
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(theme(themeId).accent);
     }
     private final class WidgetGroup {
         final String packageName,name;final boolean audio;final ArrayList<WidgetOption> options=new ArrayList<>();
@@ -1005,7 +1002,7 @@ public final class MainActivity extends Activity {
     }
     private void showDrawer() {
         base("drawer",theme(themeId),true);header("All apps");
-        search=new EditText(this); search.setSingleLine(true); search.setTextColor(Color.WHITE); search.setHintTextColor(0xffc5bdcf); search.setHint("Search apps"); search.setPadding(dp(16),0,dp(16),0); search.setBackground(rounded(0xdd282439,0x778e809d,18)); add(content,search,12);
+        search=new EditText(this); search.setSingleLine(true); search.setTextColor(Color.WHITE); search.setHintTextColor(0xffc5bdcf); search.setHint("Search apps"); search.setPadding(dp(16),0,dp(16),0); search.setBackground(rounded(translucent(theme(themeId).tint,221),translucent(theme(themeId).accent,150),18)); add(content,search,12);
         TextView tip=text("Touch and hold an app to add it to Home",12);tip.setTextColor(0xffe2d8e8);add(content,tip,10);
         FrameLayout drawerBody=new FrameLayout(this);drawerGrid=new GridView(this);drawerGrid.setNumColumns(4);drawerGrid.setVerticalSpacing(dp(3));drawerGrid.setClipToPadding(false);
         drawerBody.addView(drawerGrid,new FrameLayout.LayoutParams(-1,-1));drawerEmpty=text("No matching apps",16);drawerEmpty.setGravity(Gravity.CENTER);
@@ -1063,7 +1060,7 @@ public final class MainActivity extends Activity {
     private void showThemes() {
         base("themes",theme(themeId),true);header("Themes"); TextView intro=text("Choose a look, then preview it on your Home.",15);add(content,intro,12);
         ScrollView scroll=new ScrollView(this);LinearLayout list=col();
-        for(ThemeSpec t:themes){FrameLayout card=new FrameLayout(this);card.setBackground(rounded(t.tint,0xff8e82a6,22));Bitmap b=wall(t.id);
+        for(ThemeSpec t:themes){FrameLayout card=new FrameLayout(this);card.setBackground(rounded(t.tint,t.accent,22));Bitmap b=wall(t.id);
             if(b!=null){ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setImageBitmap(b);card.addView(image,new FrameLayout.LayoutParams(-1,-1));}
             View shade=new View(this);shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0x00000000,0xdd141323}));card.addView(shade,new FrameLayout.LayoutParams(-1,-1));
             TextView name=text(t.name+(themeId.equals(t.id)?"  ·  Current":""),22);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);name.setPadding(dp(18),0,dp(18),dp(17));name.setShadowLayer(dp(5),0,dp(1),Color.BLACK);card.addView(name,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
@@ -1073,11 +1070,12 @@ public final class MainActivity extends Activity {
     }
     private void preview(ThemeSpec t) {
         base("preview",t,false);header("Preview");content.addView(new View(this),new LinearLayout.LayoutParams(1,0,1));
-        LinearLayout panel=col();panel.setPadding(dp(18),dp(18),dp(18),dp(18));panel.setBackground(rounded(0xe8232033,t.accent,24));
+        LinearLayout panel=col();panel.setPadding(dp(18),dp(18),dp(18),dp(18));panel.setBackground(rounded(translucent(t.tint,235),t.accent,24));
         TextView title=text(t.name,26);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));panel.addView(title);add(panel,text(t.subtitle,14),7);
         LinearLayout sample=row();for(int i=0;i<Math.min(4,apps.size());i++){App a=apps.get(i);View icon=appIcon(a,t.id,dp(50),true);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.rightMargin=dp(9);sample.addView(icon,lp);}add(panel,sample,16);
-        add(panel,text("Your shortcuts stay exactly where you placed them.",13),12);
-        TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();themeFlourish();toast("Theme applied to Starlight Home");});apply.setTextColor(0xff282136);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
+        add(panel,text("Your shortcuts, folders, dock, widgets and layout stay exactly where you placed them.",13),12);
+        TextView note=text("Themed icons, bookshelf colors and launcher controls change together. Widget interiors still belong to their apps.",12);note.setTextColor(t.accent);add(panel,note,8);
+        TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();themeFlourish();toast("Theme applied to Starlight Home");});apply.setTextColor(t.tint);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
     }
     private boolean isHome() {
         if(Build.VERSION.SDK_INT>=29){RoleManager role=getSystemService(RoleManager.class);if(role!=null&&role.isRoleAvailable(RoleManager.ROLE_HOME))return role.isRoleHeld(RoleManager.ROLE_HOME);}
