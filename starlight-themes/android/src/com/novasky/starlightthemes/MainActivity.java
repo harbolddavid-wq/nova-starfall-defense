@@ -265,6 +265,13 @@ public final class MainActivity extends Activity {
             BitmapFactory.Options opts=new BitmapFactory.Options(); opts.inSampleSize=2; Bitmap b=BitmapFactory.decodeStream(s,null,opts); walls.put(id,b); return b;
         } catch (Exception e) { return null; }
     }
+    /** Optional launcher-owned folder/widget artwork; absent in the two original themes. */
+    private Bitmap decorativeArt(String group,String id) {
+        try(InputStream in=getAssets().open(group+"/"+id+".png")) {
+            BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;
+            return BitmapFactory.decodeStream(in,null,opts);
+        } catch(Exception ignored) { return null; }
+    }
     private String iconChoice(App app) {
         if(app==null)return "original";
         if(!prefs.getBoolean("themed_icons",true))return "original";
@@ -1073,6 +1080,13 @@ public final class MainActivity extends Activity {
         LinearLayout panel=col();panel.setPadding(dp(18),dp(18),dp(18),dp(18));panel.setBackground(rounded(translucent(t.tint,235),t.accent,24));
         TextView title=text(t.name,26);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));panel.addView(title);add(panel,text(t.subtitle,14),7);
         LinearLayout sample=row();for(int i=0;i<Math.min(4,apps.size());i++){App a=apps.get(i);View icon=appIcon(a,t.id,dp(50),true);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.rightMargin=dp(9);sample.addView(icon,lp);}add(panel,sample,16);
+        Bitmap folderPreview=decorativeArt("folders",t.id),widgetPreview=decorativeArt("widgets",t.id);
+        if(folderPreview!=null || widgetPreview!=null){
+            LinearLayout ornaments=row();
+            if(folderPreview!=null){ImageView bookcase=new ImageView(this);bookcase.setImageBitmap(folderPreview);bookcase.setScaleType(ImageView.ScaleType.FIT_CENTER);bookcase.setContentDescription("Bookcase art for "+t.name);ornaments.addView(bookcase,new LinearLayout.LayoutParams(dp(65),dp(65)));}
+            if(widgetPreview!=null){ImageView chrome=new ImageView(this);chrome.setImageBitmap(widgetPreview);chrome.setScaleType(ImageView.ScaleType.FIT_CENTER);chrome.setContentDescription("Widget border preview for "+t.name);LinearLayout.LayoutParams clp=new LinearLayout.LayoutParams(dp(150),dp(65));clp.leftMargin=dp(14);ornaments.addView(chrome,clp);}
+            add(panel,ornaments,10);
+        }
         add(panel,text("Your shortcuts, folders, dock, widgets and layout stay exactly where you placed them.",13),12);
         TextView note=text("Themed icons, bookshelf colors and launcher controls change together. Widget interiors still belong to their apps.",12);note.setTextColor(t.accent);add(panel,note,8);
         TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();themeFlourish();toast("Theme applied to Starlight Home");});apply.setTextColor(t.tint);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
