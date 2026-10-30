@@ -21,6 +21,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Generate credited gothic line-art pages from pinned external SVGs
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow cairosvg
+          python3 scripts/build_moonbeam_pages.py
+          test -s coloringbook/src/main/assets/pages/page_9.png
       - name: Build actual debug-signed APK
         run: gradle --no-daemon :coloringbook:assembleDebug
       - name: Verify APK and embedded third-party assets
@@ -33,7 +38,7 @@ jobs:
           test "$(grep -c kronbits PACKAGED_ASSET_INVENTORY.txt)" -ge 2
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee APK_SIGNATURE_VERIFICATION.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 12 | tee APK_PACKAGE_DETAILS.txt
-          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md ASSET_PROVENANCE.json
+          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md ASSET_PROVENANCE.json art_sources/game_icons scripts/build_moonbeam_pages.py
       - uses: actions/upload-artifact@v4
         with:
           name: Moonbeam-Coloring-APK-Source-and-Verification
@@ -43,5 +48,7 @@ jobs:
             PACKAGED_ASSET_INVENTORY.txt
             APK_SIGNATURE_VERIFICATION.txt
             APK_PACKAGE_DETAILS.txt
+            Moonbeam_Gothic_Pages_Preview.jpg
+            art_sources/game_icons/DOWNLOADED_SOURCE_MANIFEST.json
           if-no-files-found: error
           retention-days: 7
