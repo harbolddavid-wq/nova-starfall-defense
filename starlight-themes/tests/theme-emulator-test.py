@@ -48,6 +48,10 @@ def choose(name):
  shot(name.lower().replace(' ','-')+'.png')
  tap('Back to home')
  print('PASS: applied and confirmed',name)
+# Approximate Desi's tall Samsung screen; default CI emulator is only 320x640.
+adb('shell','wm','size','1080x2340')
+adb('shell','wm','density','450')
+time.sleep(2)
 adb('install','-r',ROOT/'build/widget-fixture/launcher.apk')
 adb('shell','am','start','-n',PKG+'/.MainActivity')
 find('Themes',40)
