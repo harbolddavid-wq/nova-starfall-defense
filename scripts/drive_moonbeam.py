@@ -50,10 +50,13 @@ def tap(label,scroll=False):
     if not found and scroll:
         w,h=size()
         # Scroll only the horizontal tools row; never accidentally paint on canvas.
-        for _ in range(8):
-            run("shell","input","swipe",str(int(w*.83)),str(int(h*.805)),str(int(w*.17)),str(int(h*.805)),"350")
-            time.sleep(.5)
-            found=find(label)
+        for direction in (-1,1):
+            for _ in range(8):
+                x1,x2=(.83,.17) if direction==-1 else (.17,.83)
+                run("shell","input","swipe",str(int(w*x1)),str(int(h*.805)),str(int(w*x2)),str(int(h*.805)),"350")
+                time.sleep(.5)
+                found=find(label)
+                if found:break
             if found:break
     if not found:raise RuntimeError("UI label not found: "+label)
     n,(x,y)=found
