@@ -8,7 +8,7 @@ permissions:
 jobs:
   android-emulator:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -21,6 +21,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Permit KVM acceleration when available
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; ls -l /dev/kvm; else echo 'KVM device not present'; fi
       - name: Build and exercise UI on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -29,12 +32,13 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-boot-timeout: 600
+          emulator-boot-timeout: 900
           script: |
             python3 -m pip install --disable-pip-version-check pillow cairosvg
             python3 scripts/build_moonbeam_pages.py
             python3 scripts/build_moonbeam_expansion.py
             python3 scripts/build_moonbeam_public_domain.py
+            python3 scripts/build_moonbeam_commons_cc0.py
             gradle --no-daemon :coloringbook:assembleDebug
             adb install -r coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
             python3 scripts/drive_moonbeam.py
