@@ -757,7 +757,8 @@ public final class MainActivity extends Activity {
                 ImageView icon=new ImageView(this);try{icon.setImageDrawable(found.get(0).info.loadIcon(this,0));}catch(Exception ignored){}
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);groupHeading.addView(icon,new LinearLayout.LayoutParams(dp(38),dp(38)));
                 LinearLayout names=col();names.setPadding(dp(10),0,0,0);TextView name=text(group.name,16);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);names.addView(name);
-                TextView count=text(found.size()==1?"1 widget":found.size()+" widgets",12);count.setTextColor(0xffd5c5d7);names.addView(count);
+                boolean containsAudio=false;for(WidgetOption option:found)if(option.audio){containsAudio=true;break;}
+                TextView count=text((found.size()==1?"1 widget":found.size()+" widgets")+(containsAudio?" · Music & audio":""),12);count.setTextColor(0xffd5c5d7);names.addView(count);
                 groupHeading.addView(names,new LinearLayout.LayoutParams(0,-2,1));TextView arrow=text("⌄",22);groupHeading.addView(arrow);section.addView(groupHeading);
                 LinearLayout choices=col();choices.setVisibility(View.GONE);section.addView(choices);
                 groupHeading.setContentDescription(group.name+", "+found.size()+" widgets, show choices");
@@ -795,7 +796,7 @@ public final class MainActivity extends Activity {
         LinearLayout card=col();card.setPadding(dp(12),dp(12),dp(12),dp(12));card.setBackground(rounded(0xff493a50,0xff9d879e,12));
         TextView label=text(option.label,16);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);add(card,label,0);
         int[] size=widgetSize(option.info);String number=option.sameLabelCount>1?"Choice "+option.ordinal+" of "+option.sameLabelCount+" · ":"";
-        TextView sizeText=text(number+(size[0]>0?size[0]+" × "+size[1]+" cells on Home":"Size depends on Home grid"),13);sizeText.setTextColor(0xffead9e8);add(card,sizeText,3);
+        TextView sizeText=text(number+(size[0]>0?size[0]+" × "+size[1]+" cells on Home":"Size depends on Home grid")+(option.audio?" · Music & audio":""),13);sizeText.setTextColor(0xffead9e8);add(card,sizeText,3);
         String description=option.description.isEmpty() || option.description.equalsIgnoreCase(option.label)?"No description provided by this app.":option.description;
         TextView detail=text(description,13);detail.setTextColor(0xffe4d8e5);add(card,detail,6);
         add(card,widgetPreview(option),8);

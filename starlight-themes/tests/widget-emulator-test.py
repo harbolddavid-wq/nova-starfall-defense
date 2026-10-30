@@ -98,7 +98,7 @@ def verify_picker():
     adb("shell","input","text","music")
     adb("shell","input","keyevent","4")
     tap_scrolling("Starlight QA Widget, 4 widgets, show choices")
-    wait_for("Choice 1 of 4 · 2 × 2 cells on Home")
+    wait_for("Choice 1 of 4 · 2 × 2 cells on Home · Music & audio")
     wait_for("A sample music control with a generated preview.")
     wait_for("Preview provided by Starlight QA Widget")
     with (evidence/"widget-picker-generated.png").open("wb") as f:
