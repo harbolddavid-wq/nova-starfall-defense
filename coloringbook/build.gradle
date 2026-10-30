@@ -9,6 +9,9 @@ android {
     versionCode 2
     versionName '0.1.1'
   }
-  buildTypes { debug { applicationIdSuffix '.repair' } release { minifyEnabled false } }
+  buildTypes {
+    debug { applicationIdSuffix '.repair' }
+    release { minifyEnabled false }
+  }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
