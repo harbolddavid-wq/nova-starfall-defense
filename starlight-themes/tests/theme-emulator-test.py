@@ -40,7 +40,11 @@ def choose(name):
  tap('Apply theme')
  find('Themes')
  tap('Themes')
- find(name+'  ·  Current')
+ for i in range(6):
+  try:find('Preview '+name+' current theme',timeout=4);break
+  except AssertionError:
+   if i==5:raise
+   scroll()
  shot(name.lower().replace(' ','-')+'.png')
  tap('Back to home')
  print('PASS: applied and confirmed',name)
@@ -53,7 +57,7 @@ for name in ('Fae Lanternwood','Astral Clockwork','Velvet Masquerade','Moonflowe
 adb('shell','am','force-stop',PKG)
 adb('shell','am','start','-n',PKG+'/.MainActivity')
 find('Themes',30)
-tap('Themes');find('Starlit Conservatory  ·  Current')
+tap('Themes');find('Preview Starlit Conservatory current theme')
 shot('after-restart.png')
 logs=adb('logcat','-d','-t','600')
 if any(('FATAL EXCEPTION' in line and PKG in logs[max(0,logs.find(line)-250):logs.find(line)+300]) for line in logs.splitlines() if 'FATAL EXCEPTION' in line):raise AssertionError('Recent fatal exception')
