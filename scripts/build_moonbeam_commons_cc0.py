@@ -20,10 +20,6 @@ ITEMS = [
          url="https://upload.wikimedia.org/wikipedia/commons/1/13/Saint_George_slaying_the_Dragon_%E2%80%93_blank_drawing.svg",
          page="https://commons.wikimedia.org/wiki/File:Saint_George_slaying_the_Dragon_%E2%80%93_blank_drawing.svg",
          creator="KissCC0", expected_sha1="a160b452fa138cff8b6b1841f8f94e03ce4a35ad"),
-    dict(index=53, title="The Witch's Cottage", name="Witchs_cottage_in_black_and_white.svg",
-         url="https://upload.wikimedia.org/wikipedia/commons/1/15/Witch%27s_cottage_in_black_and_white.svg",
-         page="https://commons.wikimedia.org/wiki/File:Witch%27s_cottage_in_black_and_white.svg",
-         creator="Ftiercel (Openclipart)", expected_sha1=None),
 ]
 INK=(42,36,53,255)
 def enclosed_count(im):
@@ -88,7 +84,7 @@ manifest={"project":"Moonbeam Coloring","version":"0.1.3","source":"Wikimedia Co
           "license_evidence":"See each Wikimedia Commons source page; each explicitly displays CC0 1.0.",
           "pages":records}
 (ROOT/"MOONBEAM_013_COMMONS_CC0_PROVENANCE.json").write_text(json.dumps(manifest,indent=2))
-sheet=Image.new("RGB",(720,520),"white");draw=ImageDraw.Draw(sheet)
+sheet=Image.new("RGB",(360*len(ITEMS),520),"white");draw=ImageDraw.Draw(sheet)
 for j,item in enumerate(ITEMS):
     p=Image.open(OUT/f'page_{item["index"]}.png').convert("RGBA")
     p.thumbnail((335,465))

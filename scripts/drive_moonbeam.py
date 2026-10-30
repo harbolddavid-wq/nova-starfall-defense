@@ -89,7 +89,7 @@ try:
     page("Night Creatures","Wolf at the Chapel");capture("03_wolf_page.png")
     page("Arcane Relics","Crystal Seer");capture("04_crystal_page.png")
     page("Moonlit Oddities","A Ghost's Tea Party");capture("05_ghost_tea_page.png")
-    page("Commons Classics","The Dragon's Last Stand");capture("05b_cc0_dragon.png")
+    page("Illustrated Extras","The Dragon's Last Stand");capture("05b_cc0_dragon.png")
     tap("Zoom +",scroll=True);alive("zoom plus");capture("06_zoomed.png")
     tap("Fit");alive("fit reset");capture("07_fit.png")
     tap("Magic");tap("Rainbow Trail");history("rainbow");capture("08_rainbow.png")

@@ -39,6 +39,7 @@ jobs:
             python3 scripts/build_moonbeam_expansion.py
             python3 scripts/build_moonbeam_public_domain.py
             python3 scripts/build_moonbeam_commons_cc0.py
+            python3 scripts/build_moonbeam_extra_gallery.py
             gradle --no-daemon :coloringbook:assembleDebug
             adb install -r coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
             python3 scripts/drive_moonbeam.py

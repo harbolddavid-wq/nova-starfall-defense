@@ -53,9 +53,9 @@ public class MainActivity extends Activity {
 "Potion of No Return","The Forbidden Grimoire","Crystal Seer","The Cursed Compass","Serpent's Chalice","The Moonblade",
 "Angel of Ashes","The Bleeding Valentine","Fairy in the Briars","The Siren's Crown","The Raven Bride","The Haunted Heart",
 "Octopus Observatory","The Star-Eater","Dragon in the Deep","A Ghost's Tea Party","The Carnival of Bones","The Last Moon Garden",
-"Colorbook Dragon","Dragon of the Hollow","Hand of the Oracle","The Watchful Owl","The Mystic Lotus","Night Butterfly Tattoo","The Locked Heart","Moon Poppies","The Octopus Carnival","The Moonstruck Horse","The Unimpressed Donkey","Deepwater Dream","The Dragon's Last Stand","The Witch's Cottage"};
-private static final String[] GROUPS={"First Sketches","Gothic Beginnings","Night Creatures","Haunted Places","Arcane Relics","Strange & Lovely","Moonlit Oddities","Illustrated Gallery","Commons Classics"};
-private static final int[] GROUP_START={0,5,10,16,22,28,34,40,52,54};
+"Colorbook Dragon","Dragon of the Hollow","Hand of the Oracle","The Watchful Owl","The Mystic Lotus","Night Butterfly Tattoo","The Locked Heart","Moon Poppies","The Octopus Carnival","The Moonstruck Horse","The Unimpressed Donkey","Deepwater Dream","The Dragon's Last Stand","Knight of the Moon","Fairy of Briars"};
+private static final String[] GROUPS={"First Sketches","Gothic Beginnings","Night Creatures","Haunted Places","Arcane Relics","Strange & Lovely","Moonlit Oddities","Illustrated Gallery","Illustrated Extras"};
+private static final int[] GROUP_START={0,5,10,16,22,28,34,40,52,55};
     private static final int[] COLORS = {0xffe84965,0xffff974a,0xffffce4c,0xff80c76d,0xff3bc5b4,0xff47a9e6,0xff6a76dd,0xffa773d1,0xffe77eb8,0xff915c38,0xff333347,0xffffffff};
     private final Bitmap[] kenney = new Bitmap[3];
     private final Bitmap[] kronbits = new Bitmap[2];
