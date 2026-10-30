@@ -159,7 +159,7 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40};
         private float brushSize=28,scale,offX,offY,lastX,lastY;
         private float zoom=1f,panX=0,panY=0,pinchDistance=1f,pinchZoom=1f,pinchAnchorX=0,pinchAnchorY=0,rainbowHue=0;
         private boolean mirror=false,gestureMode=false;
-        private boolean drawing=false;
+        private boolean drawing=false,strokeHasSnapshot=false;
         DrawingView(){super(MainActivity.this);setLayerType(View.LAYER_TYPE_SOFTWARE,null);paintLayer=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888);paintCanvas=new Canvas(paintLayer);lineLayer=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888);}
         void setInk(int c){ink=c;}
         void setSize(int s){brushSize=s;}
@@ -174,9 +174,9 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40};
         boolean canUndo(){return !undo.isEmpty();}
         boolean canRedo(){return !redo.isEmpty();}
         void snapshot(ArrayDeque<Bitmap> dst){Bitmap copy=paintLayer.copy(Bitmap.Config.ARGB_8888,true);if(copy==null)throw new IllegalStateException("Unable to capture editable canvas history");dst.addLast(copy);while(dst.size()>12)dst.removeFirst().recycle();}
-        void begin(){snapshot(undo);refreshHistoryButtons();}
-        void commit(){for(Bitmap b:redo)b.recycle();redo.clear();refreshHistoryButtons();savePage();}
-        void cancelStroke(){if(!drawing)return;drawing=false;if(!undo.isEmpty()){Bitmap old=undo.removeLast();swap(old);}refreshHistoryButtons();}
+        void begin(){snapshot(undo);strokeHasSnapshot=true;refreshHistoryButtons();}
+        void commit(){strokeHasSnapshot=false;for(Bitmap b:redo)b.recycle();redo.clear();refreshHistoryButtons();savePage();}
+        void cancelStroke(){if(!drawing)return;drawing=false;if(strokeHasSnapshot&&!undo.isEmpty()){Bitmap old=undo.removeLast();swap(old);}strokeHasSnapshot=false;refreshHistoryButtons();}
         void undo(){if(undo.isEmpty())return;snapshot(redo);Bitmap b=undo.removeLast();swap(b);refreshHistoryButtons();savePage();}
         void redo(){if(redo.isEmpty())return;snapshot(undo);Bitmap b=redo.removeLast();swap(b);refreshHistoryButtons();savePage();}
         void swap(Bitmap b){if(b==null)throw new IllegalArgumentException("Missing history snapshot");if(!b.isMutable())throw new IllegalStateException("History snapshot must be mutable");Bitmap previous=paintLayer;paintLayer=b;paintCanvas=new Canvas(paintLayer);previous.recycle();invalidate();}
