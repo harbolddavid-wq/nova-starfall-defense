@@ -1,0 +1,52 @@
+name: One-off Nebula Swarm APK
+on:
+  push:
+    branches:
+      - experiment/nebula-swarm-2026-10-29
+    paths:
+      - 'oneoff/**'
+      - '.github/workflows/oneoff-nebula-swarm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile signed debug APK
+        run: cd oneoff && gradle --no-daemon :app:assembleDebug
+      - name: Verify package and signing
+        shell: bash
+        run: |
+          set -euxo pipefail
+          APK=oneoff/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee oneoff/build-checks.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee -a oneoff/build-checks.txt
+          sha256sum "$APK" | tee -a oneoff/build-checks.txt
+          unzip -l "$APK" | grep -E 'classes.dex|assets/(index.html|game.js|audio.js|style.css)' | tee -a oneoff/build-checks.txt
+      - name: Archive original source
+        run: |
+          cd oneoff
+          zip -qr Nebula-Swarm-Source.zip settings.gradle build.gradle gradle.properties README.md app/build.gradle app/src/main
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nebula-Swarm-APK-and-Source
+          path: |
+            oneoff/app/build/outputs/apk/debug/app-debug.apk
+            oneoff/Nebula-Swarm-Source.zip
+            oneoff/build-checks.txt
+          if-no-files-found: error
+          retention-days: 7
