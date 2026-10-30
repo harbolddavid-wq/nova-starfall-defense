@@ -23,11 +23,22 @@ def capture(name):
         evidence("SCREENSHOT FAILURE "+name+": "+str(e));return False
 def dump():
     last=None
-    for i in range(4):
+    for i in range(8):
         try:
             run("shell","uiautomator","dump","/data/local/tmp/moonbeam_ui.xml",timeout=55)
             raw=run("shell","cat","/data/local/tmp/moonbeam_ui.xml",timeout=25)
             root=ET.fromstring(raw[raw.index("<?xml"):])
+            # Cold boot may show a Pixel Launcher ANR over Moonbeam.
+            # Dismiss only the system ANR; never dismiss an app error.
+            if any("isn't responding" in n.attrib.get("text","") and n.attrib.get("package","")=="android" for n in root.iter("node")):
+                wait=next((n for n in root.iter("node") if n.attrib.get("text","")=="Wait"),None)
+                if wait is not None:
+                    xy=bounds(wait)
+                    if xy:
+                        run("shell","input","tap",str(xy[0]),str(xy[1]))
+                        evidence("DISMISSED transient system Pixel Launcher ANR via Wait")
+                        time.sleep(3)
+                        continue
             (OUT/"last_ui.xml").write_text(raw)
             return root
         except Exception as e:last=e;time.sleep(2)
@@ -81,7 +92,7 @@ def page(category,title):
 try:
     run("logcat","-c",check=False)
     evidence("START "+run("shell","am","start","-n",PKG+"/"+ACT))
-    time.sleep(7);alive("launch");capture("01_launch.png")
+    time.sleep(7);dump();alive("launch");capture("01_launch.png")
     history("brush");capture("02_brush_history.png")
     tap("Fill",scroll=True);history("fill")
     tap("Stamps",scroll=True);tap("Blue");tap("Done");history("Kenney stamp")
