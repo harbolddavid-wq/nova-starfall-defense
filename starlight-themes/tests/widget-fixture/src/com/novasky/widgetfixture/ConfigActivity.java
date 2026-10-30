@@ -14,6 +14,7 @@ public final class ConfigActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         final int id=getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
+        if(id==AppWidgetManager.INVALID_APPWIDGET_ID)FixtureWidget.publishPreview(this);
         setResult(RESULT_CANCELED);
         LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setGravity(Gravity.CENTER);
         TextView title=new TextView(this);title.setText("Starlight QA widget configuration");layout.addView(title);

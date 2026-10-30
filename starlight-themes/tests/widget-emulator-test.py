@@ -3,6 +3,7 @@
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
 import xml.etree.ElementTree as ET
 
@@ -103,6 +104,10 @@ def verify_picker():
     wait_for("Preview provided by Starlight QA Widget")
     with (evidence/"widget-picker-generated.png").open("wb") as f:
         subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
+    raw=subprocess.run(["adb","exec-out","screencap"],stdout=subprocess.PIPE,check=True).stdout
+    colors=(bytes.fromhex("dab5e7ff"),bytes.fromhex("e7b5daff"))
+    if max(raw.count(color) for color in colors)<1000:
+        raise AssertionError("Generated preview was not visible; a fallback may have been shown")
     find_scrolling("No preview supplied by this app")
     find_scrolling("A different music control with a layout preview.")
     with (evidence/"widget-picker-layout.png").open("wb") as f:
@@ -167,12 +172,20 @@ try:
     adb("logcat","-c")
     adb("install","-r",build/"fixture.apk")
     adb("install","-r",build/"launcher.apk")
-    adb("shell","am","broadcast","-n","com.novasky.widgetfixture/.FixtureWidget","-a","com.novasky.widgetfixture.SET_PREVIEW")
+    adb("shell","am","start","-n","com.novasky.widgetfixture/.ConfigActivity")
+    wait_for("Starlight QA widget configuration")
+    if "published=true" not in adb("logcat","-d","-s","StarlightFixturePreview:I"):
+        raise AssertionError("Synthetic provider could not publish its generated preview")
+    adb("shell","input","keyevent","4")
     (evidence/"providers.txt").write_text(adb("shell","dumpsys","appwidget"))
     adb("shell","am","start","-n","com.novasky.starlightthemes/.MainActivity")
     wait_for("Home options")
     wait_for("Choose your favorite apps")
     time.sleep(2)
+    if "--picker-only" in sys.argv:
+        verify_picker()
+        print("PASS: generated preview rendered, and layout/image/missing fallbacks are available")
+        sys.exit(0)
     initial=hierarchy()
     existing={node.attrib.get("content-desc","") for node in initial.iter() if node.attrib.get("content-desc")}
     favorites=choose_two_favorites(existing)
