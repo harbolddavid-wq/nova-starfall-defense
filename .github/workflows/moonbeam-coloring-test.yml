@@ -36,9 +36,11 @@ jobs:
           unzip -l "$APK" | grep -E 'assets/(kenney|kronbits)_' | tee PACKAGED_ASSET_INVENTORY.txt
           test "$(grep -c kenney PACKAGED_ASSET_INVENTORY.txt)" -ge 3
           test "$(grep -c kronbits PACKAGED_ASSET_INVENTORY.txt)" -ge 2
+          unzip -l "$APK" | grep "assets/pages/page_" | tee PAGE_ASSET_INVENTORY.txt
+          test "$(grep -c "assets/pages/page_" PAGE_ASSET_INVENTORY.txt)" -eq 5
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee APK_SIGNATURE_VERIFICATION.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 12 | tee APK_PACKAGE_DETAILS.txt
-          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md ASSET_PROVENANCE.json art_sources/game_icons scripts/build_moonbeam_pages.py
+          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md MOONBEAM_GOTHIC_ART_CREDITS.md ASSET_PROVENANCE.json art_sources/game_icons scripts/build_moonbeam_pages.py
       - uses: actions/upload-artifact@v4
         with:
           name: Moonbeam-Coloring-APK-Source-and-Verification
@@ -46,6 +48,7 @@ jobs:
             coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
             Moonbeam_Coloring_Source.zip
             PACKAGED_ASSET_INVENTORY.txt
+            PAGE_ASSET_INVENTORY.txt
             APK_SIGNATURE_VERIFICATION.txt
             APK_PACKAGE_DETAILS.txt
             Moonbeam_Gothic_Pages_Preview.jpg
