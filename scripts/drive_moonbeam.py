@@ -83,6 +83,9 @@ try:
     evidence("START "+run("shell","am","start","-n",PKG+"/"+ACT))
     time.sleep(7);alive("launch");capture("01_launch.png")
     history("brush");capture("02_brush_history.png")
+    tap("Fill",scroll=True);history("fill")
+    tap("Stamps",scroll=True);tap("Blue");tap("Done");history("Kenney stamp")
+    tap("Sparkle",scroll=True);tap("Filigree");tap("Done");history("Kronbits sparkle")
     page("Night Creatures","Wolf at the Chapel");capture("03_wolf_page.png")
     page("Arcane Relics","Crystal Seer");capture("04_crystal_page.png")
     page("Moonlit Oddities","A Ghost's Tea Party");capture("05_ghost_tea_page.png")
@@ -103,7 +106,7 @@ try:
     runtime=run("logcat","-d","-s","AndroidRuntime:E",check=False)
     (OUT/"android_runtime_errors.txt").write_text(runtime)
     if "FATAL EXCEPTION" in runtime and PKG in runtime:raise RuntimeError("Fatal exception in logcat")
-    (OUT/"EMULATOR_TEST_PASS.txt").write_text("PASS: actual emulator UI interactions for brush history, page categories and 3 new pages, zoom+ and Fit, Rainbow, Ghostlight, Mirror, Undo/Redo, JPEG success dialog, foreground stability. Pinch/two-finger pan and physical BLU are NOT verified by adb single-pointer testing.\n")
+    (OUT/"EMULATOR_TEST_PASS.txt").write_text("PASS: actual emulator UI interactions for brush, fill, Kenney stamps, Kronbits sparkles, page categories and 3 new pages, zoom+ and Fit, Rainbow, Ghostlight, Mirror, Undo/Redo, JPEG success dialog, foreground stability. Pinch/two-finger pan and physical BLU are NOT verified by adb single-pointer testing.\n")
     evidence("PASS emulator interactions")
 except Exception as e:
     (OUT/"EMULATOR_TEST_FAILURE.txt").write_text(str(e)+"\n")
