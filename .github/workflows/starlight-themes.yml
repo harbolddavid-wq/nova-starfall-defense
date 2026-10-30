@@ -26,9 +26,10 @@ jobs:
         working-directory: starlight-themes
         run: |
           mkdir -p build/host
-          javac -d build/host android/src/com/novasky/starlightthemes/WorkspaceModel.java android/src/com/novasky/starlightthemes/IconClassifier.java tests/WorkspaceModelTest.java tests/IconClassifierTest.java
+          javac -d build/host android/src/com/novasky/starlightthemes/WorkspaceModel.java android/src/com/novasky/starlightthemes/IconClassifier.java android/src/com/novasky/starlightthemes/WidgetFinder.java tests/WorkspaceModelTest.java tests/IconClassifierTest.java tests/WidgetFinderTest.java
           java -cp build/host WorkspaceModelTest
           java -cp build/host IconClassifierTest
+          java -cp build/host WidgetFinderTest
       - name: Build unsigned Android package
         working-directory: starlight-themes
         run: python3 scripts/build-android.py

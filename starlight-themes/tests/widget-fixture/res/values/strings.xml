@@ -1,0 +1,5 @@
+<resources>
+    <string name="generated_description">A sample music control with a generated preview.</string>
+    <string name="layout_description">A different music control with a layout preview.</string>
+    <string name="image_description">A wide music control with an image preview.</string>
+</resources>

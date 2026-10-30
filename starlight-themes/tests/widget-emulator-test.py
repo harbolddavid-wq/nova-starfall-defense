@@ -46,14 +46,13 @@ def tap_node(node):
 def tap(text,partial=False):
     tap_node(wait_for(text,partial))
 
-def tap_scrolling(text):
+def find_scrolling(text,partial=False):
     previous=None
     for _ in range(10):
         tree=hierarchy()
         for node in tree.iter():
-            if match(node,text):
-                tap_node(node)
-                return
+            if match(node,text,partial):
+                return node
         lists=[node for node in tree.iter() if node.attrib.get("scrollable")=="true"]
         if not lists: break
         visible=tuple(node.attrib.get("text","") for node in lists[0].iter() if node.attrib.get("text"))
@@ -66,6 +65,9 @@ def tap_scrolling(text):
         time.sleep(1)
     raise AssertionError("Could not find "+repr(text)+" in the scrollable widget list")
 
+def tap_scrolling(text,partial=False):
+    tap_node(find_scrolling(text,partial))
+
 def menu():
     tap("Home options")
     tap("Widgets")
@@ -73,7 +75,9 @@ def menu():
 def choose_fixture():
     menu()
     tap("Add a widget")
-    tap_scrolling("Starlight QA Widget")
+    tap("Music & audio")
+    tap_scrolling("Starlight QA Widget, 4 widgets, show choices")
+    tap_scrolling("Add Starlight QA Widget choice 1 of 4")
     end=time.monotonic()+30
     while time.monotonic()<end:
         tree=hierarchy()
@@ -85,6 +89,28 @@ def choose_fixture():
                 break
         time.sleep(1)
     raise AssertionError("Widget bind/configuration screen did not appear")
+
+def verify_picker():
+    menu()
+    tap("Add a widget")
+    tap("Music & audio")
+    tap("Search apps or widgets")
+    adb("shell","input","text","music")
+    adb("shell","input","keyevent","4")
+    tap_scrolling("Starlight QA Widget, 4 widgets, show choices")
+    wait_for("Choice 1 of 4 · 2 × 2 cells on Home")
+    wait_for("A sample music control with a generated preview.")
+    wait_for("Preview provided by Starlight QA Widget")
+    with (evidence/"widget-picker-generated.png").open("wb") as f:
+        subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
+    find_scrolling("No preview supplied by this app")
+    find_scrolling("A different music control with a layout preview.")
+    with (evidence/"widget-picker-layout.png").open("wb") as f:
+        subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
+    find_scrolling("A wide music control with an image preview.")
+    find_scrolling("Add Starlight QA Widget choice 4 of 4")
+    tap("Close")
+    print("PASS: grouped audio choices, descriptions, sizes, search and missing-preview fallback")
 
 def edit_fixture(action):
     menu()
@@ -141,6 +167,7 @@ try:
     adb("logcat","-c")
     adb("install","-r",build/"fixture.apk")
     adb("install","-r",build/"launcher.apk")
+    adb("shell","am","broadcast","-n","com.novasky.widgetfixture/.FixtureWidget","-a","com.novasky.widgetfixture.SET_PREVIEW")
     (evidence/"providers.txt").write_text(adb("shell","dumpsys","appwidget"))
     adb("shell","am","start","-n","com.novasky.starlightthemes/.MainActivity")
     wait_for("Home options")
@@ -173,6 +200,7 @@ try:
     adb("shell","input","keyevent","4")
     print("PASS: create and open the library-style folder with both apps")
 
+    verify_picker()
     choose_fixture()
     tap("Finish setup")
     wait_for("Starlight QA widget ready")

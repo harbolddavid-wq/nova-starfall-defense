@@ -4,4 +4,5 @@
     android:targetCellWidth="2" android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical" android:updatePeriodMillis="0"
     android:widgetCategory="home_screen" android:initialLayout="@layout/widget"
+    android:description="@string/generated_description" android:previewLayout="@layout/preview_layout"
     android:configure="com.novasky.widgetfixture.ConfigActivity" />

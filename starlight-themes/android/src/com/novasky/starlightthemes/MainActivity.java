@@ -13,6 +13,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -23,6 +24,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -42,6 +44,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewConfiguration;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.AbsListView;
@@ -51,6 +54,7 @@ import android.widget.GridView;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RemoteViews;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -705,23 +709,135 @@ public final class MainActivity extends Activity {
     }
     private void chooseWidget() {
         if(pendingWidgetId>0){toast("Finish the current widget setup first");return;}
-        ArrayList<AppWidgetProviderInfo> providers=new ArrayList<>();
-        try{for(AppWidgetProviderInfo info:widgetManager.getInstalledProviders())if((info.widgetCategory & AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)!=0)providers.add(info);}catch(Exception e){toast("Android couldn't list widgets");return;}
-        Collections.sort(providers,(a,b)->widgetLabel(a).compareToIgnoreCase(widgetLabel(b)));
-        if(providers.isEmpty()){toast("No available Home widgets found");return;}
-        String[] labels=new String[providers.size()];for(int i=0;i<labels.length;i++)labels[i]=widgetLabel(providers.get(i));
-        new AlertDialog.Builder(this).setTitle("Add widget").setItems(labels,(d,n)->beginWidget(providers.get(n))).setNegativeButton("Cancel",null).show();
+        ArrayList<WidgetGroup> groups=new ArrayList<>();HashMap<String,WidgetGroup> packages=new HashMap<>();
+        try {
+            for(AppWidgetProviderInfo info:widgetManager.getInstalledProviders()) {
+                if((info.widgetCategory & AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)==0 || info.provider==null)continue;
+                String pkg=info.provider.getPackageName();WidgetGroup group=packages.get(pkg);
+                if(group==null){group=new WidgetGroup(pkg);packages.put(pkg,group);groups.add(group);}
+                group.options.add(new WidgetOption(info,group));
+            }
+        }catch(Exception e){toast("Android couldn't list widgets");return;}
+        if(groups.isEmpty()){toast("No available Home widgets found");return;}
+        Collections.sort(groups,(a,b)->{int n=a.name.compareToIgnoreCase(b.name);return n!=0?n:a.packageName.compareToIgnoreCase(b.packageName);});
+        for(WidgetGroup group:groups){
+            Collections.sort(group.options,(a,b)->{int n=a.label.compareToIgnoreCase(b.label);if(n!=0)return n;
+                int[] as=widgetSize(a.info),bs=widgetSize(b.info);n=Integer.compare(as[0],bs[0]);if(n==0)n=Integer.compare(as[1],bs[1]);
+                return n!=0?n:a.info.provider.flattenToString().compareTo(b.info.provider.flattenToString());});
+            for(WidgetOption option:group.options)for(WidgetOption other:group.options)if(option.label.equalsIgnoreCase(other.label)){
+                option.sameLabelCount++;if(other==option)option.ordinal=option.sameLabelCount;
+            }
+        }
+
+        LinearLayout panel=col();panel.setPadding(dp(16),dp(8),dp(16),0);
+        TextView hint=text("Choose an app to compare its widgets.",13);hint.setTextColor(0xffdfd4e5);add(panel,hint,0);
+        EditText query=new EditText(this);query.setSingleLine(true);query.setTextSize(15);query.setTextColor(Color.WHITE);
+        query.setHintTextColor(0xffc5b8cd);query.setHint("Search apps or widgets");query.setPadding(dp(12),0,dp(12),0);
+        query.setBackground(rounded(0xff40364a,0xff9b88a4,12));add(panel,query,10);
+        query.getLayoutParams().height=dp(48);
+        LinearLayout tabs=row();final boolean[] audioOnly={false};
+        TextView all=button("All apps",()->{}),audio=button("Music & audio",()->{});
+        tabs.addView(all,new LinearLayout.LayoutParams(0,dp(48),1));LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(0,dp(48),1);ap.leftMargin=dp(8);tabs.addView(audio,ap);add(panel,tabs,10);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);LinearLayout results=col();scroll.addView(results);
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,Math.min(dp(410),getResources().getDisplayMetrics().heightPixels*44/100));sp.topMargin=dp(10);panel.addView(scroll,sp);
+        LinearLayout title=col();title.setPadding(dp(22),dp(18),dp(22),dp(4));
+        TextView heading=text("Add widget",22);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.addView(heading);
+        final AlertDialog dialog=new AlertDialog.Builder(this).setCustomTitle(title).setView(panel).setNegativeButton("Close",null).create();
+        final Runnable render=()->{
+            all.setBackground(rounded(audioOnly[0]?0xff362e42:0xff765a7c,0xffac92ae,14));
+            audio.setBackground(rounded(audioOnly[0]?0xff765a7c:0xff362e42,0xffac92ae,14));
+            all.setContentDescription("All apps"+(audioOnly[0]?"":" selected"));audio.setContentDescription("Music & audio"+(audioOnly[0]?" selected":""));
+            results.removeAllViews();String term=query.getText().toString();int shown=0;
+            for(WidgetGroup group:groups){
+                ArrayList<WidgetOption> found=new ArrayList<>();
+                for(WidgetOption option:group.options)if((!audioOnly[0] || option.audio) && WidgetFinder.matches(term,group.packageName,group.name,option.label,option.description,option.audio))found.add(option);
+                if(found.isEmpty())continue;shown++;
+                LinearLayout section=col();section.setPadding(dp(10),dp(8),dp(10),dp(8));section.setBackground(rounded(0xff362e42,0xff79677e,14));
+                LinearLayout groupHeading=row();groupHeading.setMinimumHeight(dp(48));groupHeading.setClickable(true);groupHeading.setFocusable(true);
+                ImageView icon=new ImageView(this);try{icon.setImageDrawable(found.get(0).info.loadIcon(this,0));}catch(Exception ignored){}
+                icon.setScaleType(ImageView.ScaleType.FIT_CENTER);groupHeading.addView(icon,new LinearLayout.LayoutParams(dp(38),dp(38)));
+                LinearLayout names=col();names.setPadding(dp(10),0,0,0);TextView name=text(group.name,16);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);names.addView(name);
+                TextView count=text(found.size()==1?"1 widget":found.size()+" widgets",12);count.setTextColor(0xffd5c5d7);names.addView(count);
+                groupHeading.addView(names,new LinearLayout.LayoutParams(0,-2,1));TextView arrow=text("⌄",22);groupHeading.addView(arrow);section.addView(groupHeading);
+                LinearLayout choices=col();choices.setVisibility(View.GONE);section.addView(choices);
+                groupHeading.setContentDescription(group.name+", "+found.size()+" widgets, show choices");
+                groupHeading.setOnClickListener(v->{
+                    if(choices.getVisibility()==View.VISIBLE){choices.setVisibility(View.GONE);arrow.setText("⌄");groupHeading.setContentDescription(group.name+", "+found.size()+" widgets, show choices");}
+                    else {if(choices.getChildCount()==0)for(WidgetOption option:found)add(choices,widgetChoice(option,dialog),10);
+                        choices.setVisibility(View.VISIBLE);arrow.setText("⌃");groupHeading.setContentDescription(group.name+", "+found.size()+" widgets, hide choices");}
+                });
+                add(results,section,shown==1?0:8);
+            }
+            if(shown==0){TextView empty=text(audioOnly[0]?"No recognized music or audio widgets here. Check All apps too.":"No matching widgets. Try another search.",14);empty.setTextColor(0xffdfd4e5);empty.setPadding(dp(8),dp(20),dp(8),dp(16));add(results,empty,0);}
+            else if(audioOnly[0]){TextView note=text("Some apps don't identify their widgets as music or audio. Check All apps too.",12);note.setTextColor(0xffd5c5d7);note.setPadding(dp(4),dp(12),dp(4),dp(8));add(results,note,0);}
+        };
+        all.setOnClickListener(v->{audioOnly[0]=false;render.run();scroll.scrollTo(0,0);});
+        audio.setOnClickListener(v->{audioOnly[0]=true;render.run();scroll.scrollTo(0,0);});
+        query.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();scroll.scrollTo(0,0);}public void afterTextChanged(Editable e){}});
+        render.run();dialog.show();
+        if(dialog.getWindow()!=null){dialog.getWindow().setBackgroundDrawable(rounded(0xff292337,0xffb798ac,20));dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);}
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xffe8cce5);
+    }
+    private final class WidgetGroup {
+        final String packageName,name;final boolean audio;final ArrayList<WidgetOption> options=new ArrayList<>();
+        WidgetGroup(String pkg){packageName=pkg;String appName=pkg;boolean isAudio=false;
+            try{ApplicationInfo app=getPackageManager().getApplicationInfo(pkg,0);CharSequence label=getPackageManager().getApplicationLabel(app);
+                if(label!=null && !label.toString().trim().isEmpty())appName=label.toString();isAudio=app.category==ApplicationInfo.CATEGORY_AUDIO;
+            }catch(Exception ignored){}name=appName;audio=isAudio;}
+    }
+    private final class WidgetOption {
+        final AppWidgetProviderInfo info;final WidgetGroup group;final String label,description;final boolean audio;int ordinal,sameLabelCount;
+        WidgetOption(AppWidgetProviderInfo i,WidgetGroup g){info=i;group=g;label=widgetLabel(i);String detail="";
+            if(Build.VERSION.SDK_INT>=31)try{CharSequence d=i.loadDescription(MainActivity.this);if(d!=null)detail=d.toString().trim();}catch(Exception ignored){}
+            description=detail;audio=WidgetFinder.isAudio(g.audio,g.packageName,g.name,label,description);}
+    }
+    private View widgetChoice(WidgetOption option,AlertDialog dialog){
+        LinearLayout card=col();card.setPadding(dp(12),dp(12),dp(12),dp(12));card.setBackground(rounded(0xff493a50,0xff9d879e,12));
+        TextView label=text(option.label,16);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);add(card,label,0);
+        int[] size=widgetSize(option.info);String number=option.sameLabelCount>1?"Choice "+option.ordinal+" of "+option.sameLabelCount+" · ":"";
+        TextView sizeText=text(number+(size[0]>0?size[0]+" × "+size[1]+" cells on Home":"Size depends on Home grid"),13);sizeText.setTextColor(0xffead9e8);add(card,sizeText,3);
+        String description=option.description.isEmpty() || option.description.equalsIgnoreCase(option.label)?"No description provided by this app.":option.description;
+        TextView detail=text(description,13);detail.setTextColor(0xffe4d8e5);add(card,detail,6);
+        add(card,widgetPreview(option),8);
+        String addLabel=option.label+(option.sameLabelCount>1?" choice "+option.ordinal+" of "+option.sameLabelCount:"");
+        TextView addButton=button("Add widget",()->{dialog.dismiss();beginWidget(option.info);});addButton.setContentDescription("Add "+addLabel);add(card,addButton,8);
+        return card;
+    }
+    private View widgetPreview(WidgetOption option){
+        FrameLayout preview=new FrameLayout(this);preview.setBackground(rounded(0xff221d2e,0xff75647a,10));
+        preview.setMinimumHeight(dp(112));boolean loaded=false;
+        AppWidgetProviderInfo info=option.info;
+        try{
+            RemoteViews remote=null;
+            if(Build.VERSION.SDK_INT>=35)remote=widgetManager.getWidgetPreview(info.provider,info.getProfile(),AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN);
+            if(remote!=null){View rendered=remote.apply(this,preview);rendered.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);preview.addView(rendered,new FrameLayout.LayoutParams(-1,-1));loaded=true;}
+        }catch(Exception ignored){}
+        if(!loaded && Build.VERSION.SDK_INT>=31 && info.previewLayout!=0)try{
+            View rendered=new RemoteViews(info.provider.getPackageName(),info.previewLayout).apply(this,preview);
+            rendered.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);preview.addView(rendered,new FrameLayout.LayoutParams(-1,-1));loaded=true;
+        }catch(Exception ignored){}
+        if(!loaded && info.previewImage!=0)try{
+            Drawable drawable=info.loadPreviewImage(this,0);if(drawable!=null){ImageView image=new ImageView(this);image.setImageDrawable(drawable);image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setContentDescription("App-supplied preview image");preview.addView(image,new FrameLayout.LayoutParams(-1,-1));loaded=true;}
+        }catch(Exception ignored){}
+        if(loaded){preview.setContentDescription("Preview provided by "+option.group.name);preview.setFocusable(true);View shield=new View(this);shield.setOnTouchListener((v,event)->true);shield.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);preview.addView(shield,new FrameLayout.LayoutParams(-1,-1));}
+        else{TextView empty=text("No preview supplied by this app",13);empty.setTextColor(0xffd8cadc);empty.setGravity(Gravity.CENTER);preview.addView(empty,new FrameLayout.LayoutParams(-1,-1));}
+        return preview;
     }
     private String widgetLabel(AppWidgetProviderInfo info) {
         try{CharSequence s=info.loadLabel(getPackageManager());return s==null?"Widget":s.toString();}catch(Exception e){return "Widget";}
     }
-    private void beginWidget(AppWidgetProviderInfo info) {
-        if(workspace==null || workspace.getChildCount()==0){toast("Home is not ready yet");return;}
+    private int[] widgetSize(AppWidgetProviderInfo info) {
+        if(workspace==null || workspace.getChildCount()==0)return new int[]{0,0};
         ViewGroup strip=(ViewGroup)workspace.getChildAt(0);View page=strip.getChildAt(currentPage);
         int cw=page.getWidth()/WorkspaceModel.COLS,ch=page.getHeight()/WorkspaceModel.ROWS;
-        if(cw<1 || ch<1){toast("Home is not ready yet");return;}
+        if(cw<1 || ch<1)return new int[]{0,0};
         int x=Math.max(1,(info.minWidth+cw-1)/cw),y=Math.max(1,(info.minHeight+ch-1)/ch);
         if(Build.VERSION.SDK_INT>=31){x=Math.max(x,info.targetCellWidth);y=Math.max(y,info.targetCellHeight);}
+        return new int[]{x,y};
+    }
+    private void beginWidget(AppWidgetProviderInfo info) {
+        int[] size=widgetSize(info);int x=size[0],y=size[1];
+        if(x<1 || y<1){toast("Home is not ready yet");return;}
         WorkspaceModel.Pos free=model.firstRegion(currentPage,x,y);
         if(free==null){toast("This widget needs more free space on this page");return;}
         try {

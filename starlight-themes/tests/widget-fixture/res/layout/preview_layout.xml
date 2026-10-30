@@ -1,0 +1,4 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:gravity="center" android:background="#FFB5DCE7" android:textColor="#FF192A2F"
+    android:textSize="18sp" android:text="Layout music preview" />
