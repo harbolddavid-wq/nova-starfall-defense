@@ -86,7 +86,8 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40,52};
         root.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets n=insets.getInsets(WindowInsets.Type.systemBars());root.setPadding(dp(10),n.top+dp(5),dp(10),n.bottom+dp(6));return insets;});
         setContentView(root);
         LinearLayout header=row();header.setGravity(Gravity.CENTER_VERTICAL);root.addView(header,new LinearLayout.LayoutParams(-1,dp(49)));
-        TextView brand=text("✦ Moonbeam",22,true);brand.setTextColor(PURPLE);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+        TextView brand=text("✦ Moonbeam",19,true);brand.setTextColor(PURPLE);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+        header.addView(button("Magic",v->magicMenu()),new LinearLayout.LayoutParams(dp(57),dp(41)));
         header.addView(button("Pages",v->choosePage()),new LinearLayout.LayoutParams(dp(74),dp(41)));
         header.addView(button("Save JPG",v->exportJpeg()),new LinearLayout.LayoutParams(dp(101),dp(41)));
         LinearLayout second=row();second.setGravity(Gravity.CENTER_VERTICAL);root.addView(second,new LinearLayout.LayoutParams(-1,dp(44)));
@@ -139,6 +140,12 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40,52};
         }
         dialog[0]=new AlertDialog.Builder(this).setTitle(GROUPS[group]).setView(scroll).setNegativeButton("Back",(d,w)->choosePage()).create();dialog[0].show();
     }
+    private void magicMenu(){String[] options={"🌈 Rainbow Trail · shifting-color paint","☾ Ghostlight · spectral glowing ink","⇋ Mirror Magic · "+(mirrorMagic?"turn OFF":"turn ON"),"Zoom guide · pinch, two-finger pan, Fit"};
+        new AlertDialog.Builder(this).setTitle("Moonbeam's secret paint box").setItems(options,(d,which)->{
+            if(which==0||which==1){activeTool=which==0?Tool.RAINBOW:Tool.GHOSTLIGHT;paper.setTool(activeTool);rebuildTools();refreshTip();Toast.makeText(this,which==0?"Rainbow Trail ready":"Ghostlight ready",Toast.LENGTH_SHORT).show();}
+            else if(which==2){mirrorMagic=!mirrorMagic;paper.setMirror(mirrorMagic);rebuildTools();refreshTip();}
+            else new AlertDialog.Builder(this).setTitle("Zoom & pan").setMessage("Pinch with two fingers to zoom. Drag with two fingers to move around. One finger always paints or fills. Use Zoom + / Zoom − in the tool row, or Fit at the top, to return to the full page. JPEG export always saves the entire picture.").setPositiveButton("Got it",null).show();
+        }).setNegativeButton("Close",null).show();}
     private void showArtCredits(){new AlertDialog.Builder(this).setTitle("Gothic page artwork").setMessage("Gothic icon pages use adapted contours from Game-icons.net by Lorc and Delapouite, CC BY 3.0. Illustrated Gallery pages are adapted from Pavel Kukov's coloring-pages collection (CC BY-SA 4.0), with upstream public-domain sources acknowledged. Derived gallery images remain CC BY-SA 4.0. Source URLs, creators, SHA-256, modifications and original SVGs are in the source archive. Kenney stamps and Kronbits sparkles are CC0.").setPositiveButton("OK",null).show();}
     private void refreshHistoryButtons(){if(paper==null)return;if(undoButton!=null){boolean can=paper.canUndo();undoButton.setEnabled(can);undoButton.setAlpha(can?1f:.42f);}if(redoButton!=null){boolean can=paper.canRedo();redoButton.setEnabled(can);redoButton.setAlpha(can?1f:.42f);}}
     private void selectStamp(){LinearLayout choices=row();choices.setGravity(Gravity.CENTER);String[] labels={"Blue","Green","Silver"};for(int i=0;i<kenney.length;i++){final int index=i;LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setPadding(dp(8),dp(8),dp(8),dp(8));ImageView im=new ImageView(this);if(kenney[i]!=null)im.setImageBitmap(kenney[i]);item.addView(im,new LinearLayout.LayoutParams(dp(72),dp(72)));TextView t=text(labels[i],12,false);t.setGravity(Gravity.CENTER);item.addView(t);choices.addView(item);item.setOnClickListener(v->{stampIndex=index;paper.setStamp(index);Toast.makeText(this,labels[index]+" star stamp selected",Toast.LENGTH_SHORT).show();});}new AlertDialog.Builder(this).setTitle("Kenney stamps • tap to select").setView(choices).setPositiveButton("Done",null).show();}
