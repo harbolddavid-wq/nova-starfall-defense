@@ -117,6 +117,8 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40};
         Button mirror=button(mirrorMagic?"⇋ Mirror ON":"⇋ Mirror OFF",v->{mirrorMagic=!mirrorMagic;paper.setMirror(mirrorMagic);rebuildTools();refreshTip();Toast.makeText(this,mirrorMagic?"Mirror Magic: both sides paint together":"Mirror Magic off",Toast.LENGTH_SHORT).show();});
         mirror.setTextColor(mirrorMagic?Color.WHITE:INK);mirror.setBackgroundTintList(ColorStateList.valueOf(mirrorMagic?0xff3c8d8a:0xffe6dbe8));
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(114),dp(46));lp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(mirror,lp);
+        Button plus=button("Zoom +",v->{paper.zoomBy(1.45f);});Button minus=button("Zoom −",v->{paper.zoomBy(1f/1.45f);});
+        for(Button b:new Button[]{plus,minus}){LinearLayout.LayoutParams zp=new LinearLayout.LayoutParams(dp(83),dp(46));zp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(b,zp);}
     }
     private void addTool(String name,Tool tool){Button b=button(name,v->{activeTool=tool;paper.setTool(tool);rebuildTools();if(tool==Tool.STAMP)selectStamp();else if(tool==Tool.SPARKLE)selectSparkle();refreshTip();});b.setTextColor(activeTool==tool?Color.WHITE:INK);b.setBackgroundTintList(ColorStateList.valueOf(activeTool==tool?PURPLE:0xffe6dbe8));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(94),dp(46));lp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(b,lp);}
     private void choosePage(){String[] labels=new String[GROUPS.length];for(int i=0;i<GROUPS.length;i++)labels[i]=GROUPS[i]+"  ·  "+(GROUP_START[i+1]-GROUP_START[i])+" pages";
@@ -168,6 +170,7 @@ private static final int[] GROUP_START={0,5,10,16,22,28,34,40};
         void setSparkle(int i){sparkle=i;}
         void setMirror(boolean enabled){mirror=enabled;invalidate();}
         void fit(){zoom=1f;panX=panY=0;invalidate();}
+        void zoomBy(float factor){zoom=Math.max(1f,Math.min(7f,zoom*factor));clampPan();invalidate();}
         void setPage(int page){fit();paintLayer.eraseColor(Color.TRANSPARENT);lineLayer.eraseColor(Color.TRANSPARENT);buildPage(page);clearHistory();invalidate();refreshHistoryButtons();}
         void restorePaint(Bitmap b){if(b.getWidth()!=W||b.getHeight()!=H)return;paintLayer.eraseColor(Color.TRANSPARENT);paintCanvas.drawBitmap(b,0,0,null);invalidate();}
         void clearHistory(){for(Bitmap b:undo)b.recycle();for(Bitmap b:redo)b.recycle();undo.clear();redo.clear();refreshHistoryButtons();}
