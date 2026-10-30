@@ -31,12 +31,12 @@ def dump():
             # Cold boot may show a Pixel Launcher ANR over Moonbeam.
             # Dismiss only the system ANR; never dismiss an app error.
             if any("isn't responding" in n.attrib.get("text","") and n.attrib.get("package","")=="android" for n in root.iter("node")):
-                wait=next((n for n in root.iter("node") if n.attrib.get("text","")=="Wait"),None)
+                wait=next((n for n in root.iter("node") if n.attrib.get("text","")=="Close app"),None)
                 if wait is not None:
                     xy=bounds(wait)
                     if xy:
                         run("shell","input","tap",str(xy[0]),str(xy[1]))
-                        evidence("DISMISSED transient system Pixel Launcher ANR via Wait")
+                        evidence("CLOSED hung Pixel Launcher after system ANR")
                         time.sleep(3)
                         continue
             (OUT/"last_ui.xml").write_text(raw)
@@ -81,8 +81,15 @@ def alive(stage):
     evidence("ALIVE "+stage+" pid="+pid)
 def paint(stage,x=.35,y=.47):
     w,h=size()
-    run("shell","input","swipe",str(int(w*x)),str(int(h*y)),str(int(w*(x+.12))),str(int(h*(y+.035))),"400")
-    time.sleep(.8);alive(stage)
+    for attempt in range(3):
+        dump()  # close any system ANR before touching Moonbeam
+        run("shell","input","swipe",str(int(w*x)),str(int(h*y)),str(int(w*(x+.12))),str(int(h*(y+.035))),"400")
+        time.sleep(.8)
+        dump()
+        state=find("Undo")
+        if state and state[0].attrib.get("enabled")=="true":break
+        evidence(f"RETRY paint {stage}: no enabled Undo after swipe, attempt {attempt+1}")
+    alive(stage)
 def history(stage):
     paint(stage)
     tap("Undo");alive(stage+" Undo")
