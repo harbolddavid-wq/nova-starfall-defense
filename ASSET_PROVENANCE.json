@@ -1,0 +1,69 @@
+{
+  "source_type": "pre-existing third-party Library downloads, verified extracted file content",
+  "assets": [
+    {
+      "original_library_zip": "/Game Development Assets/Kenney Multi-Pack/assets_original_combined.zip",
+      "original_internal_filename": "PNG/Blue/Default/star.png",
+      "creator": "Kenney",
+      "license": "CC0 1.0",
+      "original_sha256": "ba91a196117f8c324beac04ae426379d054e9497be901469eea5d333b369265c",
+      "transform": "none (original bytes)",
+      "source_path": "coloringbook/src/main/assets/kenney_blue_star.png",
+      "apk_path": "assets/kenney_blue_star.png",
+      "visible_in_app": "Stamps > Blue"
+    },
+    {
+      "original_library_zip": "/Game Development Assets/Kenney Multi-Pack/assets_original_combined.zip",
+      "original_internal_filename": "PNG/Green/Default/star.png",
+      "creator": "Kenney",
+      "license": "CC0 1.0",
+      "original_sha256": "9512824e5782625f0988cb62065735aede0fe4dedd9e10be12d895b39b73bd8b",
+      "transform": "none (original bytes)",
+      "source_path": "coloringbook/src/main/assets/kenney_green_star.png",
+      "apk_path": "assets/kenney_green_star.png",
+      "visible_in_app": "Stamps > Green"
+    },
+    {
+      "original_library_zip": "/Game Development Assets/Kenney Multi-Pack/assets_original_combined.zip",
+      "original_internal_filename": "PNG/Grey/Default/star.png",
+      "creator": "Kenney",
+      "license": "CC0 1.0",
+      "original_sha256": "637cb033829d9fe1d6869da5826891ac90430e5d43c06fd4092398155b41dc7e",
+      "transform": "none (original bytes)",
+      "source_path": "coloringbook/src/main/assets/kenney_silver_star.png",
+      "apk_path": "assets/kenney_silver_star.png",
+      "visible_in_app": "Stamps > Silver"
+    },
+    {
+      "original_library_zip": "/Game Development Assets/Visual Effects and Particles/Kronbits 1000 CC0 Particles/Particles.zip",
+      "original_internal_filename": "Particles/Basic/star/shape_star_1.png",
+      "creator": "Kronbits",
+      "license": "CC0 1.0",
+      "original_sha256": "9e935154e00afd664d7cd5c2f82acdafe5c5391e6aabcb028abb3b4aaa9b76bb",
+      "transform": "RGBA, downsampled 512→128px Lanczos, optimized PNG",
+      "source_path": "coloringbook/src/main/assets/kronbits_star.png",
+      "apk_path": "assets/kronbits_star.png",
+      "visible_in_app": "Sparkle > Star"
+    },
+    {
+      "original_library_zip": "/Game Development Assets/Visual Effects and Particles/Kronbits 1000 CC0 Particles/Particles.zip",
+      "original_internal_filename": "Particles/Basic/star/shape_star_11.png",
+      "creator": "Kronbits",
+      "license": "CC0 1.0",
+      "original_sha256": "6cabcb3625b769f7d54ab85bf5edd1aa4d22229f3c3a92e96a77533b9d33d12c",
+      "transform": "RGBA, downsampled 512→128px Lanczos, optimized PNG",
+      "source_path": "coloringbook/src/main/assets/kronbits_filigree.png",
+      "apk_path": "assets/kronbits_filigree.png",
+      "visible_in_app": "Sparkle > Filigree"
+    }
+  ],
+  "original_art": [
+    "five line-art pages programmatically drawn in MainActivity.java",
+    "custom controls/layout"
+  ],
+  "other_assets": [],
+  "limitations": [
+    "Kenney ZIP was user-merged",
+    "Kronbits license based on cataloged creator source listing, not embedded ZIP text"
+  ]
+}

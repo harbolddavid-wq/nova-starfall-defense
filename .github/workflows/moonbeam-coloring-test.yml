@@ -1,0 +1,47 @@
+name: Moonbeam Coloring APK and asset verification
+on:
+  push:
+    branches: ['experiment/coloring-book-asset-reuse']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build actual debug-signed APK
+        run: gradle --no-daemon :coloringbook:assembleDebug
+      - name: Verify APK and embedded third-party assets
+        run: |
+          set -e
+          APK=coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'assets/(kenney|kronbits)_' | tee PACKAGED_ASSET_INVENTORY.txt
+          test "$(grep -c kenney PACKAGED_ASSET_INVENTORY.txt)" -ge 3
+          test "$(grep -c kronbits PACKAGED_ASSET_INVENTORY.txt)" -ge 2
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee APK_SIGNATURE_VERIFICATION.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 12 | tee APK_PACKAGE_DETAILS.txt
+          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md ASSET_PROVENANCE.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moonbeam-Coloring-APK-Source-and-Verification
+          path: |
+            coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
+            Moonbeam_Coloring_Source.zip
+            PACKAGED_ASSET_INVENTORY.txt
+            APK_SIGNATURE_VERIFICATION.txt
+            APK_PACKAGE_DETAILS.txt
+          if-no-files-found: error
+          retention-days: 7
