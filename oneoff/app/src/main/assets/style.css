@@ -1,0 +1,4 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html,body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#050919; color:#dffaff; font-family:system-ui,-apple-system,Roboto,sans-serif; touch-action:none; overscroll-behavior:none; user-select:none; -webkit-user-select:none; }
+#game { display:block; width:100vw; height:100vh; height:100dvh; touch-action:none; }
+#fatal { position:absolute; inset:25% 8%; color:white; text-align:center; font-size:22px; }
