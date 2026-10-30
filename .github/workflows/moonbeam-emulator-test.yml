@@ -34,6 +34,7 @@ jobs:
             python3 -m pip install --disable-pip-version-check pillow cairosvg
             python3 scripts/build_moonbeam_pages.py
             python3 scripts/build_moonbeam_expansion.py
+            python3 scripts/build_moonbeam_public_domain.py
             gradle --no-daemon :coloringbook:assembleDebug
             adb install -r coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
             python3 scripts/drive_moonbeam.py
