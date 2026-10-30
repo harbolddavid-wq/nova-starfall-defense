@@ -3,7 +3,7 @@
 Preserves unmodified SVG originals, source URLs, hashes and raster derivatives."""
 from pathlib import Path
 from urllib.request import urlopen,Request
-from PIL import Image,ImageOps,ImageDraw
+from PIL import Image,ImageOps,ImageDraw,ImageChops
 import cairosvg,io,json,hashlib,time
 ROOT=Path(__file__).resolve().parent.parent
 SRC=ROOT/"art_sources"/"public_domain_coloring"
@@ -41,6 +41,7 @@ for index,title,id,author,source_page in ITEMS:
     base=Image.new("RGBA",(720,900),(0,0,0,0))
     grey=ImageOps.grayscale(im.convert("RGB"))
     alpha=grey.point(lambda v:0 if v>239 else (255 if v<160 else int((239-v)*255/79)))
+    alpha=ImageChops.multiply(alpha,im.getchannel('A'))
     # Some originals are white-on-transparent, invert if line coverage is implausibly low.
     black=Image.new("RGBA",im.size,(42,36,53,255))
     black.putalpha(alpha)
