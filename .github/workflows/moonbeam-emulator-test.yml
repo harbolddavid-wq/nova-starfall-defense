@@ -1,0 +1,44 @@
+name: Moonbeam interactive emulator smoke test
+on:
+  push:
+    branches: ['experiment/coloring-book-asset-reuse']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build and exercise UI on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: |
+            gradle --no-daemon :coloringbook:assembleDebug
+            adb install -r coloringbook/build/outputs/apk/debug/coloringbook-debug.apk
+            python3 scripts/drive_moonbeam.py
+      - name: Save screenshots and UI evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moonbeam-Emulator-Evidence
+          path: emulator_evidence/
+          if-no-files-found: warn
+          retention-days: 7
