@@ -28,6 +28,7 @@ jobs:
           python3 scripts/build_moonbeam_expansion.py
           python3 scripts/build_moonbeam_public_domain.py
           python3 scripts/build_moonbeam_commons_cc0.py
+          python3 scripts/test_moonbeam_zoom_geometry.py
           test -s coloringbook/src/main/assets/pages/page_53.png
       - name: Build actual debug-signed APK
         run: gradle --no-daemon :coloringbook:assembleDebug
@@ -43,7 +44,7 @@ jobs:
           test "$(grep -c "assets/pages/page_" PAGE_ASSET_INVENTORY.txt)" -eq 49
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK" | tee APK_SIGNATURE_VERIFICATION.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 12 | tee APK_PACKAGE_DETAILS.txt
-          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md MOONBEAM_GOTHIC_ART_CREDITS.md ASSET_PROVENANCE.json art_sources/game_icons art_sources/public_domain_coloring art_sources/wikimedia_cc0 scripts/build_moonbeam_pages.py scripts/build_moonbeam_expansion.py scripts/build_moonbeam_public_domain.py scripts/build_moonbeam_commons_cc0.py MOONBEAM_013_COMMONS_CC0_PROVENANCE.json Moonbeam_013_Commons_CC0_Contact_Sheet.jpg MOONBEAM_012_ART_PROVENANCE.json MOONBEAM_012_ILLUSTRATED_GALLERY_PROVENANCE.json Moonbeam_012_Thirty_Pages_Contact_Sheet.jpg Moonbeam_012_Illustrated_Gallery_Contact_Sheet.jpg
+          zip -q -r Moonbeam_Coloring_Source.zip coloringbook/src coloringbook/build.gradle build.gradle settings.gradle gradle.properties README_MOONBEAM.md MOONBEAM_GOTHIC_ART_CREDITS.md ASSET_PROVENANCE.json art_sources/game_icons art_sources/public_domain_coloring art_sources/wikimedia_cc0 scripts/build_moonbeam_pages.py scripts/build_moonbeam_expansion.py scripts/build_moonbeam_public_domain.py scripts/build_moonbeam_commons_cc0.py scripts/test_moonbeam_zoom_geometry.py MOONBEAM_013_ZOOM_MATH_TEST.json MOONBEAM_013_COMMONS_CC0_PROVENANCE.json Moonbeam_013_Commons_CC0_Contact_Sheet.jpg MOONBEAM_012_ART_PROVENANCE.json MOONBEAM_012_ILLUSTRATED_GALLERY_PROVENANCE.json Moonbeam_012_Thirty_Pages_Contact_Sheet.jpg Moonbeam_012_Illustrated_Gallery_Contact_Sheet.jpg
       - uses: actions/upload-artifact@v4
         with:
           name: Moonbeam-Coloring-APK-Source-and-Verification
@@ -60,6 +61,7 @@ jobs:
             MOONBEAM_012_ILLUSTRATED_GALLERY_PROVENANCE.json
             Moonbeam_012_Illustrated_Gallery_Contact_Sheet.jpg
             MOONBEAM_013_COMMONS_CC0_PROVENANCE.json
+            MOONBEAM_013_ZOOM_MATH_TEST.json
             Moonbeam_013_Commons_CC0_Contact_Sheet.jpg
             art_sources/game_icons/DOWNLOADED_SOURCE_MANIFEST.json
           if-no-files-found: error
