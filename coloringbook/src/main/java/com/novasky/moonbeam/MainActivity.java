@@ -29,6 +29,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
@@ -46,7 +47,14 @@ public class MainActivity extends Activity {
     private static final int INK = Color.rgb(48, 38, 62);
     private static final int CREAM = Color.rgb(250, 245, 236);
     private static final int PURPLE = Color.rgb(100, 65, 144);
-    private static final String[] PAGES = {"Moon Moth", "Dragon Egg", "Haunted Castle", "Magic Garden", "Cosmic Cat", "Dragon’s Reliquary", "Gargoyle Cathedral", "The Bone Crown", "Raven’s Omen", "The Thirteenth Door"};
+    private static final String[] PAGES = {"Moon Moth", "Dragon Egg", "Haunted Castle", "Magic Garden", "Cosmic Cat", "Dragon’s Reliquary", "Gargoyle Cathedral", "The Bone Crown", "Raven’s Omen", "The Thirteenth Door",
+"Wolf at the Chapel","The Spider Queen","Pumpkin Monarch","Reaper's Waltz","The Fanged Oracle","Batwing Masquerade",
+"Tower of Thorns","The Lost Graveyard","Midnight Watchtower","Witch's Crossing","Crypt of the Rose","The Black Gate",
+"Potion of No Return","The Forbidden Grimoire","Crystal Seer","The Cursed Compass","Serpent's Chalice","The Moonblade",
+"Angel of Ashes","The Bleeding Valentine","Fairy in the Briars","The Siren's Crown","The Raven Bride","The Haunted Heart",
+"Octopus Observatory","The Star-Eater","Dragon in the Deep","A Ghost's Tea Party","The Carnival of Bones","The Last Moon Garden"};
+private static final String[] GROUPS={"First Sketches","Gothic Beginnings","Night Creatures","Haunted Places","Arcane Relics","Strange & Lovely","Moonlit Oddities"};
+private static final int[] GROUP_START={0,5,10,16,22,28,34,40};
     private static final int[] COLORS = {0xffe84965,0xffff974a,0xffffce4c,0xff80c76d,0xff3bc5b4,0xff47a9e6,0xff6a76dd,0xffa773d1,0xffe77eb8,0xff915c38,0xff333347,0xffffffff};
     private final Bitmap[] kenney = new Bitmap[3];
     private final Bitmap[] kronbits = new Bitmap[2];
@@ -61,7 +69,8 @@ public class MainActivity extends Activity {
     private int chosenSize = 28;
     private int stampIndex = 0;
     private int sparkleIndex = 0;
-    private enum Tool { BRUSH, ERASER, FILL, STAMP, SPARKLE }
+    private boolean mirrorMagic=false;
+    private enum Tool { BRUSH, ERASER, FILL, STAMP, SPARKLE, RAINBOW, GHOSTLIGHT }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -85,6 +94,7 @@ public class MainActivity extends Activity {
         redoButton=button("Redo ↷",v->{paper.redo();refreshTip();});
         second.addView(undoButton,new LinearLayout.LayoutParams(dp(83),dp(37)));
         second.addView(redoButton,new LinearLayout.LayoutParams(dp(82),dp(37)));
+        second.addView(button("Fit",v->{paper.fit();Toast.makeText(this,"Full page",Toast.LENGTH_SHORT).show();}),new LinearLayout.LayoutParams(dp(48),dp(37)));
         paper=new DrawingView();root.addView(paper,new LinearLayout.LayoutParams(-1,0,1));
         HorizontalScrollView toolScroll=new HorizontalScrollView(this);toolScroll.setHorizontalScrollBarEnabled(false);root.addView(toolScroll,new LinearLayout.LayoutParams(-1,dp(58)));
         toolStrip=row();toolStrip.setGravity(Gravity.CENTER_VERTICAL);toolScroll.addView(toolStrip);rebuildTools();
@@ -103,14 +113,34 @@ public class MainActivity extends Activity {
     private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.HORIZONTAL);return l;}
     private TextView text(String t,int sp,boolean bold){TextView v=new TextView(this);v.setText(t);v.setTextSize(sp);v.setTextColor(INK);v.setGravity(Gravity.CENTER_VERTICAL);if(bold)v.setTypeface(null,1);return v;}
     private Button button(String s,View.OnClickListener listener){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setTextSize(12);b.setPadding(dp(3),0,dp(3),0);b.setOnClickListener(listener);return b;}
-    private void rebuildTools(){toolStrip.removeAllViews();addTool("✎ Brush",Tool.BRUSH);addTool("⌫ Erase",Tool.ERASER);addTool("▧ Fill",Tool.FILL);addTool("★ Stamps",Tool.STAMP);addTool("✦ Sparkle",Tool.SPARKLE);}
+    private void rebuildTools(){toolStrip.removeAllViews();addTool("✎ Brush",Tool.BRUSH);addTool("⌫ Erase",Tool.ERASER);addTool("▧ Fill",Tool.FILL);addTool("★ Stamps",Tool.STAMP);addTool("✦ Sparkle",Tool.SPARKLE);addTool("🌈 Rainbow",Tool.RAINBOW);addTool("☾ Ghostlight",Tool.GHOSTLIGHT);
+        Button mirror=button(mirrorMagic?"⇋ Mirror ON":"⇋ Mirror OFF",v->{mirrorMagic=!mirrorMagic;paper.setMirror(mirrorMagic);rebuildTools();refreshTip();Toast.makeText(this,mirrorMagic?"Mirror Magic: both sides paint together":"Mirror Magic off",Toast.LENGTH_SHORT).show();});
+        mirror.setTextColor(mirrorMagic?Color.WHITE:INK);mirror.setBackgroundTintList(ColorStateList.valueOf(mirrorMagic?0xff3c8d8a:0xffe6dbe8));
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(114),dp(46));lp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(mirror,lp);
+    }
     private void addTool(String name,Tool tool){Button b=button(name,v->{activeTool=tool;paper.setTool(tool);rebuildTools();if(tool==Tool.STAMP)selectStamp();else if(tool==Tool.SPARKLE)selectSparkle();refreshTip();});b.setTextColor(activeTool==tool?Color.WHITE:INK);b.setBackgroundTintList(ColorStateList.valueOf(activeTool==tool?PURPLE:0xffe6dbe8));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(94),dp(46));lp.setMargins(dp(3),0,dp(3),0);toolStrip.addView(b,lp);}
-    private void choosePage(){new AlertDialog.Builder(this).setTitle("Choose a coloring page").setSingleChoiceItems(PAGES,pageIndex,(d,which)->{if(which!=pageIndex){savePage();pageIndex=which;paper.setPage(which);loadPage();pageTitle.setText(PAGES[which]);refreshTip();}d.dismiss();}).setNeutralButton("Art credits",(d,w)->showArtCredits()).setNegativeButton("Cancel",null).show();}
+    private void choosePage(){String[] labels=new String[GROUPS.length];for(int i=0;i<GROUPS.length;i++)labels[i]=GROUPS[i]+"  ·  "+(GROUP_START[i+1]-GROUP_START[i])+" pages";
+        new AlertDialog.Builder(this).setTitle("Moonbeam's art library · "+PAGES.length+" pages").setItems(labels,(d,i)->showPageGroup(i)).setNeutralButton("Art credits",(d,w)->showArtCredits()).setNegativeButton("Close",null).show();}
+    private void showPageGroup(int group){
+        ScrollView scroll=new ScrollView(this);LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);list.setPadding(dp(8),dp(6),dp(8),dp(8));scroll.addView(list);
+        final AlertDialog[] dialog={null};
+        for(int i=GROUP_START[group];i<GROUP_START[group+1];i++){final int page=i;LinearLayout item=row();item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(dp(5),dp(5),dp(5),dp(5));
+            if(i>=5){ImageView preview=new ImageView(this);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                try(InputStream in=getAssets().open("pages/page_"+i+".png")){BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=4;Bitmap bmp=BitmapFactory.decodeStream(in,null,opts);preview.setImageBitmap(bmp);}catch(Exception ignored){}
+                item.addView(preview,new LinearLayout.LayoutParams(dp(82),dp(96)));
+            }else{TextView classic=text("✦",32,true);classic.setGravity(Gravity.CENTER);classic.setTextColor(PURPLE);item.addView(classic,new LinearLayout.LayoutParams(dp(82),dp(96)));}
+            TextView label=text(PAGES[i]+(i==pageIndex?"  ✓":""),15,true);label.setPadding(dp(12),0,0,0);item.addView(label,new LinearLayout.LayoutParams(0,-1,1));
+            item.setBackgroundColor(i==pageIndex?0xffeee3f3:(i%2==0?0xfffaf5ec:0xffffffff));
+            item.setOnClickListener(v->{if(page!=pageIndex){savePage();pageIndex=page;paper.setPage(page);loadPage();pageTitle.setText(PAGES[page]);refreshTip();}dialog[0].dismiss();});
+            list.addView(item,new LinearLayout.LayoutParams(-1,dp(104)));
+        }
+        dialog[0]=new AlertDialog.Builder(this).setTitle(GROUPS[group]).setView(scroll).setNegativeButton("Back",(d,w)->choosePage()).create();dialog[0].show();
+    }
     private void showArtCredits(){new AlertDialog.Builder(this).setTitle("Gothic page artwork").setMessage("New pages use adapted SVG contours from Game-icons.net by Lorc and Delapouite, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Original SVGs, transformations and exact credits are in the source archive. Original five pages, layout and decorations are Moonbeam creations. Kenney and Kronbits tools remain CC0.").setPositiveButton("OK",null).show();}
     private void refreshHistoryButtons(){if(paper==null)return;if(undoButton!=null){boolean can=paper.canUndo();undoButton.setEnabled(can);undoButton.setAlpha(can?1f:.42f);}if(redoButton!=null){boolean can=paper.canRedo();redoButton.setEnabled(can);redoButton.setAlpha(can?1f:.42f);}}
     private void selectStamp(){LinearLayout choices=row();choices.setGravity(Gravity.CENTER);String[] labels={"Blue","Green","Silver"};for(int i=0;i<kenney.length;i++){final int index=i;LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setPadding(dp(8),dp(8),dp(8),dp(8));ImageView im=new ImageView(this);if(kenney[i]!=null)im.setImageBitmap(kenney[i]);item.addView(im,new LinearLayout.LayoutParams(dp(72),dp(72)));TextView t=text(labels[i],12,false);t.setGravity(Gravity.CENTER);item.addView(t);choices.addView(item);item.setOnClickListener(v->{stampIndex=index;paper.setStamp(index);Toast.makeText(this,labels[index]+" star stamp selected",Toast.LENGTH_SHORT).show();});}new AlertDialog.Builder(this).setTitle("Kenney stamps • tap to select").setView(choices).setPositiveButton("Done",null).show();}
     private void selectSparkle(){LinearLayout choices=row();choices.setGravity(Gravity.CENTER);String[] labels={"Star","Filigree"};for(int i=0;i<kronbits.length;i++){final int index=i;LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setPadding(dp(10),dp(10),dp(10),dp(10));ImageView im=new ImageView(this);if(kronbits[i]!=null){im.setImageBitmap(kronbits[i]);im.setBackgroundColor(PURPLE);}item.addView(im,new LinearLayout.LayoutParams(dp(90),dp(90)));TextView t=text(labels[i],12,false);t.setGravity(Gravity.CENTER);item.addView(t);choices.addView(item);item.setOnClickListener(v->{sparkleIndex=index;paper.setSparkle(index);Toast.makeText(this,labels[index]+" sparkle selected",Toast.LENGTH_SHORT).show();});}new AlertDialog.Builder(this).setTitle("Kronbits texture brush").setView(choices).setPositiveButton("Done",null).show();}
-    private void refreshTip(){if(tip!=null)tip.setText((activeTool==Tool.FILL?"Tap a closed area to fill":activeTool==Tool.STAMP?"Tap or drag to place Kenney stamps":activeTool==Tool.SPARKLE?"Drag to paint Kronbits sparkles":activeTool==Tool.ERASER?"Drag to erase your paint":"Drag to paint • all artwork stays editable")+"  •  "+PAGES[pageIndex]);}
+    private void refreshTip(){if(tip!=null)tip.setText((activeTool==Tool.FILL?"Tap a closed area to fill":activeTool==Tool.STAMP?"Kenney star stamps":activeTool==Tool.SPARKLE?"Kronbits sparkle textures":activeTool==Tool.RAINBOW?"Rainbow: paint with shifting colors":activeTool==Tool.GHOSTLIGHT?"Ghostlight: paint a spectral halo":activeTool==Tool.ERASER?"Erase your paint":"Draw on the page")+"  ·  Pinch to zoom · 2 fingers to pan"+(mirrorMagic?" · MIRROR":""));}
     private File pageFile(){return new File(getFilesDir(),"moonbeam_page_"+pageIndex+".png");}
     private void savePage(){if(paper==null)return;final Bitmap copy=paper.paintLayer.copy(Bitmap.Config.ARGB_8888,false);final File file=pageFile();saves.execute(()->{try(FileOutputStream out=new FileOutputStream(file)){copy.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ignored){}finally{copy.recycle();}});}
     private void loadPage(){try{File f=pageFile();if(f.exists()){Bitmap b=BitmapFactory.decodeFile(f.getAbsolutePath());if(b!=null){paper.restorePaint(b);b.recycle();}}}catch(Exception ignored){}}
@@ -127,6 +157,8 @@ public class MainActivity extends Activity {
         private Tool tool=Tool.BRUSH;
         private int ink=COLORS[0],stamp=0,sparkle=0;
         private float brushSize=28,scale,offX,offY,lastX,lastY;
+        private float zoom=1f,panX=0,panY=0,pinchDistance=1f,pinchZoom=1f,pinchAnchorX=0,pinchAnchorY=0,rainbowHue=0;
+        private boolean mirror=false,gestureMode=false;
         private boolean drawing=false;
         DrawingView(){super(MainActivity.this);setLayerType(View.LAYER_TYPE_SOFTWARE,null);paintLayer=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888);paintCanvas=new Canvas(paintLayer);lineLayer=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888);}
         void setInk(int c){ink=c;}
@@ -134,21 +166,93 @@ public class MainActivity extends Activity {
         void setTool(Tool t){tool=t;}
         void setStamp(int i){stamp=i;}
         void setSparkle(int i){sparkle=i;}
-        void setPage(int page){paintLayer.eraseColor(Color.TRANSPARENT);lineLayer.eraseColor(Color.TRANSPARENT);buildPage(page);clearHistory();invalidate();refreshHistoryButtons();}
+        void setMirror(boolean enabled){mirror=enabled;invalidate();}
+        void fit(){zoom=1f;panX=panY=0;invalidate();}
+        void setPage(int page){fit();paintLayer.eraseColor(Color.TRANSPARENT);lineLayer.eraseColor(Color.TRANSPARENT);buildPage(page);clearHistory();invalidate();refreshHistoryButtons();}
         void restorePaint(Bitmap b){if(b.getWidth()!=W||b.getHeight()!=H)return;paintLayer.eraseColor(Color.TRANSPARENT);paintCanvas.drawBitmap(b,0,0,null);invalidate();}
         void clearHistory(){for(Bitmap b:undo)b.recycle();for(Bitmap b:redo)b.recycle();undo.clear();redo.clear();refreshHistoryButtons();}
         boolean canUndo(){return !undo.isEmpty();}
         boolean canRedo(){return !redo.isEmpty();}
         void snapshot(ArrayDeque<Bitmap> dst){Bitmap copy=paintLayer.copy(Bitmap.Config.ARGB_8888,true);if(copy==null)throw new IllegalStateException("Unable to capture editable canvas history");dst.addLast(copy);while(dst.size()>12)dst.removeFirst().recycle();}
-        void begin(){snapshot(undo);for(Bitmap b:redo)b.recycle();redo.clear();refreshHistoryButtons();}
+        void begin(){snapshot(undo);refreshHistoryButtons();}
+        void commit(){for(Bitmap b:redo)b.recycle();redo.clear();refreshHistoryButtons();savePage();}
+        void cancelStroke(){if(!drawing)return;drawing=false;if(!undo.isEmpty()){Bitmap old=undo.removeLast();swap(old);}refreshHistoryButtons();}
         void undo(){if(undo.isEmpty())return;snapshot(redo);Bitmap b=undo.removeLast();swap(b);refreshHistoryButtons();savePage();}
         void redo(){if(redo.isEmpty())return;snapshot(undo);Bitmap b=redo.removeLast();swap(b);refreshHistoryButtons();savePage();}
         void swap(Bitmap b){if(b==null)throw new IllegalArgumentException("Missing history snapshot");if(!b.isMutable())throw new IllegalStateException("History snapshot must be mutable");Bitmap previous=paintLayer;paintLayer=b;paintCanvas=new Canvas(paintLayer);previous.recycle();invalidate();}
-        @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(CREAM);float availW=getWidth()-dp(8),availH=getHeight()-dp(8);scale=Math.min(availW/W,availH/H);offX=(getWidth()-W*scale)/2;offY=(getHeight()-H*scale)/2;Paint shadow=new Paint(3);shadow.setColor(0xffd5c7d0);c.drawRoundRect(offX+dp(3),offY+dp(5),offX+W*scale+dp(3),offY+H*scale+dp(5),dp(9),dp(9),shadow);c.save();c.translate(offX,offY);c.scale(scale,scale);c.drawColor(Color.TRANSPARENT);c.drawRect(0,0,W,H,white());c.drawBitmap(paintLayer,0,0,null);c.drawBitmap(lineLayer,0,0,null);c.restore();}
+        @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(CREAM);float availW=getWidth()-dp(8),availH=getHeight()-dp(8);float fit=Math.min(availW/W,availH/H);scale=fit*zoom;offX=(getWidth()-W*scale)/2+panX;offY=(getHeight()-H*scale)/2+panY;Paint shadow=new Paint(3);shadow.setColor(0xffd5c7d0);c.drawRoundRect(offX+dp(3),offY+dp(5),offX+W*scale+dp(3),offY+H*scale+dp(5),dp(9),dp(9),shadow);c.save();c.translate(offX,offY);c.scale(scale,scale);c.drawColor(Color.TRANSPARENT);c.drawRect(0,0,W,H,white());c.drawBitmap(paintLayer,0,0,null);c.drawBitmap(lineLayer,0,0,null);if(mirror){Paint guide=new Paint(3);guide.setColor(0x8845a5a0);guide.setStrokeWidth(2f/zoom);guide.setPathEffect(new android.graphics.DashPathEffect(new float[]{14,10},0));c.drawLine(W/2f,0,W/2f,H,guide);}c.restore();if(zoom>1.01f){Paint p=new Paint(3);p.setColor(PURPLE);p.setTextSize(dp(13));c.drawText(String.format(Locale.US,"%.1fx",zoom),dp(15),dp(23),p);}}
         private Paint white(){Paint p=new Paint();p.setColor(Color.WHITE);return p;}
-        @Override public boolean onTouchEvent(MotionEvent e){float x=(e.getX()-offX)/scale,y=(e.getY()-offY)/scale;if(x<0||y<0||x>=W||y>=H){if(e.getActionMasked()==MotionEvent.ACTION_UP&&drawing){drawing=false;savePage();}return true;}int act=e.getActionMasked();if(act==MotionEvent.ACTION_DOWN){begin();drawing=true;lastX=x;lastY=y;if(tool==Tool.FILL){floodFill((int)x,(int)y);drawing=false;savePage();}else{mark(x,y);invalidate();}return true;}if(act==MotionEvent.ACTION_MOVE&&drawing){float dx=x-lastX,dy=y-lastY;float distance=(float)Math.hypot(dx,dy);if(tool==Tool.BRUSH||tool==Tool.ERASER)stroke(lastX,lastY,x,y);else if(tool==Tool.STAMP||tool==Tool.SPARKLE){int steps=Math.max(1,(int)(distance/Math.max(12,brushSize*.8f)));for(int i=1;i<=steps;i++)mark(lastX+dx*i/steps,lastY+dy*i/steps);}lastX=x;lastY=y;invalidate();return true;}if(act==MotionEvent.ACTION_UP||act==MotionEvent.ACTION_CANCEL){if(drawing){drawing=false;savePage();invalidate();}return true;}return true;}
-        private void mark(float x,float y){if(tool==Tool.BRUSH||tool==Tool.ERASER)stroke(x,y,x+.01f,y+.01f);else if(tool==Tool.STAMP)drawStamp(kenney[stamp],x,y,brushSize*2.4f,false);else if(tool==Tool.SPARKLE)drawStamp(kronbits[sparkle],x,y,brushSize*2.2f,true);}
-        private void stroke(float x1,float y1,float x2,float y2){Paint p=new Paint(3);p.setStrokeWidth(brushSize);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setStyle(Paint.Style.STROKE);if(tool==Tool.ERASER)p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));else p.setColor(ink);paintCanvas.drawLine(x1,y1,x2,y2,p);}
+        private float distance(MotionEvent e){float dx=e.getX(0)-e.getX(1),dy=e.getY(0)-e.getY(1);return Math.max(1f,(float)Math.hypot(dx,dy));}
+        private void clampPan(){if(zoom<=1.001f){panX=panY=0;return;}float fit=Math.min((getWidth()-dp(8))/(float)W,(getHeight()-dp(8))/(float)H);float fullW=W*fit*zoom,fullH=H*fit*zoom;
+            float limX=Math.max(0,(fullW-getWidth())/2+dp(48)),limY=Math.max(0,(fullH-getHeight())/2+dp(48));
+            panX=Math.max(-limX,Math.min(limX,panX));panY=Math.max(-limY,Math.min(limY,panY));
+        }
+        @Override public boolean onTouchEvent(MotionEvent e){
+            int act=e.getActionMasked();
+            if(act==MotionEvent.ACTION_POINTER_DOWN&&e.getPointerCount()>=2){
+                cancelStroke();gestureMode=true;pinchDistance=distance(e);pinchZoom=zoom;
+                float midX=(e.getX(0)+e.getX(1))/2f,midY=(e.getY(0)+e.getY(1))/2f;
+                pinchAnchorX=(midX-offX)/scale;pinchAnchorY=(midY-offY)/scale;return true;
+            }
+            if(gestureMode){
+                if(act==MotionEvent.ACTION_MOVE&&e.getPointerCount()>=2){
+                    zoom=Math.max(1f,Math.min(7f,pinchZoom*distance(e)/pinchDistance));
+                    float midX=(e.getX(0)+e.getX(1))/2f,midY=(e.getY(0)+e.getY(1))/2f;
+                    float fit=Math.min((getWidth()-dp(8))/(float)W,(getHeight()-dp(8))/(float)H),newScale=fit*zoom;
+                    panX=midX-pinchAnchorX*newScale-(getWidth()-W*newScale)/2f;
+                    panY=midY-pinchAnchorY*newScale-(getHeight()-H*newScale)/2f;
+                    clampPan();invalidate();return true;
+                }
+                if(act==MotionEvent.ACTION_UP||act==MotionEvent.ACTION_CANCEL){gestureMode=false;invalidate();}
+                return true;
+            }
+            float x=(e.getX()-offX)/scale,y=(e.getY()-offY)/scale;
+            boolean inside=x>=0&&y>=0&&x<W&&y<H;
+            if(act==MotionEvent.ACTION_DOWN){
+                if(!inside)return true;
+                lastX=x;lastY=y;drawing=true;
+                if(tool!=Tool.FILL){begin();rainbowHue=(rainbowHue+29f)%360f;mark(x,y);invalidate();}
+                return true;
+            }
+            if(act==MotionEvent.ACTION_MOVE&&drawing){
+                if(tool==Tool.FILL)return true;
+                x=Math.max(0,Math.min(W-1,x));y=Math.max(0,Math.min(H-1,y));
+                float dx=x-lastX,dy=y-lastY,d=(float)Math.hypot(dx,dy);
+                if(tool==Tool.BRUSH||tool==Tool.ERASER||tool==Tool.RAINBOW||tool==Tool.GHOSTLIGHT){int steps=Math.max(1,(int)(d/9f));for(int i=1;i<=steps;i++){float ax=lastX+dx*(i-1)/steps,ay=lastY+dy*(i-1)/steps,bx=lastX+dx*i/steps,by=lastY+dy*i/steps;stroke(ax,ay,bx,by);}}
+                else{int steps=Math.max(1,(int)(d/Math.max(12,brushSize*.8f)));for(int i=1;i<=steps;i++)mark(lastX+dx*i/steps,lastY+dy*i/steps);}
+                lastX=x;lastY=y;invalidate();return true;
+            }
+            if(act==MotionEvent.ACTION_UP&&drawing){
+                drawing=false;
+                if(tool==Tool.FILL){if(inside){begin();floodFill((int)x,(int)y);if(mirror&&Math.abs(W-1-2*x)>1)floodFill((int)(W-1-x),(int)y);commit();} }
+                else commit();
+                invalidate();return true;
+            }
+            if(act==MotionEvent.ACTION_CANCEL){cancelStroke();invalidate();return true;}
+            return true;
+        }
+        private void mark(float x,float y){
+            if(tool==Tool.BRUSH||tool==Tool.ERASER||tool==Tool.RAINBOW||tool==Tool.GHOSTLIGHT)stroke(x,y,x+.01f,y+.01f);
+            else if(tool==Tool.STAMP){drawStamp(kenney[stamp],x,y,brushSize*2.4f,false);if(mirror)drawStamp(kenney[stamp],W-x,y,brushSize*2.4f,false);}
+            else if(tool==Tool.SPARKLE){drawStamp(kronbits[sparkle],x,y,brushSize*2.2f,true);if(mirror)drawStamp(kronbits[sparkle],W-x,y,brushSize*2.2f,true);}
+        }
+        private void stroke(float x1,float y1,float x2,float y2){
+            int color=ink;
+            if(tool==Tool.RAINBOW){float dist=(float)Math.hypot(x2-x1,y2-y1);rainbowHue=(rainbowHue+Math.max(2f,dist*1.7f))%360f;color=Color.HSVToColor(new float[]{rainbowHue,.86f,.96f});}
+            drawSegment(x1,y1,x2,y2,color);
+            if(mirror)drawSegment(W-x1,y1,W-x2,y2,color);
+        }
+        private void drawSegment(float x1,float y1,float x2,float y2,int color){
+            Paint p=new Paint(3);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setStyle(Paint.Style.STROKE);
+            if(tool==Tool.GHOSTLIGHT){
+                p.setColor(color);p.setStrokeWidth(brushSize*3.4f);p.setAlpha(36);paintCanvas.drawLine(x1,y1,x2,y2,p);
+                p.setStrokeWidth(brushSize*2.1f);p.setAlpha(70);paintCanvas.drawLine(x1,y1,x2,y2,p);
+                p.setStrokeWidth(brushSize*.72f);p.setAlpha(210);paintCanvas.drawLine(x1,y1,x2,y2,p);
+            }else{
+                p.setStrokeWidth(brushSize);if(tool==Tool.ERASER)p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));else p.setColor(color);
+                paintCanvas.drawLine(x1,y1,x2,y2,p);
+            }
+        }
         private void drawStamp(Bitmap b,float x,float y,float width,boolean tint){if(b==null)return;float height=width*b.getHeight()/b.getWidth();Paint p=new Paint(3);p.setFilterBitmap(true);if(tint)p.setColorFilter(new PorterDuffColorFilter(ink,PorterDuff.Mode.SRC_IN));paintCanvas.drawBitmap(b,null,new RectF(x-width/2,y-height/2,x+width/2,y+height/2),p);}
         private void floodFill(int x,int y){int[] boundary=new int[W*H],pix=new int[W*H];lineLayer.getPixels(boundary,0,W,0,0,W,H);paintLayer.getPixels(pix,0,W,0,0,W,H);int start=y*W+x,target=pix[start];if(Color.alpha(boundary[start])>35||target==ink)return;int[] q=new int[W*H];boolean[] seen=new boolean[W*H];int head=0,tail=0;q[tail++]=start;seen[start]=true;while(head<tail){int i=q[head++];if(Color.alpha(boundary[i])>35||pix[i]!=target)continue;pix[i]=ink;int xx=i%W,yy=i/W;if(xx>0&&!seen[i-1]){seen[i-1]=true;q[tail++]=i-1;}if(xx<W-1&&!seen[i+1]){seen[i+1]=true;q[tail++]=i+1;}if(yy>0&&!seen[i-W]){seen[i-W]=true;q[tail++]=i-W;}if(yy<H-1&&!seen[i+W]){seen[i+W]=true;q[tail++]=i+W;}}paintLayer.setPixels(pix,0,W,0,0,W,H);invalidate();}
         Bitmap renderExport(){Bitmap result=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(result);c.drawColor(Color.WHITE);c.drawBitmap(paintLayer,0,0,null);c.drawBitmap(lineLayer,0,0,null);return result;}
