@@ -60,12 +60,12 @@ for index,title,filename,upstream in ITEMS:
     output=OUT/f"page_{index}.png";base.save(output,optimize=True)
     records.append(dict(index=index,title=title,creator="Pavel Kukov collection; upstream "+upstream,source_page=source_page,original_url=url,license="CC BY-SA 4.0 for collection modifications (upstream identified as public domain)",license_evidence_url="https://github.com/pavelkukov/coloring-pages/blob/"+PIN+"/LICENSE",source_sha256=hashlib.sha256(original).hexdigest(),original_file=str(dest.relative_to(ROOT)),derived_resource=str(output.relative_to(ROOT)),derived_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),transformation="SVG rasterized and whiteness removed to transparent line-art at 720x900; added subtle original double border; derived page licensed CC BY-SA 4.0"))
 manifest={"version":"0.1.2","download_date":"2026-10-30","license_note":"Collection by Pavel Kukov is CC BY-SA 4.0. Its Acknowledgments.md identifies the chosen upstream illustrations as public domain. Adapted gallery PNGs retain CC BY-SA 4.0 with attribution; original LICENSE and Acknowledgments.md preserved.","pages":records}
-(ROOT/"MOONBEAM_012_CC0_GALLERY_PROVENANCE.json").write_text(json.dumps(manifest,indent=2))
+(ROOT/"MOONBEAM_012_ILLUSTRATED_GALLERY_PROVENANCE.json").write_text(json.dumps(manifest,indent=2))
 sheet=Image.new("RGB",(240*6,340*2),"white");d=ImageDraw.Draw(sheet)
 for j,item in enumerate(ITEMS):
     idx,title,*_=item
     im=Image.open(OUT/f"page_{idx}.png").convert("RGBA");im.thumbnail((230,295))
     x=(j%6)*240;y=(j//6)*340
     sheet.paste(im,(x,y),im);d.text((x+4,y+301),f"{idx}: {title[:26]}",fill=(42,36,53))
-sheet.save(ROOT/"Moonbeam_012_CC0_Gallery_Contact_Sheet.jpg",quality=90)
-print("CC0 GALLERY",len(records),"original SVGs and derived line-art pages")
+sheet.save(ROOT/"Moonbeam_012_Illustrated_Gallery_Contact_Sheet.jpg",quality=90)
+print("ILLUSTRATED GALLERY",len(records),"original SVGs and derived line-art pages")
