@@ -4,7 +4,7 @@ Pinch multitouch is NOT simulated by adb input; only +/- zoom and Fit are runtim
 from pathlib import Path
 import subprocess,re,time,xml.etree.ElementTree as ET,hashlib
 OUT=Path("emulator_evidence");OUT.mkdir(exist_ok=True)
-PKG="com.novasky.moonbeam.creative";ACT="com.novasky.moonbeam.MainActivity"
+PKG="com.novasky.moonbeam.gallerypreview";ACT="com.novasky.moonbeam.MainActivity"
 log=[]
 def run(*args,timeout=90,check=True,binary=False):
     p=subprocess.run(["adb",*args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
@@ -89,6 +89,7 @@ try:
     page("Night Creatures","Wolf at the Chapel");capture("03_wolf_page.png")
     page("Arcane Relics","Crystal Seer");capture("04_crystal_page.png")
     page("Moonlit Oddities","A Ghost's Tea Party");capture("05_ghost_tea_page.png")
+    page("Commons Classics","The Dragon's Last Stand");capture("05b_cc0_dragon.png")
     tap("Zoom +",scroll=True);alive("zoom plus");capture("06_zoomed.png")
     tap("Fit");alive("fit reset");capture("07_fit.png")
     tap("Magic");tap("Rainbow Trail");history("rainbow");capture("08_rainbow.png")
@@ -106,7 +107,7 @@ try:
     runtime=run("logcat","-d","-s","AndroidRuntime:E",check=False)
     (OUT/"android_runtime_errors.txt").write_text(runtime)
     if "FATAL EXCEPTION" in runtime and PKG in runtime:raise RuntimeError("Fatal exception in logcat")
-    (OUT/"EMULATOR_TEST_PASS.txt").write_text("PASS: actual emulator UI interactions for brush, fill, Kenney stamps, Kronbits sparkles, page categories and 3 new pages, zoom+ and Fit, Rainbow, Ghostlight, Mirror, Undo/Redo, JPEG success dialog, foreground stability. Pinch/two-finger pan and physical BLU are NOT verified by adb single-pointer testing.\n")
+    (OUT/"EMULATOR_TEST_PASS.txt").write_text("PASS: actual emulator UI interactions for brush, fill, Kenney stamps, Kronbits sparkles, page categories and 4 gallery pages including new CC0 dragon, zoom+ and Fit, Rainbow, Ghostlight, Mirror, Undo/Redo, JPEG success dialog, foreground stability. Pinch/two-finger pan and physical BLU are NOT verified by adb single-pointer testing.\n")
     evidence("PASS emulator interactions")
 except Exception as e:
     (OUT/"EMULATOR_TEST_FAILURE.txt").write_text(str(e)+"\n")
