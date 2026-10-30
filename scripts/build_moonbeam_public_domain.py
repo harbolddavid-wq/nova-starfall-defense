@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Twelve actual CC0/public-domain line-art SVG coloring pages from source pages with explicit license.
-Preserves unmodified SVG originals, source URLs, hashes and raster derivatives."""
+"""Twelve authentic SVG coloring pages with preserved source and CC BY-SA 4.0 terms.
+Upstream acknowledgments identify these as public-domain originals; repository changes
+are distributed under CC BY-SA 4.0, so derivatives retain attribution and ShareAlike."""
 from pathlib import Path
 from urllib.request import urlopen,Request
 from PIL import Image,ImageOps,ImageDraw,ImageChops
@@ -9,24 +10,30 @@ ROOT=Path(__file__).resolve().parent.parent
 SRC=ROOT/"art_sources"/"public_domain_coloring"
 OUT=ROOT/"coloringbook"/"src"/"main"/"assets"/"pages"
 SRC.mkdir(parents=True,exist_ok=True);OUT.mkdir(parents=True,exist_ok=True)
-# Verified October 30, 2026: each source page explicitly says Public Domain (FreeSVG CC0).
+PIN="c5f2dcae9a583dcd841122a1d32bc7b40f5746c0"
+BASE=f"https://raw.githubusercontent.com/pavelkukov/coloring-pages/{PIN}/"
 ITEMS=[
-(40,"Colorbook Dragon",187631,"Doodleguy","https://freesvg.org/colorbook-dragon"),
-(41,"Castle of Whispering Clouds",183604,"OpenClipart / Dugald Walker (1922)","https://freesvg.org/castle-in-clouds"),
-(42,"Sugar Skull & Roses",112870,"OpenClipart","https://freesvg.org/sugarskullrose"),
-(43,"The Fossil King's Skull",148611,"publicdomainvectors.org","https://freesvg.org/dinosaur-skull"),
-(44,"The Intricate Moon Mandala",165875,"OpenClipart / Pixabay source","https://freesvg.org/intricate-floral-mandala"),
-(45,"Amely's Flower Labyrinth",137100,"OpenClipart / Amely (Pixabay source)","https://freesvg.org/intricate-floral-mandala-by-amely"),
-(46,"The Old Crone",178412,"OpenClipart / Frank Howard (1833)","https://freesvg.org/oldcrone"),
-(47,"The Cloud Kingdom",145285,"OpenClipart / Mystica","https://freesvg.org/mystica-castle-outline"),
-(48,"The Watchful Owl",17128,"OpenClipart","https://freesvg.org/owl-line-art-vector-illustration"),
-(49,"The Ram's Omen",150902,"publicdomainvectors.org","https://freesvg.org/ram-skull"),
-(50,"The Celtic Flower Wheel",182620,"OpenClipart","https://freesvg.org/floral-mandala-coloring-book"),
-(51,"Little Dragon's Day Out",330220,"Colleen O'Dell / StarGlade, uploaded by hund","https://openclipart.org/detail/330220/cute-dragon-line-art")]
+(40,"Colorbook Dragon","dragon.svg","Public domain / publicdomainvectors.org"),
+(41,"Dragon of the Hollow","creazilla_dragon.svg","Public domain / SuperColoring"),
+(42,"Hand of the Oracle","hasma.svg","Public domain / SuperColoring"),
+(43,"The Watchful Owl","owl.svg","Public domain / publicdomainpictures.net"),
+(44,"The Elephant Mandala","elephant_mandala.svg","Public domain / SuperColoring"),
+(45,"Night Butterfly Tattoo","butterfly_tattoo.svg","Public domain / SuperColoring"),
+(46,"The Locked Heart","locked_heart.svg","Public domain / SuperColoring"),
+(47,"Moon Poppies","poppies_coloring_page.svg","Public domain / SuperColoring"),
+(48,"The Octopus Carnival","octo.svg","Public domain / MomJunction"),
+(49,"The Abyss Stares Back","shark_jaws.svg","Public domain / publicdomainvectors.org"),
+(50,"The Little Midnight Pony","little_pony.svg","Public domain / Flickr source"),
+(51,"Deepwater Dream","fishing_fish.svg","Public domain / publicdomainvectors.org")]
+for name in ("LICENSE","Acknowledgments.md"):
+    dest=SRC/name
+    if not dest.exists():
+        with urlopen(BASE+name,timeout=45) as r:dest.write_bytes(r.read())
 records=[]
-for index,title,id,author,source_page in ITEMS:
-    url=(f"https://openclipart.org/download/{id}" if id==330220 else f"https://freesvg.org/download/{id}")
-    dest=SRC/f"{index}_{id}.svg"
+for index,title,filename,upstream in ITEMS:
+    url=BASE+"images/"+filename
+    source_page="https://github.com/pavelkukov/coloring-pages/blob/"+PIN+"/images/"+filename
+    dest=SRC/filename
     if not dest.exists():
         req=Request(url,headers={"User-Agent":"Mozilla/5.0 MoonbeamColoring/0.1.2"})
         with urlopen(req,timeout=75) as resp:data=resp.read()
@@ -51,8 +58,8 @@ for index,title,id,author,source_page in ITEMS:
     d.rounded_rectangle((19,20,700,880),radius=22,outline=(45,37,54,255),width=3)
     d.rounded_rectangle((29,30,690,870),radius=18,outline=(45,37,54,255),width=1)
     output=OUT/f"page_{index}.png";base.save(output,optimize=True)
-    records.append(dict(index=index,title=title,creator=author,source_page=source_page,original_url=url,license="Public Domain / CC0 as identified on the source page",license_evidence_url=source_page,source_sha256=hashlib.sha256(original).hexdigest(),original_file=str(dest.relative_to(ROOT)),derived_resource=str(output.relative_to(ROOT)),derived_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),transformation="SVG rasterized and whiteness removed to transparent line-art at 720x900; added subtle original double border"))
-manifest={"version":"0.1.2","download_date":"2026-10-30","license_note":"Each source page was individually identified as Public Domain / CC0; retain source page URLs and original SVG files.","pages":records}
+    records.append(dict(index=index,title=title,creator="Pavel Kukov collection; upstream "+upstream,source_page=source_page,original_url=url,license="CC BY-SA 4.0 for collection modifications (upstream identified as public domain)",license_evidence_url="https://github.com/pavelkukov/coloring-pages/blob/"+PIN+"/LICENSE",source_sha256=hashlib.sha256(original).hexdigest(),original_file=str(dest.relative_to(ROOT)),derived_resource=str(output.relative_to(ROOT)),derived_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),transformation="SVG rasterized and whiteness removed to transparent line-art at 720x900; added subtle original double border; derived page licensed CC BY-SA 4.0"))
+manifest={"version":"0.1.2","download_date":"2026-10-30","license_note":"Collection by Pavel Kukov is CC BY-SA 4.0. Its Acknowledgments.md identifies the chosen upstream illustrations as public domain. Adapted gallery PNGs retain CC BY-SA 4.0 with attribution; original LICENSE and Acknowledgments.md preserved.","pages":records}
 (ROOT/"MOONBEAM_012_CC0_GALLERY_PROVENANCE.json").write_text(json.dumps(manifest,indent=2))
 sheet=Image.new("RGB",(240*6,340*2),"white");d=ImageDraw.Draw(sheet)
 for j,item in enumerate(ITEMS):
