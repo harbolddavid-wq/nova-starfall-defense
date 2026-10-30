@@ -548,7 +548,10 @@ public final class MainActivity extends Activity {
         LinearLayout shelves=col();shelves.setPadding(dp(10),dp(12),dp(10),dp(12));shelves.setBackground(libraryBackground());
         TextView hint=text("Hold a book for more options",12);hint.setTextColor(0xffead8e6);add(shelves,hint,0);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(shelves);
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(folder.title).setView(scroll).setNegativeButton("Close",null).setNeutralButton("Rename",(d,w)->renameFolder(pos)).create();
+        LinearLayout titleRow=row();titleRow.setPadding(dp(22),dp(18),dp(22),dp(12));
+        TextView heading=text(folder.title,21);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);titleRow.addView(heading,new LinearLayout.LayoutParams(0,-2,1));
+        TextView sparkle=text("✦",18);sparkle.setTextColor(0xffeac5d8);titleRow.addView(sparkle);
+        AlertDialog dialog=new AlertDialog.Builder(this).setCustomTitle(titleRow).setView(scroll).setNegativeButton("Close",null).setNeutralButton("Rename",(d,w)->renameFolder(pos)).create();
         int[] bookColors=themeId.equals("moonflower")?new int[]{0xff79526a,0xff745773,0xff705666,0xff805768}:new int[]{0xff49415f,0xff514362,0xff3d4b62,0xff58455b};
         for(int start=0;start<folder.children.size();start+=4){
             LinearLayout row=row();row.setGravity(Gravity.BOTTOM);
@@ -571,6 +574,9 @@ public final class MainActivity extends Activity {
             View shelf=new View(this);shelf.setBackground(rounded(themeId.equals("moonflower")?0xffc59591:0xffa78e9e,0xffdfc1be,3));shelves.addView(shelf,new LinearLayout.LayoutParams(-1,dp(5)));
         }
         dialog.show();
+        if(dialog.getWindow()!=null)dialog.getWindow().setBackgroundDrawable(rounded(0xff292337,0xffb798ac,20));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xffe8cce5);
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(0xffe8cce5);
     }
     private GradientDrawable libraryBackground() {
         int[] colors=themeId.equals("moonflower")?new int[]{0xff5d354c,0xff322339}:new int[]{0xff393047,0xff211c32};
