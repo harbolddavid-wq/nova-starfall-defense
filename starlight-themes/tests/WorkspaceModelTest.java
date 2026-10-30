@@ -13,6 +13,13 @@ public class WorkspaceModelTest {
         Collections.sort(v); return v;
     }
     public static void main(String[] args) {
+        WorkspaceModel drag = new WorkspaceModel();
+        Pos left=new Pos(0,0),right=new Pos(0,1);
+        drag.put(left,Item.app("first/App"));drag.put(right,Item.app("second/App"));
+        check(drag.move(left,right,false),"ordinary drop swaps occupied icons");
+        check("second/App".equals(drag.get(left).component) && "first/App".equals(drag.get(right).component),"swap preserves both targets");
+        check(drag.move(left,right,true),"intentional hold combines icons");
+        check(drag.get(right).isFolder() && drag.get(right).children.size()==2,"intentional combination makes a folder");
         WorkspaceModel m = new WorkspaceModel();
         check(!m.removePage(0), "keep one page");
         check(m.addToPage("a/A", 0) && m.addToPage("b/B", 0), "seed");

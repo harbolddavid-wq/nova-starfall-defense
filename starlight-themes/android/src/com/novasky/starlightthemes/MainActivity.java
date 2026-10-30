@@ -18,6 +18,7 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.AnimationDrawable;
@@ -39,6 +40,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewConfiguration;
 import android.view.WindowInsets;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -82,20 +84,25 @@ public final class MainActivity extends Activity {
     private FrameLayout root;
     private LinearLayout content;
     private PageScroll workspace;
-    private TextView dropRemove, pageDots;
+    private TextView dropRemove, pageDots, dragHelp;
     private GridView drawerGrid;
     private TextView drawerEmpty;
     private EditText search;
     private float downX, downY;
     private Runnable edgeTask;
+    private Runnable folderHoverTask;
+    private WorkspaceModel.Pos dragTarget;
+    private View dragTargetView;
+    private boolean folderDropReady;
+    private int dragOffsetCol,dragOffsetRow;
     private AppWidgetHost widgetHost;
     private AppWidgetManager widgetManager;
     private int pendingWidgetId=-1, pendingPage, pendingSlot, pendingWidth, pendingHeight;
     private String pendingProvider;
     private ImageView ambient;
     private ValueAnimator ambientAnimator;
-    private static final String[] ICON_KEYS={"original","notes","dream","atlas","video","reader","camera","music","files","settings","messages","calendar","browser","phone","gallery","weather","clock","search","apps"};
-    private static final String[] ICON_LABELS={"Original app icon","Notes","Art / Dream","Atlas","Video","Reader","Camera","Music","Files","Settings","Messages","Calendar","Browser","Phone","Gallery","Weather","Clock","Search","App drawer"};
+    private static final String[] ICON_KEYS={"auto","original","notes","dream","atlas","video","reader","camera","music","files","settings","messages","calendar","browser","phone","gallery","weather","clock","search","apps"};
+    private static final String[] ICON_LABELS={"Themed automatically","Original app icon","Notes","Art / Dream","Atlas","Video","Reader","Camera","Music","Files","Settings","Messages","Calendar","Browser","Phone","Gallery","Weather","Clock","Search","App drawer"};
     private static final class App {
         final ResolveInfo info; final ComponentName component; final String key, label;
         App(ResolveInfo info, String label) {
@@ -187,13 +194,15 @@ public final class MainActivity extends Activity {
         else { o.put("type", "folder"); o.put("title", item.title); o.put("children", new JSONArray(item.children)); }
         return o;
     }
+    private String layoutSnapshot() throws Exception {
+        JSONObject o=new JSONObject(); JSONArray pages=new JSONArray(), dock=new JSONArray();
+        for (WorkspaceModel.Item[] page : model.pages) { JSONArray a=new JSONArray(); for (WorkspaceModel.Item i:page) a.put(writeItem(i)); pages.put(a); }
+        for (WorkspaceModel.Item i:model.dock) dock.put(writeItem(i));
+        o.put("pages", pages); o.put("dock", dock);return o.toString();
+    }
     private boolean persistLayout(boolean sync, boolean finishPending) {
         try {
-            JSONObject o=new JSONObject(); JSONArray pages=new JSONArray(), dock=new JSONArray();
-            for (WorkspaceModel.Item[] page : model.pages) { JSONArray a=new JSONArray(); for (WorkspaceModel.Item i:page) a.put(writeItem(i)); pages.put(a); }
-            for (WorkspaceModel.Item i:model.dock) dock.put(writeItem(i));
-            o.put("pages", pages); o.put("dock", dock);
-            SharedPreferences.Editor edit=prefs.edit().putString("layout",o.toString()).putInt("page",currentPage);
+            SharedPreferences.Editor edit=prefs.edit().putString("layout",layoutSnapshot()).putInt("page",currentPage);
             if(finishPending)removePendingFields(edit);
             if(sync)return edit.commit();
             edit.apply(); return true;
@@ -227,7 +236,8 @@ public final class MainActivity extends Activity {
         for (String term:terms) for (App a:apps) if (!used.contains(a.key) && (a.label+" "+a.component.getPackageName()).toLowerCase(Locale.ROOT).contains(term)) {
             model.dock[dock++]=WorkspaceModel.Item.app(a.key); used.add(a.key); break;
         }
-        for (App a:apps) if (used.size()<12 && !used.contains(a.key)) { model.addToPage(a.key,0); used.add(a.key); }
+        // Let the person choose the home-page shortcuts instead of filling it
+        // with the first alphabetic apps found on the phone.
         saveLayout();
     }
     private void launch(String key) {
@@ -257,19 +267,53 @@ public final class MainActivity extends Activity {
             BitmapFactory.Options opts=new BitmapFactory.Options(); opts.inSampleSize=2; Bitmap b=BitmapFactory.decodeStream(s,null,opts); walls.put(id,b); return b;
         } catch (Exception e) { return null; }
     }
-    private Bitmap chosenIcon(String key) {
-        String choice=prefs.getString("icon:"+key,"original"); boolean valid=false;
-        for(String candidate:ICON_KEYS)if(candidate.equals(choice))valid=true;
-        if(!valid || choice.equals("original"))return null;
-        String palette=themeId.equals("moonflower")?"petal":"midnight";
+    private String iconChoice(App app) {
+        if(app==null)return "original";
+        if(!prefs.getBoolean("themed_icons",true))return "original";
+        String choice=prefs.getString("icon:"+app.key,"auto");
+        boolean valid=false;for(String candidate:ICON_KEYS)if(candidate.equals(choice))valid=true;
+        if(!valid)choice="auto";
+        if(choice.equals("auto"))return IconClassifier.classify(app.component.getPackageName(),app.label);
+        return choice;
+    }
+    private Bitmap illustratedIcon(String choice,String selectedTheme) {
+        if(choice.equals("original") || choice.equals("frame"))return null;
+        String palette=selectedTheme.equals("moonflower")?"petal":"midnight";
         String cacheKey=palette+"_"+choice; Bitmap cached=iconArt.get(cacheKey);if(cached!=null)return cached;
         try(InputStream in=getAssets().open("icons/"+palette+"_"+choice+".png")){
             BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=2;Bitmap image=BitmapFactory.decodeStream(in,null,opts);if(image!=null)iconArt.put(cacheKey,image);return image;
         }catch(Exception ignored){return null;}
     }
+    /** A complete themed tile, retaining a small app mark so similar apps stay recognizable. */
+    private View appIcon(App app,String selectedTheme,int size,boolean badge) {
+        FrameLayout frame=new FrameLayout(this);String choice=iconChoice(app);Bitmap art=illustratedIcon(choice,selectedTheme);
+        if(art!=null){
+            ImageView image=new ImageView(this);image.setImageBitmap(art);image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
+        } else if(!choice.equals("original")) {
+            int[] colors=selectedTheme.equals("moonflower")?new int[]{0xfff2deed,0xffd5c0df}:new int[]{0xff382453,0xff241a40};
+            GradientDrawable background=new GradientDrawable(GradientDrawable.Orientation.TL_BR,colors);
+            background.setCornerRadius(size*.24f);background.setStroke(dp(1),selectedTheme.equals("moonflower")?0xffaa8eba:0xff8b78a5);
+            frame.setBackground(background);
+            TextView star=text("✦",8);star.setTextColor(selectedTheme.equals("moonflower")?0xffa96287:0xffe8c8ed);
+            FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);sp.setMargins(0,dp(1),dp(3),0);frame.addView(star,sp);
+        }
+        if(app!=null)try{
+            ImageView mark=new ImageView(this);mark.setImageDrawable(app.info.loadIcon(getPackageManager()));mark.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            boolean small=art!=null && badge;
+            int markSize=small?Math.max(dp(15),Math.round(size*.31f)):art!=null?0:Math.round(size*(choice.equals("original")?.84f:.65f));
+            if(markSize>0){
+                if(small){mark.setPadding(dp(1),dp(1),dp(1),dp(1));mark.setBackground(rounded(0xfffbf7ff,0xffb5a3bf,7));}
+                FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(markSize,markSize,small?Gravity.BOTTOM|Gravity.END:Gravity.CENTER);
+                if(small)mp.setMargins(0,0,dp(1),dp(1));frame.addView(mark,mp);
+            }
+        }catch(Exception ignored){}
+        if(app==null){TextView missing=text("?",18);missing.setGravity(Gravity.CENTER);frame.addView(missing,new FrameLayout.LayoutParams(-1,-1));}
+        return frame;
+    }
     private void base(String which,ThemeSpec t,boolean dim) {
         stopAmbient(); ambient=null;
-        screen=which; workspace=null; dropRemove=null; pageDots=null; drawerGrid=null; drawerEmpty=null; search=null;
+        screen=which; workspace=null; dropRemove=null; pageDots=null; dragHelp=null; drawerGrid=null; drawerEmpty=null; search=null;
         root=new FrameLayout(this); root.setBackgroundColor(t.tint);
         Bitmap w=wall(t.id);
         if(w!=null) { ImageView iv=new ImageView(this); iv.setScaleType(ImageView.ScaleType.CENTER_CROP); iv.setImageBitmap(w); root.addView(iv,new FrameLayout.LayoutParams(-1,-1)); }
@@ -310,14 +354,30 @@ public final class MainActivity extends Activity {
         top.addView(button("Themes",this::showThemes));
         TextView menu=button("⋯",this::homeMenu); menu.setContentDescription("Home options"); LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(52),dp(48)); mp.leftMargin=dp(6); top.addView(menu,mp); add(content,top,0);
         TextView status=text(isHome()?"":"Preview · Choose Home when you're ready",12); status.setTextColor(0xfff1dff6); status.setShadowLayer(dp(3),0,dp(1),Color.BLACK); status.setMinHeight(dp(30)); status.setGravity(Gravity.CENTER_VERTICAL); status.setOnClickListener(v->homeChoice()); add(content,status,0);
+        boolean emptyPage=true;for(WorkspaceModel.Item entry:model.pages.get(currentPage))if(entry!=null){emptyPage=false;break;}
+        if(emptyPage)add(content,button("Choose your favorite apps",this::chooseFavorites),4);
         dropRemove=button("Remove shortcut",()->{}); dropRemove.setVisibility(View.GONE); dropRemove.setBackground(rounded(0xee492e43,0xffedbad5,18));
         dropRemove.setOnDragListener((view,event)->{
             if(event.getAction()==DragEvent.ACTION_DRAG_STARTED) return event.getLocalState() instanceof WorkspaceModel.Pos;
-            if(event.getAction()==DragEvent.ACTION_DROP) { WorkspaceModel.Pos p=(WorkspaceModel.Pos)event.getLocalState(); if(model.valid(p)){WorkspaceModel.Item item=model.get(p);if(item!=null && item.isWidget())widgetHost.deleteAppWidgetId(item.widgetId);model.put(p,null); saveLayout();} return true; }
+            if(event.getAction()==DragEvent.ACTION_DROP) {
+                WorkspaceModel.Pos p=(WorkspaceModel.Pos)event.getLocalState();WorkspaceModel.Item item=model.get(p);
+                if(item!=null){
+                    model.put(p,null);
+                    if(item.isWidget()){
+                        if(!persistLayout(true,false)){model.put(p,item);persistLayout(true,false);toast("Couldn't save the removal");}
+                        else try{widgetHost.deleteAppWidgetId(item.widgetId);}catch(Exception ignored){}
+                    }else saveLayout();
+                }
+                return true;
+            }
             return true;
         });
         FrameLayout.LayoutParams removeParams=new FrameLayout.LayoutParams(-1,dp(52),Gravity.TOP);
         removeParams.setMargins(dp(14),dp(58),dp(14),0); root.addView(dropRemove,removeParams);
+        dragHelp=text("Drag to move · pause over an icon to group",12);dragHelp.setGravity(Gravity.CENTER);
+        dragHelp.setPadding(dp(12),dp(6),dp(12),dp(6));dragHelp.setBackground(rounded(0xee242037,0x99ddc6e8,16));dragHelp.setVisibility(View.GONE);
+        FrameLayout.LayoutParams helpParams=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
+        helpParams.bottomMargin=dp(148);root.addView(dragHelp,helpParams);
         workspace=new PageScroll(this); workspace.setFillViewport(false); workspace.setHorizontalScrollBarEnabled(false);
         LinearLayout strip=row(); strip.setGravity(Gravity.FILL); int width=getResources().getDisplayMetrics().widthPixels-dp(28);
         for(int p=0;p<model.pages.size();p++) strip.addView(new PageView(this,p),new LinearLayout.LayoutParams(width,-1));
@@ -330,7 +390,11 @@ public final class MainActivity extends Activity {
         for(int i=0;i<WorkspaceModel.DOCK;i++){ WorkspaceModel.Pos pos=new WorkspaceModel.Pos(-1,i); View v=itemView(model.dock[i],pos,true); dock.addView(v,new LinearLayout.LayoutParams(0,dp(78),1)); }
         dock.setOnDragListener((v,e)->{
             if(e.getAction()==DragEvent.ACTION_DRAG_STARTED) return e.getLocalState() instanceof WorkspaceModel.Pos;
-            if(e.getAction()==DragEvent.ACTION_DROP) { int slot=Math.min(3,Math.max(0,(int)(e.getX()*4/Math.max(1,v.getWidth())))); if(model.move((WorkspaceModel.Pos)e.getLocalState(),new WorkspaceModel.Pos(-1,slot)))saveLayout(); return true; }
+            int slot=Math.min(3,Math.max(0,(int)(e.getX()*4/Math.max(1,v.getWidth()))));
+            WorkspaceModel.Pos dest=new WorkspaceModel.Pos(-1,slot);
+            if(e.getAction()==DragEvent.ACTION_DRAG_LOCATION){updateDragTarget((WorkspaceModel.Pos)e.getLocalState(),dest,dock.getChildAt(slot));return true;}
+            if(e.getAction()==DragEvent.ACTION_DRAG_EXITED){clearDragTarget();return true;}
+            if(e.getAction()==DragEvent.ACTION_DROP) {boolean combine=folderDropReady && dest.equals(dragTarget);clearDragTarget();if(model.move((WorkspaceModel.Pos)e.getLocalState(),dest,combine))saveLayout();return true;}
             return true;
         }); add(content,dock,8);
     }
@@ -363,13 +427,24 @@ public final class MainActivity extends Activity {
             for(int i=0;i<WorkspaceModel.CELLS;i++){WorkspaceModel.Pos p=new WorkspaceModel.Pos(page,i); WorkspaceModel.Item item=model.get(p);addView(itemView(item!=null && item.isWidget()?null:item,p,false));}
             for(int i=0;i<WorkspaceModel.CELLS;i++){
                 WorkspaceModel.Pos pos=new WorkspaceModel.Pos(page,i);WorkspaceModel.Item item=model.get(pos);
-                if(item!=null && item.isWidget()){View widget=widgetView(item);widget.setTag(pos);addView(widget);}
+                if(item!=null && item.isWidget()){View widget=widgetView(item,pos);widget.setTag(pos);addView(widget);}
             }
             setOnDragListener((v,e)->{
                 if(e.getAction()==DragEvent.ACTION_DRAG_STARTED)return e.getLocalState() instanceof WorkspaceModel.Pos;
-                if(e.getAction()==DragEvent.ACTION_DRAG_LOCATION){ maybeEdge(page,e.getX(),v.getWidth()); return true; }
-                if(e.getAction()==DragEvent.ACTION_DRAG_EXITED){cancelEdge();return true;}
-                if(e.getAction()==DragEvent.ACTION_DROP){cancelEdge(); int col=Math.max(0,Math.min(3,(int)(e.getX()*4/Math.max(1,v.getWidth())))); int row=Math.max(0,Math.min(4,(int)(e.getY()*5/Math.max(1,v.getHeight())))); if(model.move((WorkspaceModel.Pos)e.getLocalState(),new WorkspaceModel.Pos(page,row*4+col)))saveLayout(); return true;}
+                if(e.getAction()==DragEvent.ACTION_DRAG_LOCATION){
+                    maybeEdge(page,e.getX(),v.getWidth());
+                    WorkspaceModel.Pos dest=dragDestination(page,e.getX(),e.getY(),v.getWidth(),v.getHeight());
+                    if(dest!=null)updateDragTarget((WorkspaceModel.Pos)e.getLocalState(),dest,getChildAt(dest.slot));
+                    else {clearDragTarget();if(dragHelp!=null)dragHelp.setText("The widget needs more free space");}
+                    return true;
+                }
+                if(e.getAction()==DragEvent.ACTION_DRAG_EXITED){cancelEdge();clearDragTarget();return true;}
+                if(e.getAction()==DragEvent.ACTION_DROP){
+                    cancelEdge();WorkspaceModel.Pos dest=dragDestination(page,e.getX(),e.getY(),v.getWidth(),v.getHeight());
+                    boolean combine=folderDropReady && dest!=null && dest.equals(dragTarget);clearDragTarget();
+                    WorkspaceModel.Pos origin=(WorkspaceModel.Pos)e.getLocalState();WorkspaceModel.Item moving=model.get(origin);
+                    if(dest!=null && model.move(origin,dest,combine))saveLayout();else if(dest==null || !dest.equals(origin))toast(moving!=null && moving.isWidget()?"The widget needs more free space there":"That spot is occupied by a widget");return true;
+                }
                 if(e.getAction()==DragEvent.ACTION_DRAG_ENDED){cancelEdge();finishDrag();} return true;
             });
         }
@@ -398,45 +473,109 @@ public final class MainActivity extends Activity {
         ui.postDelayed(edgeTask,650);
     }
     private void cancelEdge(){if(edgeTask!=null){ui.removeCallbacks(edgeTask);edgeTask=null;}}
-    private void finishDrag(){if(!dragging)return;dragging=false;cancelEdge();if(dropRemove!=null)dropRemove.setVisibility(View.GONE);ui.post(this::showHome);}
+    private WorkspaceModel.Pos dragDestination(int page,float x,float y,int width,int height) {
+        int col=Math.max(0,Math.min(3,(int)(x*4/Math.max(1,width))))-dragOffsetCol;
+        int row=Math.max(0,Math.min(4,(int)(y*5/Math.max(1,height))))-dragOffsetRow;
+        return col<0 || row<0?null:new WorkspaceModel.Pos(page,row*4+col);
+    }
+    private void updateDragTarget(WorkspaceModel.Pos from,WorkspaceModel.Pos to,View cell) {
+        if(to.equals(dragTarget) && cell==dragTargetView)return;
+        clearDragTarget();dragTarget=to;dragTargetView=cell;
+        WorkspaceModel.Item source=model.get(from),target=model.get(to);
+        WorkspaceModel.Pos occupant=model.occupant(to);
+        boolean movingWidget=source!=null && source.isWidget();
+        boolean blocked=movingWidget?!model.regionFree(to,source.spanX,source.spanY,from):occupant!=null && model.get(occupant).isWidget();
+        if(cell!=null)cell.setBackground(rounded(blocked?0x447a394c:0x553a3454,blocked?0xaaff9a9a:0xaaddc5ed,16));
+        if(dragHelp!=null)dragHelp.setText(blocked?(movingWidget?"The widget needs more free space":"That space belongs to a widget"):movingWidget?"Drag widget to a free space":"Drag to move · pause over an icon to group");
+        boolean canGroup=source!=null && !source.isWidget() && !source.isFolder() && target!=null && !target.isWidget() && !from.equals(to);
+        if(canGroup){
+            folderHoverTask=()->{
+                folderHoverTask=null;
+                if(!dragging || !to.equals(dragTarget))return;
+                folderDropReady=true;if(dragTargetView!=null){dragTargetView.setBackground(rounded(0x995f437b,0xfff5d8f4,16));dragTargetView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);}
+                if(dragHelp!=null)dragHelp.setText(target.isFolder()?"Release to add to folder":"Release to create a folder");
+            };
+            ui.postDelayed(folderHoverTask,600);
+        }
+    }
+    private void clearDragTarget(){
+        if(folderHoverTask!=null){ui.removeCallbacks(folderHoverTask);folderHoverTask=null;}
+        if(dragTargetView!=null)dragTargetView.setBackground(null);
+        dragTarget=null;dragTargetView=null;folderDropReady=false;
+    }
+    private void finishDrag(){if(!dragging)return;dragging=false;cancelEdge();clearDragTarget();if(dropRemove!=null)dropRemove.setVisibility(View.GONE);if(dragHelp!=null)dragHelp.setVisibility(View.GONE);ui.post(this::showHome);}
+    private boolean startMoving(View view,WorkspaceModel.Pos pos) {return startMoving(view,pos,view.getWidth()/2,view.getHeight()/2);}
+    private boolean startMoving(View view,WorkspaceModel.Pos pos,int touchX,int touchY) {
+        WorkspaceModel.Item item=model.get(pos);if(item==null || dragging)return false;
+        dragOffsetCol=item.isWidget()?Math.min(item.spanX-1,Math.max(0,touchX/Math.max(1,view.getWidth()/item.spanX))):0;
+        dragOffsetRow=item.isWidget()?Math.min(item.spanY-1,Math.max(0,touchY/Math.max(1,view.getHeight()/item.spanY))):0;
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);dragging=true;
+        if(dropRemove!=null){dropRemove.setText(item.isWidget()?"Remove widget":"Remove shortcut");dropRemove.setVisibility(View.VISIBLE);}
+        if(dragHelp!=null){dragHelp.setText(item.isWidget()?"Drag widget to a free space":"Drag to move · pause over an icon to group");dragHelp.setVisibility(View.VISIBLE);}
+        View.DragShadowBuilder shadow=new View.DragShadowBuilder(view){
+            @Override public void onProvideShadowMetrics(Point size,Point touch){size.set(view.getWidth(),view.getHeight());touch.set(touchX,touchY);}
+        };
+        boolean started=view.startDragAndDrop(ClipData.newPlainText(item.isWidget()?"widget":"shortcut",""),shadow,pos,0);
+        if(started)view.setAlpha(.35f);else finishDrag();return started;
+    }
     private View itemView(WorkspaceModel.Item item, WorkspaceModel.Pos pos, boolean dock) {
         LinearLayout tile=col(); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(2),dp(2),dp(2),dp(2));
         if(item==null){tile.setContentDescription("Empty position");return tile;}
         FrameLayout iconFrame=new FrameLayout(this); iconFrame.setBackground(rounded(0xcc302b48,0xbbddc9e6,20));
         int iconSize=dp(dock?51:56);
         if(item.isFolder()) {
-            LinearLayout preview=col(); preview.setPadding(dp(8),dp(8),dp(8),dp(8));
-            for(int r=0;r<2;r++){LinearLayout line=row();for(int c=0;c<2;c++){int n=r*2+c;ImageView icon=new ImageView(this);if(n<item.children.size()){App a=byKey.get(item.children.get(n));if(a!=null)try{icon.setImageDrawable(a.info.loadIcon(getPackageManager()));}catch(Exception ignored){}}line.addView(icon,new LinearLayout.LayoutParams(0,dp(19),1));}preview.addView(line);} iconFrame.addView(preview,new FrameLayout.LayoutParams(-1,-1));
+            iconFrame.setBackground(libraryBackground());
+            LinearLayout preview=col(); preview.setPadding(dp(6),dp(5),dp(6),dp(3));
+            for(int r=0;r<2;r++){
+                LinearLayout line=row();for(int c=0;c<2;c++){int n=r*2+c;App a=n<item.children.size()?byKey.get(item.children.get(n)):null;View icon=n<item.children.size()?appIcon(a,themeId,dp(17),false):new View(this);line.addView(icon,new LinearLayout.LayoutParams(0,dp(17),1));}
+                preview.addView(line);View shelf=new View(this);shelf.setBackgroundColor(themeId.equals("moonflower")?0xffcb9e9d:0xffbba0aa);preview.addView(shelf,new LinearLayout.LayoutParams(-1,dp(2)));
+            }
+            iconFrame.addView(preview,new FrameLayout.LayoutParams(-1,-1));
         } else {
-            ImageView icon=new ImageView(this); icon.setScaleType(ImageView.ScaleType.FIT_CENTER); App a=byKey.get(item.component);
-            Bitmap custom=chosenIcon(item.component);
-            if(custom!=null){iconFrame.setBackgroundColor(Color.TRANSPARENT);icon.setImageBitmap(custom);}
-            else if(a!=null)try{icon.setImageDrawable(a.info.loadIcon(getPackageManager()));}catch(Exception ignored){}
-            int inner=custom!=null?iconSize:dp(dock?38:42);
-            FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(inner,inner,Gravity.CENTER); iconFrame.addView(icon,ip);
+            iconFrame.setBackgroundColor(Color.TRANSPARENT);
+            iconFrame.addView(appIcon(byKey.get(item.component),themeId,iconSize,true),new FrameLayout.LayoutParams(-1,-1));
         }
         tile.addView(iconFrame,new LinearLayout.LayoutParams(iconSize,iconSize));
         String label=item.isFolder()?item.title:(byKey.containsKey(item.component)?byKey.get(item.component).label:"Unavailable");
         TextView name=text(label,11); name.setGravity(Gravity.CENTER); name.setMaxLines(1); name.setEllipsize(TextUtils.TruncateAt.END); name.setShadowLayer(dp(4),0,dp(1),Color.BLACK); tile.addView(name,new LinearLayout.LayoutParams(-1,-2));
         tile.setContentDescription(label+(item.isFolder()?", folder":"")); tile.setFocusable(true); tile.setClickable(true);
         tile.setOnClickListener(v->{if(item.isFolder())openFolder(pos);else launch(item.component);});
-        tile.setOnLongClickListener(v->{
-            v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS); dragging=true; if(dropRemove!=null)dropRemove.setVisibility(View.VISIBLE);
-            boolean started=v.startDragAndDrop(ClipData.newPlainText("shortcut",""),new View.DragShadowBuilder(v),pos,0);
-            if(!started)finishDrag(); return started;
-        });
+        tile.setOnLongClickListener(v->startMoving(v,pos));
         return tile;
     }
     private void openFolder(WorkspaceModel.Pos pos) {
         WorkspaceModel.Item folder=model.get(pos); if(folder==null || !folder.isFolder())return;
-        LinearLayout list=col(); list.setPadding(dp(10),0,dp(10),0);
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(folder.title).setView(list).setNegativeButton("Close",null).setNeutralButton("Rename",(d,w)->renameFolder(pos)).create();
-        for(int i=0;i<folder.children.size();i++) {
-            final int index=i; String key=folder.children.get(i); App a=byKey.get(key); TextView b=button(a==null?"Unavailable app":a.label,()->{dialog.dismiss();launch(key);});
-            b.setTextColor(0xff282137); b.setBackgroundColor(Color.TRANSPARENT); b.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
-            b.setOnLongClickListener(v->{dialog.dismiss();folderMemberOptions(pos,index);return true;}); list.addView(b);
+        LinearLayout shelves=col();shelves.setPadding(dp(10),dp(12),dp(10),dp(12));shelves.setBackground(libraryBackground());
+        TextView hint=text("Hold a book for more options",12);hint.setTextColor(0xffead8e6);add(shelves,hint,0);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(shelves);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(folder.title).setView(scroll).setNegativeButton("Close",null).setNeutralButton("Rename",(d,w)->renameFolder(pos)).create();
+        int[] bookColors=themeId.equals("moonflower")?new int[]{0xff79526a,0xff745773,0xff705666,0xff805768}:new int[]{0xff49415f,0xff514362,0xff3d4b62,0xff58455b};
+        for(int start=0;start<folder.children.size();start+=4){
+            LinearLayout row=row();row.setGravity(Gravity.BOTTOM);
+            for(int offset=0;offset<4;offset++){
+                int index=start+offset;LinearLayout shelfSlot=col();shelfSlot.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
+                if(index<folder.children.size()){
+                    String key=folder.children.get(index);App app=byKey.get(key);
+                    FrameLayout book=new FrameLayout(this);book.setBackground(rounded(bookColors[index%bookColors.length],0xffd7b8c4,6));
+                    View spine=new View(this);spine.setBackgroundColor(0x66f0cdd2);FrameLayout.LayoutParams stripe=new FrameLayout.LayoutParams(dp(3),-1,Gravity.START);stripe.leftMargin=dp(4);book.addView(spine,stripe);
+                    FrameLayout.LayoutParams image=new FrameLayout.LayoutParams(dp(43),dp(43),Gravity.CENTER);image.leftMargin=dp(3);book.addView(appIcon(app,themeId,dp(43),true),image);
+                    shelfSlot.addView(book,new LinearLayout.LayoutParams(dp(58),dp(63)));
+                    String label=app==null?"Unavailable":app.label;TextView name=text(label,10);name.setGravity(Gravity.CENTER);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);shelfSlot.addView(name,new LinearLayout.LayoutParams(-1,dp(30)));
+                    shelfSlot.setContentDescription(label);shelfSlot.setClickable(true);shelfSlot.setFocusable(true);
+                    shelfSlot.setOnClickListener(v->{dialog.dismiss();launch(key);});
+                    shelfSlot.setOnLongClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);dialog.dismiss();folderMemberOptions(pos,index);return true;});
+                }
+                row.addView(shelfSlot,new LinearLayout.LayoutParams(0,dp(97),1));
+            }
+            add(shelves,row,8);
+            View shelf=new View(this);shelf.setBackground(rounded(themeId.equals("moonflower")?0xffc59591:0xffa78e9e,0xffdfc1be,3));shelves.addView(shelf,new LinearLayout.LayoutParams(-1,dp(5)));
         }
         dialog.show();
+    }
+    private GradientDrawable libraryBackground() {
+        int[] colors=themeId.equals("moonflower")?new int[]{0xff5d354c,0xff322339}:new int[]{0xff393047,0xff211c32};
+        GradientDrawable wood=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,colors);
+        wood.setCornerRadius(dp(15));wood.setStroke(dp(2),themeId.equals("moonflower")?0xffc397a1:0xffad97a8);return wood;
     }
     private void renameFolder(WorkspaceModel.Pos pos) {
         WorkspaceModel.Item f=model.get(pos);if(f==null || !f.isFolder())return;
@@ -451,14 +590,87 @@ public final class MainActivity extends Activity {
         }).show();
     }
     private void homeMenu() {
-        new AlertDialog.Builder(this).setTitle("Home options").setItems(new String[]{"Themes","Add a home page","Remove this empty page","Widgets","Choose default Home","Home settings"},(d,n)->{
+        new AlertDialog.Builder(this).setTitle("Home options").setItems(new String[]{"Themes","Add a home page","Remove this empty page","Widgets","Choose favorite apps","Undo favorite changes","Choose default Home","Home settings"},(d,n)->{
             switch(n){case 0:showThemes();break;case 1:if(model.addPage()){currentPage=model.pages.size()-1;saveLayout();showHome();}else toast("Maximum of eight pages");break;
             case 2:if(model.removePage(currentPage)){currentPage=Math.min(currentPage,model.pages.size()-1);saveLayout();showHome();}else toast("Keep one page and remove its shortcuts first");break;
-            case 3:widgetMenu();break;case 4:homeChoice();break;case 5:showSettings();break;}
+            case 3:widgetMenu();break;case 4:chooseFavorites();break;case 5:undoFavorites();break;case 6:homeChoice();break;case 7:showSettings();break;}
         }).show();
     }
-    private View widgetView(WorkspaceModel.Item item) {
-        FrameLayout frame=new FrameLayout(this);
+    private void chooseFavorites() {
+        if(apps.isEmpty()){toast(loading?"Finding apps…":"No apps are available yet");return;}
+        final ArrayList<App> choices=new ArrayList<>(apps);
+        final int pageNumber=currentPage;String[] labels=new String[choices.size()];boolean[] selected=new boolean[choices.size()];
+        HashSet<String> current=new HashSet<>();
+        for(WorkspaceModel.Item item:model.pages.get(pageNumber))
+            if(item!=null && !item.isWidget() && !item.isFolder())current.add(item.component);
+        for(int i=0;i<choices.size();i++){labels[i]=choices.get(i).label;selected[i]=current.contains(choices.get(i).key);}
+        LinearLayout dialogTitle=col();dialogTitle.setPadding(dp(24),dp(18),dp(24),dp(8));
+        TextView title=new TextView(this);title.setText("Choose favorite apps");title.setTextSize(20);title.setTextColor(0xff302638);dialogTitle.addView(title);
+        TextView detail=new TextView(this);detail.setText("Replaces this page's app shortcuts in alphabetical order. Folders and widgets stay; you can undo in Home options.");detail.setTextSize(13);detail.setTextColor(0xff554c5a);add(dialogTitle,detail,6);
+        AlertDialog dialog=new AlertDialog.Builder(this).setCustomTitle(dialogTitle)
+                .setMultiChoiceItems(labels,selected,(d,n,on)->selected[n]=on)
+                .setPositiveButton("Set favorites",null).setNeutralButton("Clear selection",null).setNegativeButton("Cancel",null).create();
+        dialog.setOnShowListener(ignored->{
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
+                for(int i=0;i<selected.length;i++){selected[i]=false;dialog.getListView().setItemChecked(i,false);}
+            });
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+                if(pageNumber>=model.pages.size()){dialog.dismiss();return;}
+                WorkspaceModel.Item[] page=model.pages.get(pageNumber),original=page.clone();
+                String previous;
+                try{previous=layoutSnapshot();}catch(Exception e){toast("Couldn't save the current layout");return;}
+                // Preserve folders, widgets, and unavailable shortcuts; only replace ordinary available app icons.
+                for(int i=0;i<page.length;i++){
+                    WorkspaceModel.Item item=page[i];
+                    if(item!=null && !item.isWidget() && !item.isFolder() && byKey.containsKey(item.component))page[i]=null;
+                }
+                for(int i=0;i<selected.length;i++)if(selected[i] && !model.addToPage(choices.get(i).key,pageNumber)){
+                    System.arraycopy(original,0,page,0,page.length);toast("Too many favorites for this page");return;
+                }
+                try {
+                    String updated=layoutSnapshot();
+                    SharedPreferences.Editor edit=prefs.edit().putString("layout",updated).putInt("page",currentPage);
+                    if(!previous.equals(updated))edit.putString("favorites_before",previous).putString("favorites_after",updated);
+                    if(!edit.commit())throw new IllegalStateException("save failed");
+                }catch(Exception e){
+                    System.arraycopy(original,0,page,0,page.length);persistLayout(true,false);toast("Couldn't save your favorites");return;
+                }
+                dialog.dismiss();showHome();toast("Favorites set. Undo is in Home options.");
+            });
+        });dialog.show();
+    }
+    private void undoFavorites() {
+        String previous=prefs.getString("favorites_before",null),after=prefs.getString("favorites_after",null);
+        if(previous==null || after==null){toast("There is no favorites change to undo");return;}
+        if(!after.equals(prefs.getString("layout",null))){toast("The layout changed since then; favorites can't be undone safely");return;}
+        if(!prefs.edit().putString("layout",previous).remove("favorites_before").remove("favorites_after").commit()){
+            toast("Couldn't restore the previous layout");return;
+        }
+        model=readLayout();currentPage=Math.min(currentPage,model.pages.size()-1);showHome();toast("Previous layout restored");
+    }
+    private final class WidgetFrame extends FrameLayout {
+        final WorkspaceModel.Pos position;
+        final int touchSlop;
+        float pressX,pressY;
+        Runnable longPress;
+        WidgetFrame(Context context,WorkspaceModel.Pos pos){super(context);position=pos;touchSlop=ViewConfiguration.get(context).getScaledTouchSlop();setClickable(true);}
+        private void clearWidgetPress(){if(longPress!=null){ui.removeCallbacks(longPress);longPress=null;}}
+        @Override public boolean dispatchTouchEvent(MotionEvent event){
+            switch(event.getActionMasked()){
+                case MotionEvent.ACTION_DOWN:
+                    clearWidgetPress();pressX=event.getX();pressY=event.getY();
+                    longPress=()->{longPress=null;startMoving(this,position,Math.round(pressX),Math.round(pressY));};
+                    ui.postDelayed(longPress,ViewConfiguration.getLongPressTimeout());break;
+                case MotionEvent.ACTION_MOVE:
+                    if(Math.abs(event.getX()-pressX)>touchSlop || Math.abs(event.getY()-pressY)>touchSlop)clearWidgetPress();break;
+                case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:clearWidgetPress();break;
+            }
+            return super.dispatchTouchEvent(event);
+        }
+        @Override protected void onDetachedFromWindow(){clearWidgetPress();super.onDetachedFromWindow();}
+    }
+    private View widgetView(WorkspaceModel.Item item,WorkspaceModel.Pos pos) {
+        FrameLayout frame=new WidgetFrame(this,pos);
         try {
             AppWidgetProviderInfo info=widgetManager.getAppWidgetInfo(item.widgetId);
             if(info==null)throw new IllegalStateException("Provider missing");
@@ -691,11 +903,12 @@ public final class MainActivity extends Activity {
         });
     }
     private View drawerTile(WorkspaceModel.Item item,App app,View recycled) {
-        LinearLayout tile; ImageView icon; TextView label;
-        if(recycled instanceof LinearLayout && ((LinearLayout)recycled).getChildCount()==2){tile=(LinearLayout)recycled;icon=(ImageView)tile.getChildAt(0);label=(TextView)tile.getChildAt(1);}
-        else {tile=col();tile.setGravity(Gravity.CENTER);tile.setLayoutParams(new AbsListView.LayoutParams(-1,dp(96)));icon=new ImageView(this);tile.addView(icon,new LinearLayout.LayoutParams(dp(48),dp(48)));
-            label=text("",11);label.setGravity(Gravity.CENTER);label.setMaxLines(1);label.setEllipsize(TextUtils.TruncateAt.END);tile.addView(label,new LinearLayout.LayoutParams(-1,-2));tile.setFocusable(true);}
-        Bitmap custom=chosenIcon(app.key);if(custom!=null)icon.setImageBitmap(custom);else icon.setImageDrawable(app.info.loadIcon(getPackageManager()));label.setText(app.label);tile.setContentDescription(app.label);tile.setOnClickListener(v->launch(app.key));
+        LinearLayout tile; FrameLayout icon; TextView label;
+        if(recycled instanceof LinearLayout && ((LinearLayout)recycled).getChildCount()==2 && ((LinearLayout)recycled).getChildAt(0) instanceof FrameLayout){tile=(LinearLayout)recycled;icon=(FrameLayout)tile.getChildAt(0);label=(TextView)tile.getChildAt(1);}
+        else {tile=col();tile.setGravity(Gravity.CENTER);tile.setLayoutParams(new AbsListView.LayoutParams(-1,dp(105)));icon=new FrameLayout(this);tile.addView(icon,new LinearLayout.LayoutParams(dp(54),dp(54)));
+            label=text("",11);label.setGravity(Gravity.CENTER);label.setMaxLines(2);label.setEllipsize(TextUtils.TruncateAt.END);tile.addView(label,new LinearLayout.LayoutParams(-1,-2));tile.setFocusable(true);}
+        icon.removeAllViews();icon.addView(appIcon(app,themeId,dp(54),true),new FrameLayout.LayoutParams(-1,-1));
+        label.setText(app.label);tile.setContentDescription(app.label);tile.setOnClickListener(v->launch(app.key));
         tile.setOnLongClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);new AlertDialog.Builder(this).setTitle(app.label).setItems(new String[]{"Add to Home","Add to dock","Customize icon","App info"},(d,n)->{
             if(n==0){if(model.addToPage(app.key,currentPage)){saveLayout();hideKeyboard();showHome();}else toast("No free space on this page");}
             else if(n==1){int i=0;while(i<model.dock.length && model.dock[i]!=null)i++;if(i==model.dock.length){toast("The dock is full");return;}model.dock[i]=item;saveLayout();hideKeyboard();showHome();}
@@ -704,10 +917,12 @@ public final class MainActivity extends Activity {
         }).show();return true;});return tile;
     }
     private void customizeIcon(App app) {
-        String old=prefs.getString("icon:"+app.key,"original");int selected=0;
+        String old=prefs.getString("icon:"+app.key,"auto");int selected=0;
         for(int i=0;i<ICON_KEYS.length;i++)if(ICON_KEYS[i].equals(old))selected=i;
         new AlertDialog.Builder(this).setTitle("Icon for "+app.label).setSingleChoiceItems(ICON_LABELS,selected,(d,which)->{
-            prefs.edit().putString("icon:"+app.key,ICON_KEYS[which]).apply();d.dismiss();if(screen.equals("drawer") && search!=null)refreshDrawer(search.getText().toString());toast("Icon saved for "+app.label);
+            SharedPreferences.Editor edit=prefs.edit().putString("icon:"+app.key,ICON_KEYS[which]);
+            if(!ICON_KEYS[which].equals("original"))edit.putBoolean("themed_icons",true);
+            edit.apply();d.dismiss();if(screen.equals("drawer") && search!=null)refreshDrawer(search.getText().toString());toast("Icon saved for "+app.label);
         }).setNegativeButton("Cancel",null).show();
     }
     private void themeFlourish() {
@@ -737,7 +952,7 @@ public final class MainActivity extends Activity {
         base("preview",t,false);header("Preview");content.addView(new View(this),new LinearLayout.LayoutParams(1,0,1));
         LinearLayout panel=col();panel.setPadding(dp(18),dp(18),dp(18),dp(18));panel.setBackground(rounded(0xe8232033,t.accent,24));
         TextView title=text(t.name,26);title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));panel.addView(title);add(panel,text(t.subtitle,14),7);
-        LinearLayout sample=row();for(int i=0;i<Math.min(4,apps.size());i++){App a=apps.get(i);ImageView icon=new ImageView(this);icon.setImageDrawable(a.info.loadIcon(getPackageManager()));icon.setPadding(dp(6),dp(6),dp(6),dp(6));icon.setBackground(rounded(0xcc302b48,t.accent,16));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.rightMargin=dp(9);sample.addView(icon,lp);}add(panel,sample,16);
+        LinearLayout sample=row();for(int i=0;i<Math.min(4,apps.size());i++){App a=apps.get(i);View icon=appIcon(a,t.id,dp(50),true);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(50),dp(50));lp.rightMargin=dp(9);sample.addView(icon,lp);}add(panel,sample,16);
         add(panel,text("Your shortcuts stay exactly where you placed them.",13),12);
         TextView apply=button("Apply theme",()->{prefs.edit().putString("previous_theme",themeId).putString("theme",t.id).apply();themeId=t.id;showHome();themeFlourish();toast("Theme applied to Starlight Home");});apply.setTextColor(0xff282136);apply.setBackground(rounded(t.accent,0,18));add(panel,apply,16);add(content,panel,0);
     }
@@ -759,9 +974,10 @@ public final class MainActivity extends Activity {
         add(content,text(isHome()?"Starlight is your Home":"You are previewing Starlight",18),18);
         add(content,button("Choose default Home",this::homeChoice),14);add(content,button("Switch to Samsung Home",this::homeSettings),8);
         add(content,button("Undo last theme",()->{String prev=prefs.getString("previous_theme",themeId);prefs.edit().putString("previous_theme",themeId).putString("theme",prev).apply();themeId=theme(prev).id;showHome();}),8);
+        add(content,button(prefs.getBoolean("themed_icons",true)?"Themed icons: on":"Themed icons: off",()->{prefs.edit().putBoolean("themed_icons",!prefs.getBoolean("themed_icons",true)).apply();showSettings();}),8);
         add(content,button(prefs.getBoolean("ambient",true)?"Ambient effect: on":"Ambient effect: off",()->{prefs.edit().putBoolean("ambient",!prefs.getBoolean("ambient",true)).apply();showSettings();}),8);
-        add(content,text("Touch and hold an icon to move it. Drop it onto another icon to make a folder. Swipe up for all apps. Long-press an app in the drawer to add it to Home. Your Samsung Home and its layout stay separate.",14),18);
-        add(content,text("Widgets are an early feature. Move or resize them in Home options → Widgets. Detailed appearance controls, layout backup and more themes are still being developed.",13),18);
+        add(content,text("Touch and hold an icon to move it. Pause over another icon to make a folder. Swipe up for all apps. Long-press an app in the drawer to add it to Home. Your Samsung Home and its layout stay separate.",14),18);
+        add(content,text("Touch and hold a widget to move it, or use Home options → Widgets to move or resize it. More themes, layout backup and detailed appearance controls are still being developed.",13),18);
     }
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
         if(e.getAction()==MotionEvent.ACTION_DOWN){downX=e.getX();downY=e.getY();}

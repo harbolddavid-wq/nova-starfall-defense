@@ -113,9 +113,11 @@ public final class WorkspaceModel {
     public boolean addToPage(String key, int page) {
         Pos p = firstFree(page); if (p == null) return false; put(p, Item.app(key)); return true;
     }
-    /** Drop onto an app to make a folder; drop an app onto a folder to add it.
-     * Other occupied targets swap, so no shortcut is lost. */
+    /** Explicitly combining icons makes a folder; occupied targets can instead swap. */
     public boolean move(Pos from, Pos to) {
+        return move(from,to,true);
+    }
+    public boolean move(Pos from, Pos to, boolean combine) {
         if (!valid(from) || !valid(to) || from.equals(to)) return false;
         Item source = get(from), target = get(to); if (source == null) return false;
         if(source.isWidget()) {
@@ -124,10 +126,10 @@ public final class WorkspaceModel {
         }
         Pos occupied=occupant(to);
         if(occupied!=null && get(occupied).isWidget())return false;
-        if (target != null && !source.isFolder() && !target.isFolder()) {
+        if (combine && target != null && !source.isFolder() && !target.isFolder()) {
             ArrayList<String> apps = new ArrayList<>(); apps.add(target.component); apps.add(source.component);
             put(to, Item.folder("Folder", apps)); put(from, null);
-        } else if (target != null && target.isFolder() && !source.isFolder()) {
+        } else if (combine && target != null && target.isFolder() && !source.isFolder()) {
             target.children.add(source.component); put(from, null);
         } else { put(from, target); put(to, source); }
         return true;

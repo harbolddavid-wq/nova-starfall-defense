@@ -97,6 +97,42 @@ def require_absent(text):
     if any(match(node,text) for node in tree.iter()):
         raise AssertionError("Unexpected UI text remains: "+text)
 
+def bounds(node):
+    found=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",node.attrib["bounds"])
+    if not found: raise AssertionError("Missing target bounds")
+    return tuple(map(int,found.groups()))
+
+def choose_two_favorites(existing):
+    tap("Choose your favorite apps")
+    tree=hierarchy()
+    options=[node for node in tree.iter() if node.attrib.get("class","").endswith("CheckedTextView")
+             and node.attrib.get("text") and node.attrib.get("text") not in existing]
+    if len(options)<2: raise AssertionError("Not enough apps visible in favorites chooser")
+    names=[options[0].attrib["text"],options[1].attrib["text"]]
+    for name in names: tap(name)
+    tap("Set favorites")
+    for name in names: wait_for(name)
+    return names
+
+def drag_down_one_cell(node,width_cells,height_cells):
+    left,top,right,bottom=bounds(node)
+    w=(right-left)//width_cells;h=(bottom-top)//height_cells
+    start_x=left+w//2;start_y=top+h//2
+    # Slow initial movement stays within Android's long-press touch slop.
+    adb("shell","input","swipe",start_x,start_y,start_x,start_y+h,9000)
+    return top,h
+
+def wait_moved(label,old_top,cell_height):
+    end=time.monotonic()+20
+    while time.monotonic()<end:
+        current=bounds(wait_for(label))[1]
+        if current!=old_top:
+            if abs(current-(old_top+cell_height))>max(32,cell_height//6):
+                raise AssertionError(label+" moved to the wrong row")
+            return current
+        time.sleep(1)
+    raise AssertionError(label+" did not move from its original position")
+
 try:
     adb("shell","wm","size","1080x2340")
     adb("shell","wm","density","450")
@@ -108,6 +144,34 @@ try:
     (evidence/"providers.txt").write_text(adb("shell","dumpsys","appwidget"))
     adb("shell","am","start","-n","com.novasky.starlightthemes/.MainActivity")
     wait_for("Home options")
+    wait_for("Choose your favorite apps")
+    time.sleep(2)
+    initial=hierarchy()
+    existing={node.attrib.get("content-desc","") for node in initial.iter() if node.attrib.get("content-desc")}
+    favorites=choose_two_favorites(existing)
+    tap("Home options")
+    tap("Undo favorite changes")
+    wait_for("Choose your favorite apps")
+    for name in favorites: require_absent(name)
+    tap("Choose your favorite apps")
+    for name in favorites: tap(name)
+    tap("Set favorites")
+    icon=wait_for(favorites[0]);old_top,cell_height=drag_down_one_cell(icon,1,1)
+    new_top=wait_moved(favorites[0],old_top,cell_height)
+    adb("shell","am","force-stop","com.novasky.starlightthemes")
+    adb("shell","am","start","-n","com.novasky.starlightthemes/.MainActivity")
+    if abs(bounds(wait_for(favorites[0]))[1]-new_top)>5: raise AssertionError("Dragged app position was not restored")
+    print("PASS: choose and undo favorites, drag an app directly and restore its position")
+
+    a=bounds(wait_for(favorites[0]));b=bounds(wait_for(favorites[1]))
+    adb("shell","input","swipe",(a[0]+a[2])//2,(a[1]+a[3])//2,(b[0]+b[2])//2,(b[1]+b[3])//2,14000)
+    tap("Folder, folder")
+    wait_for("Hold a book for more options")
+    for name in favorites: wait_for(name)
+    with (evidence/"library-folder.png").open("wb") as f:
+        subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True)
+    adb("shell","input","keyevent","4")
+    print("PASS: create and open the library-style folder with both apps")
 
     choose_fixture()
     tap("Finish setup")
@@ -119,7 +183,10 @@ try:
     edit_fixture("Move to a position")
     tap("Page 2",partial=True)
     tap("Row 1, column 1, available")
-    wait_for("Starlight QA widget ready")
+    widget=wait_for("Starlight QA widget ready")
+    old_top,cell_height=drag_down_one_cell(widget,2,2)
+    wait_moved("Starlight QA widget ready",old_top,cell_height)
+    print("PASS: drag a widget directly")
 
     edit_fixture("Resize in place")
     tap("3 × 2 cells")
