@@ -1,0 +1,70 @@
+name: Nova Themes 2.0.9 gesture recovery (unsigned private-art-safe build)
+on:
+  push:
+    branches: [experiment/nova-themes-gesture-209-20261030]
+    paths:
+      - 'nova-themes-2-build/**'
+      - '.github/workflows/nova-themes-209-gesture.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out isolated experiment
+        uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK tooling
+        uses: android-actions/setup-android@v3
+      - name: Install pinned SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Restore code-only source (NO original art / signing keys)
+        run: |
+          mkdir -p work
+          base64 -d nova-themes-2-build/ci-source.zip.b64 > work/source.zip
+          echo "f678abf850d27d9c3488c3a2135d4161a87a13903e1f0014d60fc3de5ef7994b  work/source.zip" | sha256sum -c -
+          cd work && unzip -q source.zip
+      - name: Host tests (gesture suppression + navigation)
+        run: |
+          set -eu
+          cd work
+          mkdir -p host
+          javac -d host android/src/com/novasky/themes/NavigationGestures.java android/src/com/novasky/themes/GestureGate.java tests/NavigationGesturesTest.java tests/GestureGateTest.java
+          java -cp host com.novasky.themes.NavigationGesturesTest
+          java -cp host com.novasky.themes.GestureGateTest
+          grep -q 'android:versionCode="209"' android/AndroidManifest.xml
+          ! grep -q 'NovaVideoWallpaperService' android/AndroidManifest.xml
+      - name: Compile release Java and package unsigned APK
+        run: |
+          set -eu
+          cd work
+          mkdir -p build/classes build/dex
+          SDK_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar"
+          javac --release 8 -cp "$ANDROID_JAR" -d build/classes $(find android/src -name '*.java' | sort)
+          "$SDK_TOOLS/aapt2" compile --dir android/res -o build/res.zip
+          "$SDK_TOOLS/aapt2" link -o build/base.apk --manifest android/AndroidManifest.xml -I "$ANDROID_JAR" build/res.zip
+          java -cp "$SDK_TOOLS/lib/d8.jar" com.android.tools.r8.D8 --release --min-api 30 --lib "$ANDROID_JAR" --output build/dex $(find build/classes -name '*.class' | sort)
+          (cd build/dex && zip -q -j ../base.apk *.dex)
+          "$SDK_TOOLS/zipalign" -f -p 4 build/base.apk build/Nova_Themes_2.0.9_UNSIGNED_NO_ART.apk
+          "$SDK_TOOLS/zipalign" -c -p 4 build/Nova_Themes_2.0.9_UNSIGNED_NO_ART.apk
+          cp "$SDK_TOOLS/lib/apksigner.jar" build/apksigner.jar
+          echo "Unsigned CI build intentionally excludes 32 private theme asset files. Do not install as a release."
+          sha256sum build/Nova_Themes_2.0.9_UNSIGNED_NO_ART.apk
+      - name: Export unsigned APK and signing tool for PRIVATE local signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-themes-209-unsigned-ci
+          path: |
+            work/build/Nova_Themes_2.0.9_UNSIGNED_NO_ART.apk
+            work/build/apksigner.jar
+          retention-days: 7
+          if-no-files-found: error
