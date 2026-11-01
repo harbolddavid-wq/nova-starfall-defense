@@ -1,7 +1,7 @@
 name: Cursed Camera bundled face effects
 on:
   push:
-    branches: [work/cursed-camera-first-booth]
+    branches: [work/cursed-camera-face-fix]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo '0fe8468b2f1031ed06a25e13d12f7b21e2305eeeb45bb74059ec857206751919  work/source.zip' | sha256sum -c -
+          echo '3c3df0f2e2bf0c11d2dc5c269f1e7afea4af6f3e02dd6d071e27bbec86e2a85b  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
@@ -69,10 +69,13 @@ jobs:
             adb pull /sdcard/screen.png work/output/screen.png
             adb logcat -c
             adb shell am start -W -n com.novasky.midnightbooth/.SceneSmokeActivity
-            for attempt in $(seq 1 60); do adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt; if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi; if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi; sleep 2; done
+            for attempt in $(seq 1 20); do adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt; if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi; if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi; sleep 2; done
+            adb logcat -d -t 12000 > work/output/early-logcat.txt
             grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt
             adb exec-out run-as com.novasky.midnightbooth cat files/scene-smoke.png > work/output/scene-smoke.png
             test -s work/output/scene-smoke.png
+            adb exec-out run-as com.novasky.midnightbooth cat files/face-smoke.png > work/output/face-smoke.png
+            test -s work/output/face-smoke.png
             adb logcat -d -t 1500 > work/output/logcat.txt
       - uses: actions/upload-artifact@v4
         if: always()
