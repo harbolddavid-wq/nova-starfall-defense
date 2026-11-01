@@ -1,0 +1,22 @@
+name: Test free image editing API
+on:
+  push:
+    branches: [work/cursed-engine-free-probe]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet gradio_client
+      - name: Inspect public provider API
+        run: |
+          python - <<'PY'
+          from gradio_client import Client
+          c=Client('Qwen/Qwen-Image-Edit-2511',verbose=False)
+          print(c.view_api(return_format='str'))
+          PY
