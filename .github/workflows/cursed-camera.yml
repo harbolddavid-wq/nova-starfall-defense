@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo '31847374d60838df8f5c707b812d8129b7f0b618bac51ae3695085229cf6cc14  work/source.zip' | sha256sum -c -
+          echo 'acda4d58046eceb409deec53c759593ae696e5a19a8321c5d8e4b128515225ce  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
