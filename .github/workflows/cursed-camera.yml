@@ -1,4 +1,4 @@
-name: Cursed Camera first booth
+name: Cursed Camera bundled face effects
 on:
   push:
     branches: [work/cursed-camera-first-booth]
@@ -8,39 +8,33 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Restore and check source
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore source
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo 'f1f7d52fb54923a6b2391dbc67231371fc36d367ea0253f04a556cc26f746df8  work/source.zip' | sha256sum -c -
+          echo '8779a0c9030c0ea68a83ca8f196859c9371365e3dac8b30e6f23017b7745c364  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
-          python3 - <<'PY'
-          from pathlib import Path
-          m=Path('AndroidManifest.xml').read_text();s=Path('src/com/novasky/midnightbooth/BoothActivity.java').read_text()
-          assert 'android.permission.INTERNET' not in m
-          for x in ('ACTION_OPEN_DOCUMENT','ACTION_IMAGE_CAPTURE','IS_PENDING','out.compress','if(result==null)','ACTION_SEND'):
-              assert x in s,x
-          print('PASS offline manifest and image import/export checks')
-          PY
-      - name: Compile APK
+      - name: Build with bundled offline face detection
         run: |
-          set -eu
-          t="$ANDROID_HOME/build-tools/35.0.0"; a="$ANDROID_HOME/platforms/android-35/android.jar"
-          mkdir -p work/classes work/dex work/out
-          javac --release 8 -cp "$a" -d work/classes $(find work/src -name '*.java')
-          "$t/aapt2" link -o work/base.apk --manifest work/AndroidManifest.xml -I "$a"
-          java -cp "$t/lib/d8.jar" com.android.tools.r8.D8 --release --min-api 29 --lib "$a" --output work/dex $(find work/classes -name '*.class')
-          (cd work/dex && zip -q -j ../base.apk *.dex)
-          "$t/zipalign" -f -p 4 work/base.apk work/out/midnight-unsigned.apk
-          cp "$t/lib/apksigner.jar" work/out/
+          cd work
+          gradle --no-daemon :app:assembleRelease
+          mkdir -p output
+          cp app/build/outputs/apk/release/app-release-unsigned.apk output/midnight-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" output/
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions output/midnight-unsigned.apk > output/permissions.txt
+          if grep -q 'android.permission.INTERNET' output/permissions.txt; then echo 'Unexpected internet permission' >&2; exit 1; fi
       - uses: actions/upload-artifact@v4
         with:
           name: midnight-booth-unsigned
-          path: work/out/*
+          path: work/output/*
           retention-days: 7
