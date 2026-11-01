@@ -1,41 +1,67 @@
 [
   {
-    "action": "screenshot",
-    "label": "home-before"
+    "action": "wait",
+    "seconds": 4,
+    "label": "launcher-stable"
   },
   {
     "action": "settings",
-    "label": "settings-open"
+    "label": "open-settings"
+  },
+  {
+    "action": "wait",
+    "seconds": 5,
+    "label": "settings-fully-loaded"
   },
   {
     "action": "tap",
-    "x": 360,
-    "y": 140,
-    "label": "settings-tap"
+    "x": 330,
+    "y": 1205,
+    "label": "tap-display-and-touch"
+  },
+  {
+    "action": "wait",
+    "seconds": 2,
+    "label": "display-panel-loaded"
   },
   {
     "action": "back",
-    "label": "settings-back"
+    "label": "back-to-settings"
   },
   {
-    "action": "swipe",
-    "x1": 360,
-    "y1": 20,
-    "x2": 360,
-    "y2": 1000,
-    "duration_ms": 400,
-    "label": "notification-swipe"
-  },
-  {
-    "action": "back",
-    "label": "shade-back"
+    "action": "wait",
+    "seconds": 1,
+    "label": "settings-returned"
   },
   {
     "action": "home",
-    "label": "home-after"
+    "label": "home-button"
+  },
+  {
+    "action": "wait",
+    "seconds": 2,
+    "label": "home-settled"
+  },
+  {
+    "action": "swipe",
+    "x1": 350,
+    "y1": 3,
+    "x2": 350,
+    "y2": 950,
+    "duration_ms": 650,
+    "label": "swipe-notification-shade"
+  },
+  {
+    "action": "wait",
+    "seconds": 2,
+    "label": "shade-settled"
+  },
+  {
+    "action": "back",
+    "label": "dismiss-panel"
   },
   {
     "action": "ui_dump",
-    "label": "hierarchy"
+    "label": "read-ui-hierarchy"
   }
 ]
