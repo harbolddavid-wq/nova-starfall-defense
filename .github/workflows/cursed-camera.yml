@@ -27,7 +27,7 @@ jobs:
       - name: Build with bundled offline face detection
         run: |
           cd work
-          gradle --no-daemon :app:assembleRelease
+          gradle --no-daemon -Pandroid.useAndroidX=true :app:assembleRelease
           mkdir -p output
           cp app/build/outputs/apk/release/app-release-unsigned.apk output/midnight-unsigned.apk
           cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" output/
