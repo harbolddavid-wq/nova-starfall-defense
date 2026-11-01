@@ -18,7 +18,7 @@ jobs:
         run: |
           mkdir work
           base64 -d nova-gallery-luminous/code.zip.b64 > work/code.zip
-          echo '7331724c5c12efa8e702ce7bee7f4d55d7bf3b0a4093abff02943f0b23da29fa  work/code.zip' | sha256sum -c -
+          echo '1df7696789594974effe317a29bb4bcd1848707bce5accaa51c3196e15e988be  work/code.zip' | sha256sum -c -
           cd work && unzip -q code.zip
           python3 - <<'PY'
           from pathlib import Path
