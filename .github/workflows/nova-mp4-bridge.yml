@@ -21,7 +21,7 @@ jobs:
         run: |
           mkdir -p work
           base64 -d nova-mp4-bridge/code.zip.b64 > work/code.zip
-          echo 'b692e80867a28f4fce3661d33bcc899628cd1c91d0e0e13207e8022c5d5ef9a2  work/code.zip' | sha256sum -c -
+          echo 'a87bee7d69aba184b06f3cb795cc06a4a798e83fbb41ffe0c56aaff6a7fea700  work/code.zip' | sha256sum -c -
           cd work && unzip -q code.zip
       - name: Test confirmed gesture baseline and bridge guardrails
         run: |
