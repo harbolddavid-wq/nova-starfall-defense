@@ -1,0 +1,53 @@
+name: Nova Gallery experience test
+on:
+  push:
+    branches: [experiment/nova-gallery-luminous-020]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore source and verify core guarantees
+        run: |
+          mkdir work
+          base64 -d nova-gallery-luminous/code.zip.b64 > work/code.zip
+          echo '7331724c5c12efa8e702ce7bee7f4d55d7bf3b0a4093abff02943f0b23da29fa  work/code.zip' | sha256sum -c -
+          cd work && unzip -q code.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          a=Path('src/com/novasky/gallery/GalleryActivity.java').read_text()
+          m=Path('AndroidManifest.xml').read_text()
+          for x in ['MediaStore.createDeleteRequest','REQUEST_DELETE','RecoverableSecurityException','if(!requested)','getContentResolver().query(u,','if(partial())removed.clear()','reduceMotion()','toggleChrome()','getFocusX()','restoreGrid()']:
+              assert x in a,x
+          assert 'android.permission.INTERNET' not in m and 'android:versionCode="3"' in m
+          png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==')
+          for name in Path('../nova-gallery-luminous/image_names.txt').read_text().splitlines():
+              p=Path('res')/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(png)
+          print('PASS: privacy, native deletion consent and interaction guardrails')
+          PY
+      - name: Compile test package
+        run: |
+          set -eu
+          t="$ANDROID_HOME/build-tools/35.0.0"
+          a="$ANDROID_HOME/platforms/android-35/android.jar"
+          mkdir -p work/classes work/dex work/output
+          javac --release 8 -cp "$a" -d work/classes $(find work/src -name '*.java' | sort)
+          "$t/aapt2" compile --dir work/res -o work/res.zip
+          "$t/aapt2" link -o work/base.apk --manifest work/AndroidManifest.xml -I "$a" work/res.zip
+          java -cp "$t/lib/d8.jar" com.android.tools.r8.D8 --release --min-api 26 --lib "$a" --output work/dex $(find work/classes -name '*.class' | sort)
+          (cd work/dex && zip -q -j ../base.apk *.dex)
+          "$t/zipalign" -f -p 4 work/base.apk work/output/gallery-placeholder-unsigned.apk
+          cp "$t/lib/apksigner.jar" work/output/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-gallery-unsigned-placeholder
+          path: work/output/*
+          retention-days: 7
