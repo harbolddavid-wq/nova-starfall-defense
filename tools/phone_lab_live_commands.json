@@ -1,0 +1,41 @@
+[
+  {
+    "action": "screenshot",
+    "label": "home-before"
+  },
+  {
+    "action": "settings",
+    "label": "settings-open"
+  },
+  {
+    "action": "tap",
+    "x": 360,
+    "y": 140,
+    "label": "settings-tap"
+  },
+  {
+    "action": "back",
+    "label": "settings-back"
+  },
+  {
+    "action": "swipe",
+    "x1": 360,
+    "y1": 20,
+    "x2": 360,
+    "y2": 1000,
+    "duration_ms": 400,
+    "label": "notification-swipe"
+  },
+  {
+    "action": "back",
+    "label": "shade-back"
+  },
+  {
+    "action": "home",
+    "label": "home-after"
+  },
+  {
+    "action": "ui_dump",
+    "label": "hierarchy"
+  }
+]
