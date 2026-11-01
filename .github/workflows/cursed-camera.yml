@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo 'b8da2199fd0ad80b921c230a1fbff2c660f118378f3acd1a8ac8645f7e43f828  work/source.zip' | sha256sum -c -
+          echo '474a21e2cffbdf415edd09af8c9f6ab874232c71e8ce0acbcb5bc0a9a669b8d2  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
@@ -40,7 +40,10 @@ jobs:
           retention-days: 7
 
       - name: Build emulator test app
-        run: cd work && gradle --no-daemon -Pandroid.useAndroidX=true :app:assembleDebug
+        run: |
+          mkdir -p work/app/src/debug/assets
+          curl -fsSL https://raw.githubusercontent.com/googlesamples/mlkit/master/ios/quickstarts/vision/Resources/grace_hopper.jpg -o work/app/src/debug/assets/ci_portrait.jpg
+          cd work && gradle --no-daemon -Pandroid.useAndroidX=true :app:assembleDebug
       - name: Enable hardware virtualization
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -64,6 +67,17 @@ jobs:
             grep -q 'CURSED CAMERA' work/output/window.xml
             adb shell screencap -p /sdcard/screen.png
             adb pull /sdcard/screen.png work/output/screen.png
+            adb logcat -c
+            adb shell am start -W -n com.novasky.midnightbooth/.SceneSmokeActivity
+            for attempt in $(seq 1 60); do
+              adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt
+              if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi
+              if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi
+              sleep 2
+            done
+            grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt
+            adb exec-out run-as com.novasky.midnightbooth cat files/scene-smoke.png > work/output/scene-smoke.png
+            test -s work/output/scene-smoke.png
             adb logcat -d -t 1500 > work/output/logcat.txt
       - uses: actions/upload-artifact@v4
         if: always()
