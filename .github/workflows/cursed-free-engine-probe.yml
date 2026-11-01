@@ -20,3 +20,12 @@ jobs:
           c=Client('Qwen/Qwen-Image-Edit-2511',verbose=False)
           print(c.view_api(return_format='str'))
           PY
+      - name: Transform public portrait
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/googlesamples/mlkit/master/ios/quickstarts/vision/Resources/grace_hopper.jpg -o portrait.jpg
+          python - <<'PY'
+          from gradio_client import Client, handle_file
+          c=Client('Qwen/Qwen-Image-Edit-2511',verbose=False)
+          result=c.predict(images=[{'image':handle_file('portrait.jpg'),'caption':None}],prompt='Transform this person into a realistic gothic vampire using cinematic prosthetic makeup, pale skin and subtle fangs. Keep the same face, identity, clothing and background.',seed=0,randomize_seed=True,true_guidance_scale=4,num_inference_steps=20,height=512,width=512,rewrite_prompt=False,api_name='/infer')
+          print('RESULT:',result)
+          PY
