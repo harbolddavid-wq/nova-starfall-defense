@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo '0e5b3dbc18c1ca84c5be3bdadd3dc0ba8381c8967dfd06900044b4989c42b358  work/source.zip' | sha256sum -c -
+          echo 'b5bf91bd03c5d41b232f2752e2caa8dd6ff5a94d618a7f77ee3b7bda98fc6849  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
@@ -70,6 +70,7 @@ jobs:
             adb logcat -c
             adb shell am start -W -n com.novasky.midnightbooth/.SceneSmokeActivity
             for attempt in $(seq 1 60); do adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt; if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi; if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi; sleep 2; done
+            adb logcat -d -t 12000 > work/output/early-logcat.txt
             grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt
             adb exec-out run-as com.novasky.midnightbooth cat files/scene-smoke.png > work/output/scene-smoke.png
             test -s work/output/scene-smoke.png
