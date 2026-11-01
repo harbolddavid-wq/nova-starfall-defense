@@ -1,0 +1,46 @@
+name: Cursed Camera first booth
+on:
+  push:
+    branches: [work/cursed-camera-first-booth]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore and check source
+        run: |
+          mkdir work
+          base64 -d midnight-booth/source.b64 > work/source.zip
+          echo 'ecae1e94afd91051688eb3480e71537e680674984b5ad1660b47d2b638be5f6c  work/source.zip' | sha256sum -c -
+          cd work && unzip -q source.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          m=Path('AndroidManifest.xml').read_text();s=Path('src/com/novasky/midnightbooth/BoothActivity.java').read_text()
+          assert 'android.permission.INTERNET' not in m
+          for x in ('ACTION_OPEN_DOCUMENT','ACTION_IMAGE_CAPTURE','IS_PENDING','out.compress','if(result==null)','ACTION_SEND'):
+              assert x in s,x
+          print('PASS offline manifest and image import/export checks')
+          PY
+      - name: Compile APK
+        run: |
+          set -eu
+          t="$ANDROID_HOME/build-tools/35.0.0"; a="$ANDROID_HOME/platforms/android-35/android.jar"
+          mkdir -p work/classes work/dex work/out
+          javac --release 8 -cp "$a" -d work/classes $(find work/src -name '*.java')
+          "$t/aapt2" link -o work/base.apk --manifest work/AndroidManifest.xml -I "$a"
+          java -cp "$t/lib/d8.jar" com.android.tools.r8.D8 --release --min-api 29 --lib "$a" --output work/dex $(find work/classes -name '*.class')
+          (cd work/dex && zip -q -j ../base.apk *.dex)
+          "$t/zipalign" -f -p 4 work/base.apk work/out/midnight-unsigned.apk
+          cp "$t/lib/apksigner.jar" work/out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: midnight-booth-unsigned
+          path: work/out/*
+          retention-days: 7
