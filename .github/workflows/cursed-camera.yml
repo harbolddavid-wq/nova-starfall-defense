@@ -18,7 +18,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo 'd777fed0820805bb779e7d13efb45c750b113fcbe88d923c5084a8c60cd53777  work/source.zip' | sha256sum -c -
+          echo 'f1f7d52fb54923a6b2391dbc67231371fc36d367ea0253f04a556cc26f746df8  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
           python3 - <<'PY'
           from pathlib import Path
