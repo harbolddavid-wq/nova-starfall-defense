@@ -1,0 +1,55 @@
+name: Nova Phone Lab Live - Android 16 control proof
+
+on:
+  push:
+    branches:
+      - experiment/nova-phone-lab-live-2026-11-01
+    paths:
+      - '.github/workflows/nova-phone-lab-live-proof.yml'
+      - 'tools/phone_lab_remote_controls.py'
+      - 'tools/phone_lab_live_commands.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-phone-lab-live-proof
+  cancel-in-progress: true
+
+jobs:
+  adb-control-proof:
+    name: Demonstrate ADB screenshots and touch commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Android SDK tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36'
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Start disposable Android 16 and execute actual touch commands
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: python3 tools/phone_lab_remote_controls.py tools/phone_lab_live_commands.json
+      - name: Save screenshots, action record, UI hierarchy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Phone-Lab-Live-Proof
+          path: phone-lab-live-evidence/
+          if-no-files-found: warn
+          retention-days: 7
