@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo 'ca249323690fe1bf7483760db1d0772d048be4c5a017cc65afc129ed57c1294d  work/source.zip' | sha256sum -c -
+          echo 'b8da2199fd0ad80b921c230a1fbff2c660f118378f3acd1a8ac8645f7e43f828  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
@@ -36,5 +36,38 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: midnight-booth-unsigned
+          path: work/output/*
+          retention-days: 7
+
+      - name: Build emulator test app
+        run: cd work && gradle --no-daemon -Pandroid.useAndroidX=true :app:assembleDebug
+      - name: Enable hardware virtualization
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android 16 launch smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          ram-size: 4096M
+          disable-animations: true
+          script: |
+            adb shell wm size 720x1600
+            adb shell wm density 260
+            adb install work/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -W -n com.novasky.midnightbooth/.BoothActivity
+            adb shell uiautomator dump /sdcard/window.xml
+            adb pull /sdcard/window.xml work/output/window.xml
+            grep -q 'CURSED CAMERA' work/output/window.xml
+            adb shell screencap -p /sdcard/screen.png
+            adb pull /sdcard/screen.png work/output/screen.png
+            adb logcat -d -t 1500 > work/output/logcat.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cursed-scene-android16-smoke
           path: work/output/*
           retention-days: 7
