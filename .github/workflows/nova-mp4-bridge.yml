@@ -1,0 +1,65 @@
+name: Nova Themes MP4 bridge candidate
+on:
+  push:
+    branches: [experiment/nova-mp4-bridge-210]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore code-only source
+        run: |
+          mkdir -p work
+          base64 -d nova-mp4-bridge/code.zip.b64 > work/code.zip
+          echo 'b692e80867a28f4fce3661d33bcc899628cd1c91d0e0e13207e8022c5d5ef9a2  work/code.zip' | sha256sum -c -
+          cd work && unzip -q code.zip
+      - name: Test confirmed gesture baseline and bridge guardrails
+        run: |
+          mkdir -p work/host
+          javac -d work/host work/themes/android/src/com/novasky/themes/NavigationGestures.java work/themes/android/src/com/novasky/themes/GestureGate.java work/themes/tests/NavigationGesturesTest.java work/themes/tests/GestureGateTest.java
+          java -cp work/host com.novasky.themes.NavigationGesturesTest
+          java -cp work/host com.novasky.themes.GestureGateTest
+          python3 - <<'PY'
+          from pathlib import Path
+          m=Path('work/themes/android/AndroidManifest.xml').read_text()
+          t=Path('work/themes/android/src/com/novasky/themes/MainActivity.java').read_text()
+          p=Path('work/lock/app/src/main/java/com/nova/lockscapes/ThemesVideoBridge.java').read_text()
+          assert 'NovaVideoWallpaperService' not in m and 'BIND_WALLPAPER' not in m
+          assert 'gestureGate.resetForNewTouch()' in t and 'gestureGate.isBlocked()' in t
+          assert 'getCallingPackage()' in p and 'CALLER_CERT' in p
+          assert 'FLAG_LOCK' in p and 'FLAG_SYSTEM' in p and 'temporary.delete()' in p
+          print('PASS: gesture baseline, no competing service, authenticated transactional bridge')
+          PY
+      - name: Build unsigned candidate packages
+        run: |
+          set -eu
+          tools="$ANDROID_HOME/build-tools/35.0.0"
+          android="$ANDROID_HOME/platforms/android-35/android.jar"
+          test -f "$android" && test -f "$tools/lib/d8.jar"
+          for app in themes lock; do
+            if [ "$app" = themes ]; then root=work/themes/android; min=30; else root=work/lock/app/src/main; min=26; fi
+            mkdir -p "work/$app/build/classes" "work/$app/build/dex"
+            javac --release 8 -cp "$android" -d "work/$app/build/classes" $(find "$root" -name '*.java' | sort)
+            "$tools/aapt2" compile --dir "$root/res" -o "work/$app/build/res.zip"
+            "$tools/aapt2" link -o "work/$app/build/base.apk" --manifest "$root/AndroidManifest.xml" -I "$android" "work/$app/build/res.zip"
+            java -cp "$tools/lib/d8.jar" com.android.tools.r8.D8 --release --min-api "$min" --lib "$android" --output "work/$app/build/dex" $(find "work/$app/build/classes" -name '*.class' | sort)
+            (cd "work/$app/build/dex" && zip -q -j ../base.apk *.dex)
+            "$tools/zipalign" -f -p 4 "work/$app/build/base.apk" "work/$app/build/$app-unsigned.apk"
+          done
+          mkdir -p work/output
+          cp work/themes/build/themes-unsigned.apk work/lock/build/lock-unsigned.apk "$tools/lib/apksigner.jar" work/output/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-mp4-bridge-unsigned-candidates
+          path: work/output/*
+          retention-days: 7
