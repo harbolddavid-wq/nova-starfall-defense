@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir work
           base64 -d midnight-booth/source.b64 > work/source.zip
-          echo '44ee105c65b6ff6931dd2d4856b2e3ab325ced46a9fea127f9e60c11074c83e0  work/source.zip' | sha256sum -c -
+          echo '94219cda2c12f086173140ffb272803e4ec42f8e7aa1c755a1fcd489c2909210  work/source.zip' | sha256sum -c -
           cd work && unzip -q source.zip
       - name: Build with bundled offline face detection
         run: |
@@ -73,6 +73,8 @@ jobs:
             grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt
             adb exec-out run-as com.novasky.midnightbooth cat files/scene-smoke.png > work/output/scene-smoke.png
             test -s work/output/scene-smoke.png
+            adb exec-out run-as com.novasky.midnightbooth cat files/face-smoke.png > work/output/face-smoke.png
+            test -s work/output/face-smoke.png
             adb logcat -d -t 1500 > work/output/logcat.txt
       - uses: actions/upload-artifact@v4
         if: always()
