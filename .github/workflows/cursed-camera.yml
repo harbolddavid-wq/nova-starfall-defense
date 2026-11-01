@@ -69,12 +69,7 @@ jobs:
             adb pull /sdcard/screen.png work/output/screen.png
             adb logcat -c
             adb shell am start -W -n com.novasky.midnightbooth/.SceneSmokeActivity
-            for attempt in $(seq 1 60); do
-              adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt
-              if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi
-              if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi
-              sleep 2
-            done
+            for attempt in $(seq 1 60); do adb logcat -d -s CursedSceneSmoke:I '*:S' > work/output/scene-log.txt; if grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt; then break; fi; if grep -q SCENE_SMOKE_FAILED work/output/scene-log.txt; then cat work/output/scene-log.txt; exit 1; fi; sleep 2; done
             grep -q SCENE_SMOKE_SUCCESS work/output/scene-log.txt
             adb exec-out run-as com.novasky.midnightbooth cat files/scene-smoke.png > work/output/scene-smoke.png
             test -s work/output/scene-smoke.png
