@@ -61,6 +61,9 @@ def screenshot_jpeg():
 def perform(action):
     cmd=action.get("action")
     if cmd=="status": return PHONE.status()
+    if cmd=="launch_fixture":
+        PHONE.adb("shell","am","start","-n","com.novasky.phonelab.fixture/.MainActivity")
+        return {"action":"launch_fixture","package":"com.novasky.phonelab.fixture","status":"command_sent"}
     if cmd=="settings": return PHONE.settings()
     if cmd=="tap":return PHONE.tap(int(action["x"]),int(action["y"]))
     if cmd=="swipe":return PHONE.swipe(int(action["x1"]),int(action["y1"]),int(action["x2"]),int(action["y2"]),int(action.get("duration_ms",450)))
@@ -76,9 +79,18 @@ def main():
     PHONE.adb("shell","wm","size","720x1600")
     PHONE.adb("shell","wm","density","260")
     PHONE.adb("shell","settings","put","secure","immersive_mode_confirmations","confirmed")
-    print("SESSION READY",sdk,flush=True)
-    post("LAB_READY",device=sdk,commands=["status","screenshot","settings","tap","swipe","back","home","stop"],
-         expires_in_seconds=TIMEOUT_SECONDS,warning="Synthetic screen only; issue comments are public")
+    apk="lab-fixture/app/build/outputs/apk/debug/app-debug.apk"
+    if not os.path.isfile(apk): raise RuntimeError("Synthetic APK not built")
+    print("INSTALLING FIXTURE",apk,flush=True)
+    print(PHONE.adb("install","-r",apk,timeout=90).decode("utf-8","replace"),flush=True)
+    package=PHONE.adb("shell","pm","path","com.novasky.phonelab.fixture").decode("utf-8","replace").strip()
+    if not package.startswith("package:"):raise RuntimeError("Fixture APK installation not confirmed")
+    PHONE.adb("shell","am","start","-n","com.novasky.phonelab.fixture/.MainActivity")
+    time.sleep(3)
+    print("SESSION READY",sdk,"FIXTURE",package,flush=True)
+    post("LAB_READY",device=sdk,commands=["status","screenshot","launch_fixture","settings","tap","swipe","back","home","stop"],
+         installed_package="com.novasky.phonelab.fixture",
+         expires_in_seconds=TIMEOUT_SECONDS,warning="Synthetic APK only; issue comments are public")
     processed=set()
     finish=time.monotonic()+TIMEOUT_SECONDS
     while time.monotonic()<finish:
