@@ -57,7 +57,7 @@ jobs:
           emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
-            adb shell settings put system screen_off_timeout 1234567
+            adb shell settings put system font_scale 1.37
             adb shell run-as com.novasky.phonelab.fixture sh -c 'mkdir -p files; echo NOVA_STATE_PRESERVED > files/checkpoint.txt'
             adb shell run-as com.novasky.phonelab.fixture cat files/checkpoint.txt | grep -q NOVA_STATE_PRESERVED
             adb shell sync
@@ -112,5 +112,5 @@ jobs:
           script: |
             adb shell pm path com.novasky.phonelab.fixture | grep -q package:
             adb shell run-as com.novasky.phonelab.fixture cat files/checkpoint.txt | grep -q NOVA_STATE_PRESERVED
-            adb shell settings get system screen_off_timeout | grep -q 1234567
+            adb shell settings get system font_scale | grep -q 1.37
             echo 'PASS: synthetic app install, app data and Android setting survived cold boot on a fresh runner.'
