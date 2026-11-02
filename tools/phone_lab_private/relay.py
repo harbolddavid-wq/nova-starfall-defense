@@ -171,8 +171,9 @@ def make_app(agent_token: str | None = None, control_token: str | None = None,
         return {"session_id": sess.id, "result": result.get("result", {})}
 
     from mcp_bridge import install_mcp
-    install_mcp(app, execute, list_sessions, Command,
-                oidc_controller_auth=lambda header: is_auth(header, control_token, "controller"))
+    if os.environ.get("PHONE_LAB_MCP_TOKEN"):
+        install_mcp(app, execute, list_sessions, Command,
+                    oidc_controller_auth=lambda header: is_auth(header, control_token, "controller"))
     return app
 
 
