@@ -1,3 +1,4 @@
-request=2
-purpose=real_android16_direct_MCP_screen_touch_test_after_strict_oidc_allowlist
+request=3
+purpose=direct_chatgpt_mcp_live_android16_interaction
+session_limit=420_seconds
 synthetic_only=true
