@@ -26,7 +26,7 @@ class GithubOIDCVerifier:
 
     @classmethod
     def from_environment(cls):
-        ref = os.environ.get("PHONE_LAB_ALLOWED_GITHUB_WORKFLOW_REF", "")
+        ref = os.environ.get("PHONE_LAB_ALLOWED_GITHUB_WORKFLOW_REFS", "") or os.environ.get("PHONE_LAB_ALLOWED_GITHUB_WORKFLOW_REF", "")
         return cls(ref) if ref else None
 
     def verify(self, token: str, role: str) -> bool:
@@ -45,7 +45,7 @@ class GithubOIDCVerifier:
         checks = {
             "repository": claims.get("repository") == self.repository,
             "ref": claims.get("ref") == branch,
-            "workflow_ref": claims.get("workflow_ref") == self.workflow_ref,
+            "workflow_ref": claims.get("workflow_ref") in {v.strip() for v in self.workflow_ref.split(";") if v.strip()},
             "event_name": claims.get("event_name") in {"push", "workflow_dispatch"},
             "runner_environment": claims.get("runner_environment") == "github-hosted",
         }
