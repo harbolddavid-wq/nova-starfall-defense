@@ -6,12 +6,15 @@ Public GitHub issue comments are NOT appropriate for private APKs or user data.
 No public HTTP listener, shell evaluation, tunnels, or long-lived credentials.
 """
 import base64, hashlib, io, json, os, re, sys, time
+from datetime import datetime,timezone
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from PIL import Image
 
 sys.path.insert(0,os.path.dirname(__file__))
 from phone_lab_live_core import PhoneLab
+from phone_lab_fast_frames import collect as collect_fast_frames, contact_sheet
 
 REPO=os.environ["GITHUB_REPOSITORY"]
 ISSUE=int(os.environ.get("PHONE_LAB_ISSUE","2"))
@@ -88,13 +91,15 @@ def main():
     PHONE.adb("shell","am","start","-n","com.novasky.phonelab.fixture/.MainActivity")
     time.sleep(3)
     print("SESSION READY",sdk,"FIXTURE",package,flush=True)
-    post("LAB_READY",device=sdk,commands=["status","screenshot","launch_fixture","settings","tap","swipe","back","home","stop"],
+    # Scope polling to this session, not the ever-growing public issue history.
+    session_since=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+    post("LAB_READY",device=sdk,commands=["status","screenshot","launch_fixture","settings","tap","swipe","back","home","burst","sequence","stop"],
          installed_package="com.novasky.phonelab.fixture",
          expires_in_seconds=TIMEOUT_SECONDS,warning="Synthetic APK only; issue comments are public")
     processed=set()
     finish=time.monotonic()+TIMEOUT_SECONDS
     while time.monotonic()<finish:
-        comments=api("GET",URL+"?per_page=100")
+        comments=api("GET",URL+"?per_page=100&since="+quote(session_since))
         for c in comments:
             cid=c.get("id")
             if cid in processed:continue
@@ -107,9 +112,16 @@ def main():
                 command=json.loads(body[len("LAB_CMD:"):])
                 if command.get("session")!=SESSION:continue
                 seq=command.get("seq","unspecified")
-                result=perform(command)
-                time.sleep(.9)
-                jpeg,raw_hash,w,h=screenshot_jpeg()
+                if command.get("action") in ("burst","sequence"):
+                    mode,frames=collect_fast_frames(PHONE,command,perform)
+                    jpeg,w,h,cell_width=contact_sheet(frames)
+                    result={"action":mode,"frames":[v for _,v in frames],
+                            "cell_width":cell_width,"notes":"contact sheet ordered left-right then top-bottom"}
+                    raw_hash=frames[-1][1]["sha256"]
+                else:
+                    result=perform(command)
+                    time.sleep(.65 if command.get("action")!="screenshot" else 0)
+                    jpeg,raw_hash,w,h=screenshot_jpeg()
                 b64=base64.b64encode(jpeg).decode("ascii")
                 post("LAB_RESULT",command_comment_id=cid,seq=seq,action=command["action"],
                      result=result,image_base64=b64,image_mime="image/jpeg",
@@ -121,7 +133,7 @@ def main():
             except Exception as e:
                 print(f"COMMAND ERROR {cid}: {e}",file=sys.stderr,flush=True)
                 post("LAB_ERROR",command_comment_id=cid,error=str(e)[:220])
-        time.sleep(4)
+        time.sleep(1.5)
     post("LAB_ENDED",reason="disposable session timed out")
     print("SESSION TIMED OUT",flush=True)
 
