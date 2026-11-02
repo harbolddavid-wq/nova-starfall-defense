@@ -59,8 +59,10 @@ jobs:
             adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
             adb shell settings put system font_scale 1.37
             adb shell run-as com.novasky.phonelab.fixture mkdir -p files
-            adb shell run-as com.novasky.phonelab.fixture touch files/checkpoint.txt
-            adb shell run-as com.novasky.phonelab.fixture ls files/checkpoint.txt | grep -q checkpoint.txt
+            printf NOVA_STATE_PRESERVED > /tmp/nova-synthetic-checkpoint-data.txt
+            adb push /tmp/nova-synthetic-checkpoint-data.txt /data/local/tmp/nova-checkpoint-data.txt
+            adb shell run-as com.novasky.phonelab.fixture cp /data/local/tmp/nova-checkpoint-data.txt files/checkpoint.txt
+            adb shell run-as com.novasky.phonelab.fixture cat files/checkpoint.txt | grep -q NOVA_STATE_PRESERVED
             adb shell sync
       - name: Archive public synthetic checkpoint only
         run: |
