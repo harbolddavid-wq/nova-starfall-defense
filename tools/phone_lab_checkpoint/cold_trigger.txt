@@ -1,0 +1,3 @@
+request=1
+synthetic_only=true
+purpose=verify_cold_boot_user_data_fresh_runner

@@ -1,0 +1,116 @@
+name: Nova Phone Lab - Synthetic Cold State Restore
+on:
+  push:
+    branches: [experiment/nova-phone-lab-live-2026-11-01]
+    paths: ['tools/phone_lab_checkpoint/cold_trigger.txt']
+permissions:
+  contents: read
+jobs:
+  synthetic-checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Restore synthetic fixture
+        id: apk-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+          key: nova-lab-button-apk-${{ hashFiles('lab-fixture/**') }}-v1
+      - name: Build synthetic fixture if needed
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        run: gradle --no-daemon -p lab-fixture :app:assembleDebug
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Restore synthetic Android 16 base
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: nova-phone-lab-avd-api36-googleapis-x64-v1
+      - name: Install synthetic app and write cold-boot state
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          force-avd-creation: false
+          emulator-boot-timeout: 600
+          disable-animations: true
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+            adb shell settings put system screen_off_timeout 1234567
+            adb shell run-as com.novasky.phonelab.fixture sh -c 'mkdir -p files; echo NOVA_STATE_PRESERVED > files/checkpoint.txt'
+            adb shell run-as com.novasky.phonelab.fixture cat files/checkpoint.txt | grep -q NOVA_STATE_PRESERVED
+            adb shell sync
+      - name: Archive public synthetic checkpoint only
+        run: |
+          tar --sparse --exclude='avd/*/snapshots' --exclude='avd/*/cache.img*' -C "$HOME/.android" -czf "$RUNNER_TEMP/nova-synthetic-avd.tgz" avd
+          size=$(stat -c '%s' "$RUNNER_TEMP/nova-synthetic-avd.tgz")
+          echo "Synthetic checkpoint bytes: $size"
+          test "$size" -le 209715200
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-synthetic-avd-${{ github.run_id }}
+          path: ${{ runner.temp }}/nova-synthetic-avd.tgz
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+  restore-fresh-runner:
+    needs: synthetic-checkpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: nova-synthetic-avd-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore disposable synthetic files
+        run: |
+          mkdir -p "$HOME/.android"
+          tar -xzf "$RUNNER_TEMP/nova-synthetic-avd.tgz" -C "$HOME/.android"
+      - name: Boot restored cold-boot state
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          force-avd-creation: false
+          emulator-boot-timeout: 600
+          disable-animations: true
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb shell pm path com.novasky.phonelab.fixture | grep -q package:
+            adb shell run-as com.novasky.phonelab.fixture cat files/checkpoint.txt | grep -q NOVA_STATE_PRESERVED
+            adb shell settings get system screen_off_timeout | grep -q 1234567
+            echo 'PASS: synthetic app install, app data and Android setting survived cold boot on a fresh runner.'
