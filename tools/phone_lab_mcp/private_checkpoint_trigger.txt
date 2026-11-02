@@ -1,1 +1,1 @@
-synthetic_private_checkpoint_test=5
+synthetic_private_checkpoint_test=6
