@@ -14,6 +14,7 @@ from typing import Callable
 
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
+from oauth_server import install_oauth, BASE
 from pydantic import ValidationError
 
 MAX_RPC_BYTES = 64_000
@@ -22,6 +23,7 @@ PROTOCOL_VERSION = "2025-06-18"
 
 def _tool(name: str, desc: str, props: dict, required: list[str], read_only=False):
     return {"name": name, "description": desc,
+            "securitySchemes": [{"type": "oauth2", "scopes": ["lab:control"]}],
             "inputSchema": {"type": "object", "properties": props, "required": required, "additionalProperties": False},
             "annotations": {"readOnlyHint": read_only, "destructiveHint": False}}
 
@@ -52,6 +54,8 @@ def install_mcp(app, execute: Callable, list_sessions: Callable, Command: type, 
     if len(secret) < 32:
         raise RuntimeError("PHONE_LAB_MCP_TOKEN must contain >=32 characters")
 
+    oauth_access = install_oauth(app, pairing_key=secret)
+
     def rpc_result(request_id, result):
         return {"jsonrpc": "2.0", "id": request_id, "result": result}
 
@@ -61,7 +65,8 @@ def install_mcp(app, execute: Callable, list_sessions: Callable, Command: type, 
     def authorized(auth):
         return bool(auth and auth.startswith("Bearer ") and
                     (secrets.compare_digest(auth[7:].encode(), secret.encode()) or
-                     (oidc_controller_auth is not None and oidc_controller_auth(auth))))
+                     (oidc_controller_auth is not None and oidc_controller_auth(auth)) or
+                     oauth_access(auth)))
 
     async def call_tool(name: str, args: dict):
         allowed = next((t for t in TOOLS if t["name"] == name), None)
@@ -135,7 +140,13 @@ def install_mcp(app, execute: Callable, list_sessions: Callable, Command: type, 
             return JSONResponse(rpc_result(rid, {"tools": TOOLS}), headers={"Cache-Control": "no-store"})
         if method == "tools/call":
             if not authorized(request.headers.get("authorization")):
-                return Response(status_code=401, headers={"WWW-Authenticate": "Bearer", "Cache-Control": "no-store"})
+                challenge = ('Bearer resource_metadata="' + BASE + '/.well-known/oauth-protected-resource",'
+                             ' error="insufficient_scope", error_description="Connect Nova Phone Lab to continue"')
+                return JSONResponse(rpc_result(rid, {
+                    "isError": True,
+                    "content": [{"type": "text", "text": "Authentication required; connect Nova Phone Lab."}],
+                    "_meta": {"mcp/www_authenticate": [challenge]}}),
+                    headers={"WWW-Authenticate": challenge, "Cache-Control": "no-store"})
             params = obj.get("params", {})
             if not isinstance(params, dict) or not isinstance(params.get("name"), str) or not isinstance(params.get("arguments", {}), dict):
                 return JSONResponse(rpc_error(rid, -32602, "Invalid tool parameters"))
