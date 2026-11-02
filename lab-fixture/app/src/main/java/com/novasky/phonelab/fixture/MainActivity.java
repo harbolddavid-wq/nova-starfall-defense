@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
     }
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        count=getPreferences(MODE_PRIVATE).getInt("count",0);
         getWindow().setStatusBarColor(Color.rgb(20,20,26));
         getWindow().setNavigationBarColor(Color.rgb(20,20,26));
         root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);
@@ -55,13 +56,13 @@ public class MainActivity extends Activity {
         countLabel=label("",24);countLabel.setTypeface(null,Typeface.BOLD);
         root.addView(countLabel);
         Button press=control("PRESS ME +1");press.setId(101);
-        press.setOnClickListener(v->{count++;update();});
+        press.setOnClickListener(v->{count++;getPreferences(MODE_PRIVATE).edit().putInt("count",count).commit();update();});
         root.addView(press);
         Button mode=control("TOGGLE COLOR");
         mode.setId(102);mode.setOnClickListener(v->{night=!night;update();});
         root.addView(mode);
         Button reset=control("RESET COUNTER");
-        reset.setId(103);reset.setOnClickListener(v->{count=0;update();});
+        reset.setId(103);reset.setOnClickListener(v->{count=0;getPreferences(MODE_PRIVATE).edit().putInt("count",count).commit();update();});
         root.addView(reset);
         stateLabel=label("",22);
         root.addView(stateLabel);
