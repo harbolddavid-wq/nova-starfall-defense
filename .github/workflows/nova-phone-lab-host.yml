@@ -1,0 +1,59 @@
+name: Nova Phone Lab - Relay Hosting Container Proof
+on:
+  push:
+    branches:
+      - experiment/nova-phone-lab-live-2026-11-01
+    paths:
+      - '.github/workflows/nova-phone-lab-host.yml'
+      - 'tools/phone_lab_host/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relay-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify credentials and Render Blueprint
+        run: |
+          python3 -m pip install --disable-pip-version-check pytest pyyaml
+          python3 -m pytest -q tools/phone_lab_host/test_host.py
+          python3 - <<'PY'
+          import yaml
+          from pathlib import Path
+          bp=yaml.safe_load(Path('tools/phone_lab_host/render.phone-lab.yaml').read_text())
+          assert bp['services'][0]['plan']=='free'
+          assert bp['services'][0]['runtime']=='docker'
+          assert all(x.get('sync') is False for x in bp['services'][0]['envVars'][:2])
+          print('PASS: Render free blueprint with non-committed secret envVars')
+          PY
+      - name: Build actual relay Docker image
+        run: docker build -f tools/phone_lab_host/Dockerfile -t nova-phone-lab-private-relay:ci .
+      - name: Run container and verify authenticated API
+        run: |
+          set -eu
+          AGENT=$(python3 -c 'import secrets; print(secrets.token_urlsafe(40))')
+          CONTROL=$(python3 -c 'import secrets; print(secrets.token_urlsafe(40))')
+          docker run -d --name nova-phone-lab-host-check -p 127.0.0.1:10000:10000 \
+            -e PHONE_LAB_AGENT_TOKEN="$AGENT" -e PHONE_LAB_CONTROL_TOKEN="$CONTROL" \
+            nova-phone-lab-private-relay:ci >/dev/null
+          trap 'docker rm -f nova-phone-lab-host-check >/dev/null 2>&1 || true' EXIT
+          PHONE_LAB_CONTROL_TOKEN="$CONTROL" python3 - <<'PY'
+          import json,os,time,urllib.request,urllib.error
+          root='http://127.0.0.1:10000'
+          for _ in range(60):
+              try:
+                  with urllib.request.urlopen(root+'/health',timeout=2) as response:
+                      if json.load(response)['status']=='ok':break
+              except (OSError,ValueError):time.sleep(.25)
+          else:raise RuntimeError('Container did not start')
+          try:
+              urllib.request.urlopen(root+'/v1/sessions',timeout=3)
+              raise AssertionError('Unauthenticated sessions accessible')
+          except urllib.error.HTTPError as exc:assert exc.code==401
+          req=urllib.request.Request(root+'/v1/sessions',headers={'Authorization':'Bearer '+os.environ['PHONE_LAB_CONTROL_TOKEN']})
+          with urllib.request.urlopen(req,timeout=3) as response:
+              assert json.load(response)=={'sessions':[]}
+          print('PASS: actual Docker host /health, rejected unauthorized client, authorized empty sessions')
+          PY
