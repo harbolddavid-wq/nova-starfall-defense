@@ -1,0 +1,2 @@
+session_request=1
+purpose=synthetic_android_settings_only
