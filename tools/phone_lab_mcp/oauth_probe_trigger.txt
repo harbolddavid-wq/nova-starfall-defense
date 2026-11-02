@@ -1,0 +1,2 @@
+request=1
+purpose=public_oauth_metadata_and_redirect_rejection_on_render
