@@ -48,6 +48,8 @@ jobs:
       - name: Check fixture and dependencies
         run: |
           test -s lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+          gradle --no-daemon :app:assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
           python3 -m pip install --disable-pip-version-check 'websockets>=14,<17'
           python3 -m py_compile tools/phone_lab_mcp/mcp_hosted_smoke.py
           python3 -m unittest discover -s tools/phone_lab_mcp -p 'test_live_supervisor.py'
@@ -81,6 +83,7 @@ jobs:
             adb shell wm size 720x1600
             adb shell wm density 260
             adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
             if grep -Fxq 'mode=quick_start' tools/phone_lab_mcp/trigger.txt; then echo 'Quick start: full MCP smoke test skipped.'; else python3 tools/phone_lab_mcp/mcp_hosted_smoke.py; fi
             python3 tools/phone_lab_mcp/live_supervisor.py
       - name: Upload hashes/metadata only (no screenshots or tokens)
@@ -89,5 +92,13 @@ jobs:
         with:
           name: Nova-Phone-Lab-MCP-Android16-Verified-Metadata
           path: tools/phone_lab_mcp/hosted_mcp_report.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload testable Starfall Defense v1.1 APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Starfall-Defense-v1.1-Lab-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: ignore
           retention-days: 7
