@@ -5,6 +5,7 @@ RUN python -m pip install --no-cache-dir 'fastapi>=0.115,<1' 'uvicorn[standard]>
     && useradd --create-home --uid 10001 lab
 COPY tools/phone_lab_private/relay.py /app/relay.py
 COPY tools/phone_lab_private/oidc_auth.py /app/oidc_auth.py
+COPY tools/phone_lab_private/mcp_bridge.py /app/mcp_bridge.py
 COPY tools/phone_lab_host/host_start.py /app/host_start.py
 USER lab
 EXPOSE 10000
