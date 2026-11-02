@@ -46,7 +46,6 @@ class GithubOIDCVerifier:
             "repository": claims.get("repository") == self.repository,
             "ref": claims.get("ref") == branch,
             "workflow_ref": claims.get("workflow_ref") == self.workflow_ref,
-            "sub": claims.get("sub") == "repo:" + self.repository + ":ref:" + branch,
             "event_name": claims.get("event_name") in {"push", "workflow_dispatch"},
             "runner_environment": claims.get("runner_environment") == "github-hosted",
         }
