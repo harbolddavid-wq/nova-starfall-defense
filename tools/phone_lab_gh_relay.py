@@ -15,9 +15,9 @@ from phone_lab_live_core import PhoneLab
 
 REPO=os.environ["GITHUB_REPOSITORY"]
 ISSUE=int(os.environ.get("PHONE_LAB_ISSUE","2"))
-SESSION=os.environ.get("PHONE_LAB_SESSION","pilot-2026-11-01-a")
-OWNER=os.environ.get("PHONE_LAB_OWNER","harbolddavid-wq")
 RUN_ID=os.environ.get("GITHUB_RUN_ID","unknown")
+SESSION=os.environ.get("PHONE_LAB_SESSION",f"lab-{RUN_ID}")
+OWNER=os.environ.get("PHONE_LAB_OWNER","harbolddavid-wq")
 TOKEN=os.environ["GITHUB_TOKEN"]
 PHONE=PhoneLab()
 URL=f"https://api.github.com/repos/{REPO}/issues/{ISSUE}/comments"
