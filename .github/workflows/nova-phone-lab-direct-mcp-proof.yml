@@ -80,11 +80,7 @@ jobs:
             adb shell wm size 720x1600
             adb shell wm density 260
             adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
-            if grep -Fxq 'mode=quick_start' tools/phone_lab_mcp/trigger.txt; then
-              echo 'Quick start: leaving the full MCP smoke test for proof mode.'
-            else
-              python3 tools/phone_lab_mcp/mcp_hosted_smoke.py
-            fi
+            if grep -Fxq 'mode=quick_start' tools/phone_lab_mcp/trigger.txt; then echo 'Quick start: full MCP smoke test skipped.'; else python3 tools/phone_lab_mcp/mcp_hosted_smoke.py; fi
             python3 tools/phone_lab_mcp/chat_live_hold.py
       - name: Upload hashes/metadata only (no screenshots or tokens)
         if: always()
