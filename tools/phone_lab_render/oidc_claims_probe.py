@@ -3,7 +3,9 @@ import base64, json, os
 from urllib import request, parse, error
 REPO='harbolddavid-wq/nova-starfall-defense'
 BRANCH='refs/heads/experiment/nova-phone-lab-live-2026-11-01'
-REF=REPO+'/.github/workflows/nova-phone-lab-hosted-render.yml@'+BRANCH
+ALLOWED={REPO+'/.github/workflows/'+name+'@'+BRANCH for name in ('nova-phone-lab-hosted-render.yml', 'nova-phone-lab-direct-mcp-proof.yml')}
+REF=os.environ.get('GITHUB_WORKFLOW_REF','')
+assert REF in ALLOWED, 'Current workflow not allowlisted'
 for role in ('agent','controller'):
     audience='nova-phone-lab-'+role
     u=os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'];sep='&' if '?' in u else '?'
