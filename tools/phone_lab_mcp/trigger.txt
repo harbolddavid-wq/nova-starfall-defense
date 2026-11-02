@@ -1,0 +1,3 @@
+request=1
+purpose=verify_direct_MCP_tool_calls_on_real_android_16_through_render
+synthetic_only=true
