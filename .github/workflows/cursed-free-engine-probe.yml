@@ -1,4 +1,4 @@
-name: Test free image editing API
+name: Test lighter free image editing API
 on:
   push:
     branches: [work/cursed-engine-free-probe]
@@ -13,19 +13,19 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install --quiet gradio_client
-      - name: Inspect public provider API
-        run: |
-          python - <<'PY'
-          from gradio_client import Client
-          c=Client('Qwen/Qwen-Image-Edit-2511',verbose=False)
-          print(c.view_api(return_format='str'))
-          PY
-      - name: Transform public portrait
+      - name: Test lighter editor using public portrait
         run: |
           curl -fsSL https://raw.githubusercontent.com/googlesamples/mlkit/master/ios/quickstarts/vision/Resources/grace_hopper.jpg -o portrait.jpg
           python - <<'PY'
           from gradio_client import Client, handle_file
-          c=Client('Qwen/Qwen-Image-Edit-2511',verbose=False)
-          result=c.predict(images=[{'image':handle_file('portrait.jpg'),'caption':None}],prompt='Transform this person into a realistic gothic vampire using cinematic prosthetic makeup, pale skin and subtle fangs. Keep the same face, identity, clothing and background.',seed=0,randomize_seed=True,true_guidance_scale=4,num_inference_steps=20,height=512,width=512,rewrite_prompt=False,api_name='/infer')
-          print('RESULT:',result)
+          import shutil
+          c=Client('multimodalart/Qwen-Image-Edit-Fast',verbose=False)
+          print(c.view_api(return_format='str'))
+          out=c.predict(image=handle_file('portrait.jpg'),prompt='Transform this person into a realistic gothic vampire with visible pale skin, red eyes and sharp fangs, using cinematic photorealistic practical makeup. Preserve recognizable face, hair, clothing and background.',seed=0,randomize_seed=True,true_guidance_scale=1,num_inference_steps=8,rewrite_prompt=False,api_name='/infer')
+          print('Result type:',type(out))
+          shutil.copyfile(out[0],'vampire.png')
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-vampire-probe
+          path: vampire.png
