@@ -81,6 +81,7 @@ jobs:
             adb shell wm density 260
             adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
             python3 tools/phone_lab_mcp/mcp_hosted_smoke.py
+            python3 tools/phone_lab_mcp/chat_live_hold.py
       - name: Upload hashes/metadata only (no screenshots or tokens)
         if: always()
         uses: actions/upload-artifact@v4
