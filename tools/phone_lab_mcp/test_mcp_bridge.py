@@ -14,6 +14,7 @@ from mcp_bridge import install_mcp
 
 os.environ['PHONE_LAB_MCP_TOKEN'] = 'm'*48
 os.environ['PHONE_LAB_CONTROL_TOKEN'] = 'c'*48
+os.environ['PHONE_LAB_OAUTH_SIGNING_KEY'] = 's'*64
 
 class Command(BaseModel):
     session_id: str
@@ -60,9 +61,9 @@ async def run():
         l=await c.post('/mcp',json=rpc('tools/list',2),headers=headers)
         assert l.status_code==200 and len(l.json()['result']['tools'])==8
         forbidden=await c.post('/mcp',json=rpc('tools/call',3,{'name':'list_sessions','arguments':{}}),headers=headers)
-        assert forbidden.status_code==401
+        assert forbidden.json()["result"]["isError"] and "mcp/www_authenticate" in forbidden.json()["result"]["_meta"]
         bad=await c.post('/mcp',json=rpc('tools/call',4,{'name':'list_sessions','arguments':{}}),headers={**headers,'Authorization':'Bearer bad'})
-        assert bad.status_code==401
+        assert bad.json()["result"]["isError"]
         auth={**headers,'Authorization':'Bearer '+os.environ['PHONE_LAB_MCP_TOKEN']}
         sessions=await c.post('/mcp',json=rpc('tools/call',5,{'name':'list_sessions','arguments':{}}),headers=auth)
         assert sessions.json()['result']['structuredContent']['sessions'][0]['device']['api_level']=='36'
