@@ -73,7 +73,9 @@ def run_supervisor(*, get_token, start_agent, get_sessions, now, sleep,
 
 
 def main():
-    subprocess.run(["adb", "shell", "am", "start", "-n", FIXTURE],
+    trigger = (HERE / "trigger.txt").read_text(encoding="utf-8")
+    target = "com.novasky.arcade/.MainActivity" if "launch=starfall" in trigger.splitlines() else FIXTURE
+    subprocess.run(["adb", "shell", "am", "start", "-n", target],
                    check=True, stdout=subprocess.DEVNULL)
     with open(os.devnull, "w") as sink:
         def spawn(token):
