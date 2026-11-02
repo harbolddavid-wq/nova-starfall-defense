@@ -1,4 +1,4 @@
-request=4
+request=5
 mode=quick_start
 purpose=direct_chatgpt_mcp_live_android16_interaction
 session_limit=420_seconds
