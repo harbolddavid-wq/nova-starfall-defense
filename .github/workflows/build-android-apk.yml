@@ -1,7 +1,7 @@
 name: Build free Android APK
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/nova-phone-lab-live-2026-11-01]
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,4 +27,4 @@ jobs:
           name: Nova-Starfall-Defense-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 7
