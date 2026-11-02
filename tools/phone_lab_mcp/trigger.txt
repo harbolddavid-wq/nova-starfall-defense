@@ -1,5 +1,6 @@
-request=6
+request=7
 mode=quick_start
-purpose=direct_chatgpt_mcp_live_android16_interaction
+purpose=starfall_defense_1_1_drag_pause_emulator_check
 session_limit=1800_seconds
-synthetic_only=true
+synthetic_only=false
+launch=starfall
