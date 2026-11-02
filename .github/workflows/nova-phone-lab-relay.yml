@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/nova-phone-lab-relay.yml'
       - 'tools/phone_lab_gh_relay.py'
+      - 'tools/phone_lab_start.txt'
   workflow_dispatch:
 
 permissions:
@@ -26,7 +27,6 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PHONE_LAB_ISSUE: '2'
       PHONE_LAB_OWNER: 'harbolddavid-wq'
-      PHONE_LAB_SESSION: 'pilot-2026-11-01-a'
       PHONE_LAB_SESSION_SECONDS: '270'
     steps:
       - uses: actions/checkout@v4
