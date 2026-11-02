@@ -3,7 +3,7 @@ import base64, json, os
 from urllib import request, parse, error
 REPO='harbolddavid-wq/nova-starfall-defense'
 BRANCH='refs/heads/experiment/nova-phone-lab-live-2026-11-01'
-REF=REPO+'/.github/workflows/nova-phone-lab-oidc-probe.yml@'+BRANCH
+REF=REPO+'/.github/workflows/nova-phone-lab-hosted-render.yml@'+BRANCH
 for role in ('agent','controller'):
     audience='nova-phone-lab-'+role
     u=os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'];sep='&' if '?' in u else '?'
