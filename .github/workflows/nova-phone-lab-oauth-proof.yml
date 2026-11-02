@@ -1,0 +1,16 @@
+name: Nova Phone Lab - Remote MCP OAuth Discovery Proof
+on:
+  push:
+    branches: [experiment/nova-phone-lab-live-2026-11-01]
+    paths: ['tools/phone_lab_mcp/oauth_probe_trigger.txt']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oauth-public-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify hosted OAuth 2.1 discovery and redirect restrictions
+        run: python3 tools/phone_lab_mcp/oauth_remote_probe.py
