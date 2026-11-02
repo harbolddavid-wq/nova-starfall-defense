@@ -15,6 +15,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
+from oidc_auth import GithubOIDCVerifier
 
 ACTIONS = {"screenshot", "status", "tap", "swipe", "back", "home", "settings"}
 MAX_FRAME_BYTES = 8_000_000
@@ -53,14 +54,18 @@ def make_app(agent_token: str | None = None, control_token: str | None = None,
         raise ValueError("Invalid session TTL")
     app = FastAPI(title="Nova Phone Lab Private Relay", docs_url=None, redoc_url=None, openapi_url=None)
     sessions: dict[str, Session] = {}
+    oidc_verifier = GithubOIDCVerifier.from_environment()
 
-    def is_auth(provided: str | None, expected: str) -> bool:
+    def is_auth(provided: str | None, expected: str, role: str) -> bool:
         if not provided or not provided.startswith("Bearer "):
             return False
-        return secrets.compare_digest(provided[7:].encode(), expected.encode())
+        token = provided[7:]
+        if secrets.compare_digest(token.encode(), expected.encode()):
+            return True
+        return oidc_verifier is not None and oidc_verifier.verify(token, role)
 
     def require_control(auth: str | None):
-        if not is_auth(auth, control_token):
+        if not is_auth(auth, control_token, "controller"):
             raise HTTPException(status_code=401, detail="Unauthorized")
 
     def valid_session(sid: str) -> Session:
@@ -85,7 +90,7 @@ def make_app(agent_token: str | None = None, control_token: str | None = None,
 
     @app.websocket("/v1/agent")
     async def agent_socket(ws: WebSocket):
-        if not is_auth(ws.headers.get("authorization"), agent_token):
+        if not is_auth(ws.headers.get("authorization"), agent_token, "agent"):
             await ws.close(code=1008)
             return
         await ws.accept()
