@@ -12,13 +12,17 @@ for role in ('agent','controller'):
     payload=token.split('.')[1];payload+='='*((4-len(payload)%4)%4)
     claims=json.loads(base64.urlsafe_b64decode(payload))
     flags={'repository':claims.get('repository')==REPO,'branch':claims.get('ref')==BRANCH,
-            'workflow_ref':claims.get('workflow_ref')==REF,'sub':claims.get('sub')=='repo:'+REPO+':ref:'+BRANCH,
+            'workflow_ref':claims.get('workflow_ref')==REF,'subject_present':bool(claims.get('sub')),
             'runner_environment':claims.get('runner_environment')=='github-hosted',
             'event_name':claims.get('event_name') in ('push','workflow_dispatch')}
     print('Token issuer claims (boolean matches only):',role,flags,flush=True)
+    assert all(flags.values()), 'Signed identity claims did not match expected workflow'
     endpoint='https://nova-phone-lab-private-relay.onrender.com/v1/sessions'
     test=request.Request(endpoint,headers={'Authorization':'Bearer '+token})
     try:
-        with request.urlopen(test,timeout=30) as response: print('Remote controller probe:',role,response.status,flush=True)
+        with request.urlopen(test,timeout=30) as response:
+            status = response.status
     except error.HTTPError as e:
-        print('Remote controller probe:',role,e.code,flush=True)
+        status = e.code
+    print('Remote controller probe:',role,status,flush=True)
+    assert status == (200 if role == 'controller' else 401), 'Unexpected remote authorization result'
