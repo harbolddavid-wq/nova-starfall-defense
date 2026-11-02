@@ -23,8 +23,8 @@ class CheckpointError(ValueError):
 
 def decode_key(text: str) -> bytes:
     try:
-        key = base64.b64decode(text, validate=True)
-    except (ValueError, TypeError) as e:
+        key = base64.b64decode(text.strip(), validate=True)
+    except (ValueError, TypeError, AttributeError) as e:
         raise CheckpointError('Invalid checkpoint key encoding') from e
     if len(key) != 32:
         raise CheckpointError('Checkpoint key must contain 32 bytes')
