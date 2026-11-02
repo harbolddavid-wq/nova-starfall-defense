@@ -47,8 +47,11 @@ jobs:
             adb shell am start -n com.novasky.phonelab.fixture/.MainActivity
             sleep 3
             adb shell input tap 350 430
+            sleep 1
             adb shell input tap 350 430
+            sleep 1
             adb shell uiautomator dump /sdcard/window.xml
+            adb exec-out cat /sdcard/window.xml
             adb exec-out cat /sdcard/window.xml | grep -q 'BUTTON PRESSES: 2'
             adb shell am force-stop com.novasky.phonelab.fixture
             mkdir -p "$RUNNER_TEMP/nova-save"
@@ -102,8 +105,10 @@ jobs:
             adb shell am start -n com.novasky.phonelab.fixture/.MainActivity
             sleep 3
             adb shell uiautomator dump /sdcard/window.xml
+            adb exec-out cat /sdcard/window.xml
             adb exec-out cat /sdcard/window.xml | grep -q 'BUTTON PRESSES: 2'
             adb shell input tap 350 430
             adb shell uiautomator dump /sdcard/window.xml
+            adb exec-out cat /sdcard/window.xml
             adb exec-out cat /sdcard/window.xml | grep -q 'BUTTON PRESSES: 3'
             echo 'PASS synthetic counter restored to 2 on a fresh runner and advanced to 3.'
