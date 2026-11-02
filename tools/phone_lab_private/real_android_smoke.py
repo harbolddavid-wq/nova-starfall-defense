@@ -41,7 +41,11 @@ def png_info(blob):
 
 
 def xml_tree(phone):
-    return ElementTree.fromstring(phone.ui_hierarchy())
+    # Core PhoneLab intentionally exposes only allowlisted actions, not UI dumps.
+    # This test-only observer uses Android uiautomator to verify what a real APK rendered.
+    phone.adb("shell", "uiautomator", "dump", "/sdcard/nova-phone-lab-proof.xml", timeout=30)
+    xml = phone.adb("exec-out", "cat", "/sdcard/nova-phone-lab-proof.xml", timeout=15)
+    return ElementTree.fromstring(xml.decode("utf-8", "replace"))
 
 
 def text_exists(tree, value):
