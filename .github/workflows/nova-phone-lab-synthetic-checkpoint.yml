@@ -66,6 +66,41 @@ jobs:
             adb exec-out cat /sdcard/window.xml | grep -q 'BUTTON PRESSES: 1'
             adb emu avd snapshot save nova_checkpoint | tee /tmp/nova-checkpoint.txt
             grep -q '^OK' /tmp/nova-checkpoint.txt
+      - name: Archive public synthetic checkpoint only
+        run: |
+          tar --sparse -C "$HOME/.android" -czf "$RUNNER_TEMP/nova-synthetic-avd.tgz" avd
+          size=$(stat -c '%s' "$RUNNER_TEMP/nova-synthetic-avd.tgz")
+          echo "Synthetic checkpoint bytes: $size"
+          test "$size" -le 209715200
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-synthetic-avd-${{ github.run_id }}
+          path: ${{ runner.temp }}/nova-synthetic-avd.tgz
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+  restore-fresh-runner:
+    needs: synthetic-checkpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: nova-synthetic-avd-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore disposable synthetic files
+        run: |
+          mkdir -p "$HOME/.android"
+          tar -xzf "$RUNNER_TEMP/nova-synthetic-avd.tgz" -C "$HOME/.android"
       - name: Restart emulator and restore checkpoint
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -85,4 +120,4 @@ jobs:
             adb shell input tap 350 430
             adb shell uiautomator dump /sdcard/window.xml
             adb exec-out cat /sdcard/window.xml | grep -q 'BUTTON PRESSES: 2'
-            echo 'PASS: synthetic app state survived emulator restart on same disposable runner.'
+            echo 'PASS: synthetic app state survived emulator restart on a fresh disposable runner.'
