@@ -50,6 +50,7 @@ jobs:
           test -s lab-fixture/app/build/outputs/apk/debug/app-debug.apk
           python3 -m pip install --disable-pip-version-check 'websockets>=14,<17'
           python3 -m py_compile tools/phone_lab_mcp/mcp_hosted_smoke.py
+          python3 -m unittest discover -s tools/phone_lab_mcp -p 'test_live_supervisor.py'
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
