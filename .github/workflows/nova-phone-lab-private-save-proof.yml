@@ -19,6 +19,7 @@ jobs:
         run: |
           test -n "$PHONE_LAB_BACKUP_TOKEN"
           test -n "$PHONE_LAB_CHECKPOINT_KEY"
+          python3 -c 'import os,re; s=os.environ["PHONE_LAB_CHECKPOINT_KEY"].strip(); print("Key characters:",len(s)); print("Key has internal whitespace:",bool(re.search(r"\s",s))); print("Key begins with URL:",s.startswith(("https://","http://"))); print("Key has only base64 characters:",bool(re.fullmatch(r"[A-Za-z0-9+/=]+",s)))'
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
