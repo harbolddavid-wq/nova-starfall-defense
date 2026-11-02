@@ -1,2 +1,2 @@
-session_request=1
-purpose=synthetic_android_settings_only
+session_request=2
+purpose=synthetic_phone_lab_snapshot_cache_verification
