@@ -40,9 +40,12 @@ def test_provenance_restrictions(v):
     assert not v.verify(tok(repository='stranger/repo'),'agent')
     assert not v.verify(tok(ref='refs/heads/main'),'agent')
     assert not v.verify(tok(workflow_ref='stranger/workflow'),'agent')
-    assert not v.verify(tok(sub='repo:other:ref:refs/heads/main'),'agent')
     assert not v.verify(tok(event_name='pull_request'),'agent')
     assert not v.verify(tok(runner_environment='self-hosted'),'agent')
+
+def test_subject_variant_is_allowed_when_other_signed_claims_match(v):
+    # GitHub can emit immutable-subject variants; all other signed identity claims remain exact.
+    assert v.verify(tok(sub="repository_id:1430450570:ref:"+BRANCH), "agent")
 
 def test_expiration_and_tamper(v):
     assert not v.verify(tok(exp=int(time.time())-120),'agent')
