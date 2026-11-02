@@ -1,0 +1,55 @@
+name: Nova Phone Lab - Temporary Live Relay Proof
+
+on:
+  push:
+    branches:
+      - experiment/nova-phone-lab-live-2026-11-01
+    paths:
+      - '.github/workflows/nova-phone-lab-relay.yml'
+      - 'tools/phone_lab_gh_relay.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nova-phone-lab-relay-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  temporary-live-relay:
+    name: Temporary Android 16 command-response session
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PHONE_LAB_ISSUE: '2'
+      PHONE_LAB_OWNER: 'harbolddavid-wq'
+      PHONE_LAB_SESSION: 'pilot-2026-11-01-a'
+      PHONE_LAB_SESSION_SECONDS: '270'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Android platform tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36'
+      - name: Setup Pillow
+        run: python3 -m pip install --disable-pip-version-check pillow
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot emulator and process authenticated commands in one session
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: python3 tools/phone_lab_gh_relay.py
