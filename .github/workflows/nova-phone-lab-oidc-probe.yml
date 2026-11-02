@@ -1,0 +1,19 @@
+name: Nova Phone Lab - No Emulator OIDC Auth Diagnostic
+on:
+  push:
+    branches:
+      - experiment/nova-phone-lab-live-2026-11-01
+    paths:
+      - 'tools/phone_lab_render/oidc_probe_start.txt'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  oidc-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare safe OIDC claim flags and test hosted server
+        run: python3 tools/phone_lab_render/oidc_claims_probe.py
