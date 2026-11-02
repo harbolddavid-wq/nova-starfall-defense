@@ -1,0 +1,91 @@
+name: Nova Phone Lab - Direct MCP Real Android 16 Proof
+on:
+  push:
+    branches:
+      - experiment/nova-phone-lab-live-2026-11-01
+    paths:
+      - 'tools/phone_lab_mcp/trigger.txt'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: nova-phone-lab-mcp-test
+  cancel-in-progress: true
+jobs:
+  auth-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify signed workflow identity and hosted authorization
+        run: python3 tools/phone_lab_render/oidc_claims_probe.py
+  direct-mcp-android16:
+    needs: auth-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Restore synthetic APK cache
+        id: apk-cache
+        uses: actions/cache@v4
+        with:
+          path: lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+          key: nova-lab-button-apk-${{ hashFiles('lab-fixture/**') }}-v1
+      - name: Build synthetic fixture on cache miss
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        run: gradle --no-daemon -p lab-fixture :app:assembleDebug
+      - name: Check fixture and dependencies
+        run: |
+          test -s lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+          python3 -m pip install --disable-pip-version-check 'websockets>=14,<17'
+          python3 -m py_compile tools/phone_lab_mcp/mcp_hosted_smoke.py
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Restore Android 16 AVD snapshot
+        id: avd-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: nova-phone-lab-avd-api36-googleapis-x64-v1
+      - name: Boot Android 16 and connect to hosted Render relay
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          heap-size: 256M
+          force-avd-creation: false
+          emulator-boot-timeout: 600
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb shell wm size 720x1600
+            adb shell wm density 260
+            adb install -r lab-fixture/app/build/outputs/apk/debug/app-debug.apk
+            python3 tools/phone_lab_mcp/mcp_hosted_smoke.py
+      - name: Upload hashes/metadata only (no screenshots or tokens)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Phone-Lab-MCP-Android16-Verified-Metadata
+          path: tools/phone_lab_mcp/hosted_mcp_report.json
+          if-no-files-found: ignore
+          retention-days: 7
