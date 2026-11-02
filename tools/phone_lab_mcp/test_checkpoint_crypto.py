@@ -24,5 +24,6 @@ class CheckpointCryptoTests(unittest.TestCase):
         with self.assertRaises(CheckpointError): decrypt(b'bad',self.key,self.package,self.sha)
     def test_valid_base64_key(self):
         self.assertEqual(decode_key(base64.b64encode(self.key).decode()),self.key)
+        self.assertEqual(decode_key('  '+base64.b64encode(self.key).decode()+'\n'),self.key)
 
 if __name__ == '__main__': unittest.main()
