@@ -4,6 +4,9 @@ No token is stored in source, logs or a public GitHub issue. Both workflow
 identity and audience/role are checked after cryptographic signature validation.
 """
 import os
+import logging
+
+logger = logging.getLogger("phone_lab_oidc")
 from dataclasses import dataclass
 import jwt
 from jwt import PyJWKClient
@@ -35,12 +38,19 @@ class GithubOIDCVerifier:
                                 audience=AUDIENCES[role], issuer=ISSUER,
                                 options={"require": ["exp", "iat", "iss", "aud", "sub"]},
                                 leeway=15)
-        except (PyJWTError, ValueError, OSError, TimeoutError):
+        except (PyJWTError, ValueError, OSError, TimeoutError) as exc:
+            logger.warning("GitHub OIDC signature/expiry verification rejected: %s", type(exc).__name__)
             return False
         branch = "refs/heads/experiment/nova-phone-lab-live-2026-11-01"
-        return (claims.get("repository") == self.repository and
-                claims.get("ref") == branch and
-                claims.get("workflow_ref") == self.workflow_ref and
-                claims.get("sub") == "repo:" + self.repository + ":ref:" + branch and
-                claims.get("event_name") in {"push", "workflow_dispatch"} and
-                claims.get("runner_environment") == "github-hosted")
+        checks = {
+            "repository": claims.get("repository") == self.repository,
+            "ref": claims.get("ref") == branch,
+            "workflow_ref": claims.get("workflow_ref") == self.workflow_ref,
+            "sub": claims.get("sub") == "repo:" + self.repository + ":ref:" + branch,
+            "event_name": claims.get("event_name") in {"push", "workflow_dispatch"},
+            "runner_environment": claims.get("runner_environment") == "github-hosted",
+        }
+        failed = [name for name, ok in checks.items() if not ok]
+        if failed:
+            logger.warning("GitHub OIDC validated signature but rejected identity checks: %s", ",".join(failed))
+        return not failed
