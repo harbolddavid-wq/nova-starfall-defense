@@ -1,0 +1,18 @@
+# Optional FREE-tier demo relay host. No paid plan is requested by this blueprint.
+# User must choose to connect their own Render account and review the free limits.
+# Render hosts the RELAY only; it does not host a persistent Android emulator.
+services:
+  - type: web
+    name: nova-phone-lab-private-relay
+    runtime: docker
+    plan: free
+    dockerfilePath: ./tools/phone_lab_host/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PHONE_LAB_AGENT_TOKEN
+        sync: false
+      - key: PHONE_LAB_CONTROL_TOKEN
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: '1'
