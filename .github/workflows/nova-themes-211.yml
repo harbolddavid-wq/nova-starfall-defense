@@ -1,0 +1,65 @@
+name: Nova Themes 2.0.11 named pages (unsigned Android build)
+on:
+  push:
+    branches: [experiment/nova-themes-named-pages-211-20261103]
+    paths:
+      - 'nova-themes-211/**'
+      - '.github/workflows/nova-themes-211.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore proven MP4 code and apply 2.0.11 changes
+        run: |
+          set -eu
+          mkdir -p work
+          base64 -d nova-mp4-bridge/code.zip.b64 > work/code.zip
+          echo '26eb65dbc0a8ce9240484a41f932a95c804ff3eaa423464f49a708c26630abc0  work/code.zip' | sha256sum -c -
+          cd work && unzip -q code.zip && cd ..
+          NOVA_THEMES_ROOT="$GITHUB_WORKSPACE/work/themes" python3 nova-themes-211/apply_named_pages.py
+          grep -q 'android:versionCode="211"' work/themes/android/AndroidManifest.xml
+      - name: Host gesture and page-navigation tests
+        run: |
+          set -eu
+          cd work/themes
+          mkdir -p host
+          javac -d host android/src/com/novasky/themes/NavigationGestures.java android/src/com/novasky/themes/GestureGate.java tests/NavigationGesturesTest.java tests/GestureGateTest.java
+          java -cp host com.novasky.themes.NavigationGesturesTest
+          java -cp host com.novasky.themes.GestureGateTest
+          grep -q 'void createNamedPage' android/src/com/novasky/themes/MainActivity.java
+          grep -q 'void uninstallApp' android/src/com/novasky/themes/MainActivity.java
+          grep -q 'void chooseLockVideo' android/src/com/novasky/themes/MainActivity.java
+      - name: Build unsigned Android app without private art or credentials
+        run: |
+          set -eu
+          root=work/themes/android
+          tools="$ANDROID_HOME/build-tools/35.0.0"
+          android="$ANDROID_HOME/platforms/android-35/android.jar"
+          test -f "$android" && test -f "$tools/lib/d8.jar"
+          mkdir -p work/build/classes work/build/dex work/output
+          javac --release 8 -cp "$android" -d work/build/classes $(find "$root/src" -name '*.java' | sort)
+          "$tools/aapt2" compile --dir "$root/res" -o work/build/res.zip
+          "$tools/aapt2" link -o work/build/base.apk --manifest "$root/AndroidManifest.xml" -I "$android" work/build/res.zip
+          java -cp "$tools/lib/d8.jar" com.android.tools.r8.D8 --release --min-api 30 --lib "$android" --output work/build/dex $(find work/build/classes -name '*.class' | sort)
+          (cd work/build/dex && zip -q -j ../base.apk *.dex)
+          "$tools/zipalign" -f -p 4 work/build/base.apk work/output/Nova_Themes_2.0.11_UNSIGNED_NO_ART.apk
+          "$tools/zipalign" -c -p 4 work/output/Nova_Themes_2.0.11_UNSIGNED_NO_ART.apk
+          cp "$tools/lib/apksigner.jar" work/output/apksigner.jar
+          echo 'Unsigned build excludes theme art and signing key; NOT an installable release.'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-themes-211-unsigned-code
+          path: work/output/*
+          retention-days: 7
+          if-no-files-found: error
