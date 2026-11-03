@@ -1,0 +1,23 @@
+name: Nova Themes 2.0.11 source baseline handoff
+on:
+  push:
+    branches: [experiment/nova-themes-named-pages-211-20261103]
+    paths:
+      - '.github/workflows/nova-themes-source-handoff.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore already-tested MP4 candidate code (without credentials or theme artwork)
+        run: |
+          base64 -d nova-mp4-bridge/code.zip.b64 > themes-mp4-source.zip
+          unzip -t themes-mp4-source.zip | tail -1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-themes-mp4-source-baseline
+          path: themes-mp4-source.zip
+          retention-days: 2
