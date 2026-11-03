@@ -18,7 +18,7 @@ public class MainActivity extends Activity {
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         game = new WebView(this);
-        game.setBackgroundColor(0xff050816);
+        game.setBackgroundColor(0xff080d20);
         game.setWebViewClient(new WebViewClient());
         game.setWebChromeClient(new WebChromeClient());
         WebSettings settings = game.getSettings();
