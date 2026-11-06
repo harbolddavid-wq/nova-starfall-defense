@@ -76,11 +76,21 @@ jobs:
             await page.locator('button.up').dispatchEvent('pointerup',{pointerId:48});
             const mapped=await page.evaluate(()=>window.__pocketTestEvents||[]);
             await page.screenshot({path:'pocket-import-controls.png',fullPage:true});
-            const result={details,mapped,errors,bad,eventsHooked:events};
+            await page.locator('#pocket-save-state').click();
+            await page.waitForTimeout(800);
+            const saveStatus=await page.locator('#status').textContent();
+            await page.locator('#pocket-load-state').click();
+            await page.waitForTimeout(800);
+            const loadStatus=await page.locator('#status').textContent();
+            await page.screenshot({path:'pocket-game-saves.png',fullPage:true});
+            await page.locator('#back').click();
+            await page.locator('[data-game="lantern"]').click();
+            const oldDemoStatus=await page.locator('#status').textContent();
+            const result={details,mapped,errors,bad,eventsHooked:events,saveStatus,loadStatus,oldDemoStatus};
             fs.writeFileSync('result.json',JSON.stringify(result,null,2));
             console.log('RESULT',JSON.stringify(result).slice(0,7000));
             await browser.close();
-            if(!details.manager || !details.started || mapped.length<4)process.exit(2);
+            if(!details.manager || !details.started || mapped.length<4 || !/saved/i.test(saveStatus) || !/restored/i.test(loadStatus) || !/Cartridge loaded/.test(oldDemoStatus))process.exit(2);
           })().catch(e=>{console.error('TEST ERROR',e);process.exit(3)});
           NODE
           node smoke.cjs
