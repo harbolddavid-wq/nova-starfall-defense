@@ -167,17 +167,39 @@ body[data-back=classicblue] .nc-card.back{background:repeating-linear-gradient(4
 .nc-card.back.card.card-back:before,.nc-card.back.card.card-back:after{pointer-events:none}
 .nc-stock .nc-card.back.card.card-back{width:100%;height:100%;min-width:0;min-height:0;flex:1}
 @media(max-width:720px){#ncGameSwitchBar{padding:7px 12px}.nc-current-game{font-size:9px}.nc-current-game strong{font-size:13px}#ncGameSwitchBar #ncChangeGame{min-width:162px;min-height:50px} .nc-card.back.card.card-back{width:43px;min-width:43px;height:64px;min-height:64px;flex:0 0 43px}.nc-stock .nc-card.back.card.card-back{width:100%;min-width:0;height:100%;min-height:0;flex:1}}
+
+/* 0.2.2: essential actions belong together in a system-bar-safe navigation row. */
+.masthead{justify-content:flex-start;min-height:68px}
+#ncGameSwitchBar{scroll-margin-top:0;align-items:center;gap:10px}
+.nc-nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-left:auto;min-width:0}
+#ncGameSwitchBar #settingsBtn{display:block;min-width:154px;min-height:50px;padding:10px 14px!important;background:linear-gradient(110deg,#7e396e,#44386f);color:#fff7ef;border:1px solid #e9b8f0;border-radius:14px!important;box-shadow:0 0 12px #7f3bd24a;font-size:14px!important;font-weight:700;line-height:1.25;white-space:nowrap;touch-action:manipulation;position:relative;z-index:1}
+#ncGameSwitchBar #ncChangeGame{margin:0;min-width:154px;min-height:50px;flex:none}
+@media(max-width:720px){
+  .masthead{padding:11px 15px 10px;min-height:60px}
+  #ncGameSwitchBar{display:flex;flex-wrap:wrap;align-items:stretch;gap:7px;padding:9px 12px 12px}
+  #ncGameSwitchBar .nc-current-game{flex:0 0 100%;font-size:9px;letter-spacing:.1em}
+  #ncGameSwitchBar .nc-current-game strong{display:inline;margin-left:8px;font-size:12px;letter-spacing:.03em}
+  .nc-nav-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:stretch;width:100%;margin-left:0}
+  #ncGameSwitchBar #ncChangeGame,#ncGameSwitchBar #settingsBtn{width:100%;min-width:0;min-height:52px;font-size:13px!important;padding:10px 7px!important;white-space:normal}
+}
+@media(max-width:360px){#ncGameSwitchBar #ncChangeGame,#ncGameSwitchBar #settingsBtn{font-size:11px!important}}
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
 <header class="masthead">
   <div class="logo"><span class="logo-mark">✦</span><div><h1>NOVA <span>CARDS</span></h1><small>THE FAMILY COLLECTION <b>• <span id="ncGameTitle">CANASTA</span> • FOUR-GAME COLLECTION</b></small></div></div>
-  <div class="header-buttons"><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">🎨 Table &amp; Cards</button></div>
 </header>
-<nav id="ncGameSwitchBar" aria-label="Card game navigation"><span class="nc-current-game">NOW PLAYING <strong id="ncCurrentGameName">Canasta</strong></span><button id="ncChangeGame" type="button" aria-controls="ncGameChooser" aria-haspopup="dialog">🃏 Change Games</button></nav>
+<nav id="ncGameSwitchBar" aria-label="Card game navigation">
+  <span class="nc-current-game">NOW PLAYING <strong id="ncCurrentGameName">Canasta</strong></span>
+  <div class="nc-nav-actions">
+    <button id="ncChangeGame" type="button" aria-controls="ncGameChooser" aria-haspopup="dialog">🃏 Change Games</button>
+    <button class="ghost" id="settingsBtn" type="button" aria-label="Open Table and Cards gallery">🎨 Table &amp; Cards</button>
+  </div>
+</nav>
 <div id="ncCanastaRoot"><section class="play-layout">
   <aside class="side-panel">
     <div class="panel-heading">YOUR TABLE</div>
+    <button class="ghost" id="learnBtn" type="button">✧ Learning Lab</button>
     <div class="settings-row"><label for="mode">Game mode</label><select id="mode"><option value="partnership_4p">Partners • 4 players</option><option value="cutthroat_2p">Cutthroat • 2 players</option><option value="cutthroat_3p">Cutthroat • 3 players</option><option value="cutthroat_4p">Cutthroat • 4 players</option></select></div>
     <div class="portrait-tip">✧ Tap any opponent portrait to set their <strong>skill, personality, and risk-taking</strong>.</div>
     <button id="newGame" class="outline wide">↻ New game</button>

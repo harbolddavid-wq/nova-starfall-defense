@@ -7,6 +7,10 @@ import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.graphics.Color;
+import android.graphics.Insets;
+import android.os.Build;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -17,9 +21,34 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Reserve Android's real system-bar insets before WebView hit testing.
+        // Edge-to-edge is enforced for target SDK 35+ on Android 15/16.
+        FrameLayout safeRoot = new FrameLayout(this);
+        safeRoot.setBackgroundColor(Color.rgb(7, 20, 27));
         cards = new WebView(this);
         cards.setBackgroundColor(Color.rgb(7, 20, 27));
-        setContentView(cards);
+        safeRoot.addView(cards, new FrameLayout.LayoutParams(-1, -1));
+        safeRoot.setOnApplyWindowInsetsListener((view, insets) -> {
+            final int top, bottom, left, right;
+            if (Build.VERSION.SDK_INT >= 30) {
+                Insets bars = insets.getInsets(WindowInsets.Type.statusBars()
+                        | WindowInsets.Type.navigationBars()
+                        | WindowInsets.Type.displayCutout());
+                top = bars.top;
+                bottom = bars.bottom;
+                left = bars.left;
+                right = bars.right;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+                left = insets.getSystemWindowInsetLeft();
+                right = insets.getSystemWindowInsetRight();
+            }
+            view.setPadding(left, top, right, bottom);
+            return insets;
+        });
+        setContentView(safeRoot);
+        safeRoot.requestApplyInsets();
         WebSettings settings = cards.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);

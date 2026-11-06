@@ -1,9 +1,7 @@
-# Nova Card Collection 0.2.1
-All four approved/playable offline games continue from 0.2.0.
-- **Change Games** now has a standalone sticky navigation row with a large, reliable touch target even when the game is scrolled.
-- Solitaire stock and all face-down tableau cards now display the same chosen card back as Canasta; designs update immediately when changed, without restarting Solitaire.
-- Original gold/purple fantasy dragon-and-playing-cards app icon now appears in the Android launcher (real mipmap resource). Icon derived from original generated artwork.
-- Gameplay, balances and house rules remain unchanged.
-Validated with phone-sized browser tests: switch games while scrolled on all four games, change Solitaire card backs for stock and tableau immediately, no JS errors. Existing 15 Blackjack rounds, 10 Poker hands with chip conservation, Solitaire undo, and prior Canasta tests passed.
-
-Android v0.2.1 keeps package site.novasky.cardcollection. **Important:** GitHub Actions debug keys are ephemeral, so Android may require uninstalling v0.2.0 to install this APK. A persistent signing key is still needed for future true in-place upgrades. No changes to the official Nova Family Store or Starfall Defense main branch.
+# Nova Card Collection 0.2.2 — Android-safe navigation
+The real cause of the top controls missing touches was a target-SDK-35 WebView drawing behind Android's status bar/cutout on Android 15/16.
+Native MainActivity now measures status bar, display cutout, navigation bar, and side insets and physically pads the WebView's container. The WebView itself is no longer in the system's touch region.
+Inside the page, neither Change Games nor Table & Cards is in the branding header. Both share a large, sticky navigation row underneath it; on phones the two controls sit side-by-side with touch targets 52px tall.
+The Learning Lab remains accessible inside Canasta's side controls. Gameplay logic, poker chips, deck customization, solitaire card-back synchronization, and app icon are unchanged.
+Browser smoke test: both buttons tappable in all four games despite a simulated 34px status bar consuming touches; Change Games clickable after scrolling; Solitaire stock back still updates; no JS errors. Native compilation via GitHub Actions pending in this commit.
+Package site.novasky.cardcollection, versionCode 22. This GitHub Actions install-test build uses an ephemeral debug signing key and may require uninstalling v0.2.1 before installation. Do not publish as production release until real phone test.
