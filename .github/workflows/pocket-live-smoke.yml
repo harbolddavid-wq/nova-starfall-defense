@@ -1,0 +1,96 @@
+name: Live Nova Pocket mGBA gameplay acceptance test
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-live-smoke.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless browser driver
+        run: npm install --no-save playwright
+      - name: Download legally distributed independent GBA homebrew
+        run: |
+          curl -fL --retry 3 https://raw.githubusercontent.com/maximilian8181/The-Axe-GBA/master/theAxe.gba -o test.gba
+      - name: Test actual published app in Chrome
+        run: |
+          cat > smoke.cjs <<'NODE'
+          const {chromium}=require('playwright');
+          const fs=require('fs');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,channel:'chrome',args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
+            const page=await browser.newPage({viewport:{width:412,height:915},deviceScaleFactor:1});
+            const errors=[],bad=[];
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+            page.on('pageerror',e=>errors.push('JS '+e.message));
+            page.on('response',r=>{if(r.status()>=400)bad.push(r.status()+' '+r.url());});
+            await page.goto('https://headless-qiekxafrnim-harbolddavid-140c.wix-site-host.com/',{waitUntil:'domcontentloaded'});
+            await page.locator('#romLoader').setInputFiles('test.gba');
+            await page.waitForTimeout(18000);
+            let state=await page.locator('#status').textContent();
+            let details=await page.evaluate(()=>{
+              const f=document.querySelector('#pocket-mgba-frame'),e=f?.contentWindow?.EJS_emulator;
+              let canvas=[];
+              try{canvas=[...f.contentDocument.querySelectorAll('canvas')].map(c=>({width:c.width,height:c.height}));}catch(err){}
+              return {status:document.querySelector('#status')?.textContent,core:window.NovaPocketDiagnostics?.currentCore,loaded:window.NovaPocketDiagnostics?.mGBALoaded,iframe:!!f,emulator:!!e,started:e?.started??null,manager:!!e?.gameManager,canvas};
+            });
+            await page.screenshot({path:'pocket-import-initial.png',fullPage:true});
+            console.log('AFTER_LOAD',JSON.stringify(details),'STATUS',state,'ERRORS',JSON.stringify(errors.slice(-15)),'BAD',JSON.stringify(bad.slice(-15)));
+            await page.locator('#start').click();
+            await page.waitForTimeout(6000);
+            details=await page.evaluate(()=>{
+              const f=document.querySelector('#pocket-mgba-frame'),e=f?.contentWindow?.EJS_emulator;
+              let canvas=[],distinct=null;
+              try{
+                canvas=[...f.contentDocument.querySelectorAll('canvas')].map(c=>({width:c.width,height:c.height}));
+                const c=f.contentDocument.querySelector('canvas');
+                const ctx=c?.getContext('2d',{willReadFrequently:true});
+                if(ctx){
+                  const d=ctx.getImageData(0,0,Math.min(c.width,160),Math.min(c.height,100)).data;
+                  const colors=new Set();
+                  for(let i=0;i<d.length;i+=32)colors.add(d[i]+','+d[i+1]+','+d[i+2]);
+                  distinct=colors.size;
+                }
+              }catch(err){distinct='error '+err.message;}
+              return {status:document.querySelector('#status')?.textContent,started:e?.started??null,manager:!!e?.gameManager,canvas,distinct};
+            });
+            await page.screenshot({path:'pocket-import-playing.png',fullPage:true});
+            const events=await page.evaluate(()=>{
+              const e=document.querySelector('#pocket-mgba-frame')?.contentWindow?.EJS_emulator;
+              if(!e?.gameManager?.simulateInput)return null;
+              const seen=[];const f=e.gameManager.simulateInput.bind(e.gameManager);
+              e.gameManager.simulateInput=(...a)=>{seen.push(a);return f(...a);};
+              window.__pocketTestEvents=seen;return true;
+            });
+            await page.locator('button.action.a').dispatchEvent('pointerdown',{pointerId:47});
+            await page.locator('button.action.a').dispatchEvent('pointerup',{pointerId:47});
+            await page.locator('button.up').dispatchEvent('pointerdown',{pointerId:48});
+            await page.locator('button.up').dispatchEvent('pointerup',{pointerId:48});
+            const mapped=await page.evaluate(()=>window.__pocketTestEvents||[]);
+            await page.screenshot({path:'pocket-import-controls.png',fullPage:true});
+            const result={details,mapped,errors,bad,eventsHooked:events};
+            fs.writeFileSync('result.json',JSON.stringify(result,null,2));
+            console.log('RESULT',JSON.stringify(result).slice(0,7000));
+            await browser.close();
+            if(!details.manager || !details.started || mapped.length<4)process.exit(2);
+          })().catch(e=>{console.error('TEST ERROR',e);process.exit(3)});
+          NODE
+          node smoke.cjs
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocket-live-test-evidence
+          path: |
+            result.json
+            pocket-*.png
+          if-no-files-found: warn
+          retention-days: 7
