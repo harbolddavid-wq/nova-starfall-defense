@@ -112,6 +112,15 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
 .inspector-opening .opening-cards{padding:7px 0 4px}
 .opening-breakdown,.point-breakdown{color:#d4d9c7;font-size:12px;margin:0 0 10px}
 @media(max-width:560px){.meld-opening-label{font-size:9px;padding:3px 6px 5px}.inspector-opening{padding:10px;font-size:12px}.inspector-opening strong{font-size:13px}}
+
+/* 0.1.5: make rank boundaries obvious after a large discard pickup.
+   The hand still pans horizontally; no vertical swipe-to-discard needed. */
+.hand .hand-card.hand-group-break { margin-left: 12px; }
+.hand .hand-card.hand-group-break:before {
+  content:''; position:absolute; left:-8px; top:29px; height:60px;
+  border-left:1px solid #eed7a688; pointer-events:none;
+}
+@media(max-width:520px){ .hand .hand-card.hand-group-break{margin-left:9px;} }
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
@@ -555,6 +564,38 @@ function chooseAIAction(o) {
 function suggestedAction(o){return chooseAIAction({...o,difficulty:'hard'});}
 
 ;
+// Sort only the displayed hand. The game engine retains every card's original
+// ID, owner and current turn; auto sorting must not alter game state.
+
+const HAND_RANKS = ['A','K','Q','J','10','9','8','7','6','5','4','3'];
+const HAND_SUITS = ['♠','♥','♦','♣','★'];
+const handRankIndex = rank => {
+  const i=HAND_RANKS.indexOf(rank);
+  return i<0 ? HAND_RANKS.length : i;
+};
+function handDisplayGroup(card){
+  return isWild(card)?'Wild':card.rank;
+}
+function sortHandForDisplay(hand){
+  return hand.map((card,index)=>({card,index})).sort((a,b)=>{
+    const wa=isWild(a.card),wb=isWild(b.card);
+    // Wild 2s and Jokers live together at the far right of the hand.
+    if(wa!==wb) return wa?1:-1;
+    if(wa&&wb){
+      const aJ=a.card.rank==='Joker',bJ=b.card.rank==='Joker';
+      if(aJ!==bJ) return aJ?-1:1;
+    } else {
+      const d=handRankIndex(a.card.rank)-handRankIndex(b.card.rank);
+      if(d)return d;
+    }
+    const suits=HAND_SUITS.indexOf(a.card.suit)-HAND_SUITS.indexOf(b.card.suit);
+    if(suits)return suits;
+    return a.index-b.index; // stable duplicate-deck ordering
+  }).map(x=>x.card);
+}
+
+;
+
 
 
 const $=id=>document.getElementById(id);
@@ -642,8 +683,17 @@ function render(){
   }).join('');
   const visible=new Set(game.hands[0].map(c=>c.id));selected=new Set([...selected].filter(id=>visible.has(id)));
   $('handCount').textContent=game.hands[0].length;
-  $('selectionInfo').textContent=selected.size?`${selected.size} selected · Double-tap a card to discard`:'Tap cards to group · DOUBLE-TAP to discard';
-  $('hand').innerHTML=game.hands[0].map(c=>`<button class="hand-card" data-id="${esc(c.id)}" aria-pressed="${selected.has(c.id)}" title="${esc(c.rank+c.suit)}">${cardHtml(c,false,selected.has(c.id))}</button>`).join('');
+  $('selectionInfo').textContent=selected.size?`${selected.size} selected · Double-tap a card to discard`:'AUTO-GROUPED BY RANK · DOUBLE-TAP to discard';
+  // Card sorting is display-only, never a mutation of the hand used by Canasta rules.
+  // Retain scroll when tapping/selecting in a very large hand (e.g. discard pickup).
+  const handArea=$('hand'),oldScroll=handArea.scrollLeft;
+  let previousGroup=null;
+  handArea.innerHTML=sortHandForDisplay(game.hands[0]).map(c=>{
+    const group=handDisplayGroup(c),isNew=previousGroup!==null&&previousGroup!==group;
+    previousGroup=group;
+    return `<button class="hand-card${isNew?' hand-group-break':''}" data-id="${esc(c.id)}" aria-pressed="${selected.has(c.id)}" title="${esc(c.rank+c.suit)}" aria-label="${esc(c.rank==='Joker'?'Joker':c.rank+' of '+c.suit)}">${cardHtml(c,false,selected.has(c.id))}</button>`;
+  }).join('');
+  handArea.scrollLeft=oldScroll;
   const human=game.turn===0&&!aiBusy,draw=human&&game.phase==='draw',play=human&&game.phase==='play';
   for(const id of ['drawBtn','pickupBtn'])$(id).disabled=!draw;
   for(const id of ['meldBtn','extendBtn','openBtn','discardBtn','hintBtn'])$(id).disabled=!play;

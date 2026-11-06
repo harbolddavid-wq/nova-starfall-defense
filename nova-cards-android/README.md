@@ -1,6 +1,5 @@
-# Nova Cards — v0.1.4 audit build
-Android offline Canasta test APK, compiled from bundled single-file HTML.
-Version 0.1.4: single-player partnership opening explicitly audited; show opponent opener, initial point requirement and exact cards, per-meld points and breakdown. 6+6+2 is 30 pts, legal only after a 50+ opener at score 0. All game moves still validated by the same engine.
-Package site.novasky.cards.previewv014 installs alongside earlier test APKs so their saves are not overwritten.
-27 automated Node tests passed locally, including AI full-round simulation, partner cannot combine opening cards, pickup opening audit. Phone-sized browser interface test passed.
-This public branch is only for building the install-test APK; the official Family Store and Starfall Defense main branch are not modified. The APK remains a test build and is not production signed.
+# Nova Cards — 0.1.5 automatic hand organization
+Offline Canasta install-test build. Cards in the player's hand are automatically sorted A, K, Q, J, 10 down through 3; Jokers and 2s grouped as wilds at the end. Card IDs, game rules, score and undo state are unchanged. Gaps between rank groups and preserved horizontal scroll support large hands after picking up the discard pile.
+Tested: 31 Node engine/sorting tests passed, mobile Chromium 46-card hand with consecutive groups, no lost cards, preserved scroll while selecting, and exactly one discard on double tap.
+Version 0.1.5 uses a distinct test package identity site.novasky.cards.previewv015, so it installs alongside all earlier test apps and does not erase their progress.
+This branch builds test APKs only; the official Nova Family Store is not modified, and a production-signed release still requires more testing.
