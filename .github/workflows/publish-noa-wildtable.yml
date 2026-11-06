@@ -19,11 +19,26 @@ jobs:
           set -euo pipefail
           mkdir -p parts release
           base='https://nova-family-store.hatchable.site/api/wildtable-transfer'
-          for i in $(seq -w 1 8); do
-            number=$((10#$i))
-            curl --fail --silent --show-error --location --retry 4 --retry-all-errors --connect-timeout 25 --max-time 180 \\
-              -o "parts/part$i.bin" "$base?part=$number"
-          done
+          python3 - <<'PY'
+          import time, urllib.request
+          base = 'https://nova-family-store.hatchable.site/api/wildtable-transfer'
+          for i in range(1, 9):
+              dest = f'parts/part{i:02}.bin'
+              for attempt in range(1, 4):
+                  try:
+                      req = urllib.request.Request(f'{base}?part={i}', headers={'User-Agent': 'Nova-Family-Store-Publisher/1.0'})
+                      with urllib.request.urlopen(req, timeout=120) as response:
+                          payload = response.read()
+                          print(f'Part {i}: HTTP {response.status}, bytes {len(payload)}', flush=True)
+                      with open(dest, 'wb') as out:
+                          out.write(payload)
+                      break
+                  except Exception as ex:
+                      print(f'Part {i}: attempt {attempt} failed: {type(ex).__name__}: {ex}', flush=True)
+                      if attempt == 3:
+                          raise
+                      time.sleep(attempt * 2)
+          PY
           sha256sum --check <<'EXPECTED'
           33843e98f6f8669cee103773897a3e3f83928ba26c5d86f09de67b9c63d1df80  parts/part01.bin
           bd2d7c038a7f830d978672cdc2067530d4601c3b4846c339f3c2ec1c450ae38b  parts/part02.bin
