@@ -52,6 +52,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release view family-store-apks-2026-11-05 >/dev/null
-          gh release upload family-store-apks-2026-11-05 release/*.apk
-          gh release view family-store-apks-2026-11-05 --json assets --jq '[.assets[].name]'
+          gh release view family-store-apks-2026-11-05 -R harbolddavid-wq/nova-starfall-defense >/dev/null
+          gh release upload family-store-apks-2026-11-05 release/*.apk -R harbolddavid-wq/nova-starfall-defense
+          gh release view family-store-apks-2026-11-05 -R harbolddavid-wq/nova-starfall-defense --json assets --jq '[.assets[].name]'
