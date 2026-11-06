@@ -1,0 +1,29 @@
+name: Licensed GBA homebrew test cartridge
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-homebrew-test.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download independently authored homebrew game for internal boot testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p licensed-test
+          curl -fL --retry 3 https://raw.githubusercontent.com/maximilian8181/The-Axe-GBA/master/theAxe.gba -o licensed-test/theAxe.gba
+          curl -fL --retry 3 https://raw.githubusercontent.com/maximilian8181/The-Axe-GBA/master/LICENSE.md -o licensed-test/LICENSE.md
+          test $(stat -c%s licensed-test/theAxe.gba) -gt 20000
+          wc -c licensed-test/*
+          head -n 35 licensed-test/LICENSE.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pocket-homebrew-test
+          path: licensed-test/
+          retention-days: 3
