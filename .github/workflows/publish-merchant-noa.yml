@@ -1,0 +1,49 @@
+name: Publish Noa's The Merchant game APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-merchant-noa.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'harbolddavid-wq/nova-starfall-defense'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download verified game parts and reconstruct the original signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p parts release
+          src='https://nova-family-store.hatchable.site/downloads'
+          for i in 1 2 3 4; do
+            curl --fail --show-error --silent --location --retry 2 --connect-timeout 20 \
+              -o "parts/merchant.part$i" \
+              "$src/The_Merchant_Deals_Beyond_Reality_0.1.0.part$i"
+          done
+          sha256sum --check <<'EXPECTED'
+          daf950404856beec0819bed2c70d3b1584fb5c16b473970462e4cc13bdad6067  parts/merchant.part1
+          6a97cef46d0f16ea9f9c302c9d600caa47032c94675c4c93ed3139ca55a8a67f  parts/merchant.part2
+          c2887dadc6b8a412f866e1bb342cb9f4363d5d86b7668ba33c1fb2ac0f8da5e4  parts/merchant.part3
+          d18fce34358d5cb6e79c82d1a21a29798937e06ae335a18403303ad36a300912  parts/merchant.part4
+          EXPECTED
+          cat parts/merchant.part{1,2,3,4} > release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk
+          test "$(stat -c %s release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk)" -eq 25834029
+          echo "6abd49eb971cc0ee69dd58201d13533fc81ece9672151a5937a88cb926f110cb  release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk" | sha256sum --check
+          unzip -tqq release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk
+          jarsigner -verify release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk
+      - name: Publish original game to the existing Family Store GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view family-store-apks-2026-11-05 -R harbolddavid-wq/nova-starfall-defense >/dev/null
+          gh release upload family-store-apks-2026-11-05 \
+            release/The_Merchant_Deals_Beyond_Reality_0.1.0.apk \
+            -R harbolddavid-wq/nova-starfall-defense
+          gh release view family-store-apks-2026-11-05 -R harbolddavid-wq/nova-starfall-defense \
+            --json assets --jq '.assets[] | select(.name == "The_Merchant_Deals_Beyond_Reality_0.1.0.apk") | {name,size,digest,url}'
