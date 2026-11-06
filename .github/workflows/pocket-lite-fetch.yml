@@ -1,0 +1,30 @@
+name: Nova Pocket lightweight mGBA WebAssembly test build
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-lite-fetch.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Obtain open-source lean mGBA SDK
+        run: |
+          set -euxo pipefail
+          mkdir -p site-lite/data/mgba
+          npm pack @wasm-gaming/mgba-wasm@0.1.1 --pack-destination .
+          tar -xzf wasm-gaming-mgba-wasm-0.1.1.tgz
+          cp -R package/dist/mgba/. site-lite/data/mgba/
+          find site-lite/data/mgba -type f -printf '%p: %s bytes\n' | sort
+          test -s site-lite/data/mgba/mgba.sdk.js
+          test -s site-lite/data/mgba/mgba.js
+          test -s site-lite/data/mgba/mgba.wasm
+          printf '%s\n' 'mGBA SDK and its compiled wasm under MPL-2.0' 'https://github.com/wasm-gaming/mGBA-wasm' >site-lite/THIRD_PARTY_LITE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-pocket-lite-runtime
+          path: site-lite/
+          retention-days: 7
