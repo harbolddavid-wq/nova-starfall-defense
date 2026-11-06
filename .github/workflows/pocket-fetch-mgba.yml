@@ -1,0 +1,44 @@
+name: Nova Pocket browser mGBA dependencies
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-fetch-mgba.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fetch-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned stable open-source emulator runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle/data/cores bundle/data/localization
+          base=https://cdn.emulatorjs.org/stable/data
+          for f in loader.js emulator.min.js emulator.min.css version.json; do
+            curl --fail --location --retry 3 "$base/$f" -o "bundle/data/$f"
+          done
+          for f in cores/mgba-wasm.data cores/cores.json; do
+            curl --fail --location --retry 3 "$base/$f" -o "bundle/data/$f"
+          done
+          for f in en-US.json en.json; do
+            curl --fail --location "$base/localization/$f" -o "bundle/data/localization/$f" || rm -f "bundle/data/localization/$f"
+          done
+          echo "Downloads:"
+          find bundle -type f -printf '%p %s bytes\n'
+          test $(stat -c%s bundle/data/cores/mgba-wasm.data) -gt 500000
+          test $(stat -c%s bundle/data/emulator.min.js) -gt 200000
+          cat >bundle/THIRD_PARTY_NOTICES.txt <<'ENDLICENSE'
+          EmulatorJS: GPL-3.0, https://github.com/EmulatorJS/EmulatorJS
+          mGBA: MPL-2.0, https://github.com/mgba-emu/mgba
+          Runtime pinned to EmulatorJS 'stable' at download date; do not include any commercial ROM or BIOS.
+          ENDLICENSE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-pocket-mgba-runtime
+          path: bundle/
+          if-no-files-found: error
+          retention-days: 7
