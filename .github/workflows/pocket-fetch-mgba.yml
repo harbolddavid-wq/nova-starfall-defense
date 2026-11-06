@@ -22,7 +22,7 @@ jobs:
             curl --fail --location --retry 3 "$base/$f" -o "bundle/data/$f" || rm -f "bundle/data/$f"
           done
           for f in cores/mgba-wasm.data cores/mgba-legacy-wasm.data cores/cores.json compression/extract7z.js compression/extract7z.wasm cores/reports/mgba.json; do
-            curl --fail --location --retry 3 "$base/$f" -o "bundle/data/$f"
+            curl --fail --location --retry 3 "$base/$f" -o "bundle/data/$f" || rm -f "bundle/data/$f"
           done
           for f in en-US.json en.json; do
             curl --fail --location "$base/localization/$f" -o "bundle/data/localization/$f" || rm -f "bundle/data/localization/$f"
