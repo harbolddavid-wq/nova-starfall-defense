@@ -121,14 +121,49 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
   border-left:1px solid #eed7a688; pointer-events:none;
 }
 @media(max-width:520px){ .hand .hand-card.hand-group-break{margin-left:9px;} }
+/* Nova Cards 0.2.0: additional games. The existing Canasta CSS and JS remain unchanged. */
+#ncGameChooser{position:fixed;inset:0;z-index:150;background:#031018ee;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:22px 14px}
+.nc-chooser{border:1px solid #c59b5b99;border-radius:19px;background:linear-gradient(145deg,#1b3a40,#071820 75%);color:#f6e5c9;box-shadow:0 20px 80px #000d;padding:21px;max-width:810px;width:100%;position:relative}
+.nc-chooser h2{font-size:clamp(23px,5vw,32px);letter-spacing:.07em;margin:3px 0}.nc-chooser p{color:#bed3cf;margin:3px 0 22px}.nc-game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.nc-game-choice{min-height:165px;border-radius:13px!important;border:1px solid #d7b87988!important;display:flex;flex-direction:column;justify-content:space-between;align-items:start;text-align:left;padding:18px!important;color:#ffe5b6;box-shadow:inset 0 0 50px #0009;position:relative;overflow:hidden}
+.nc-game-choice:before{content:'';position:absolute;inset:0;opacity:.38;background:radial-gradient(circle at 80% 10%,#a5c4ab 1%,transparent 50%);pointer-events:none}.nc-choice-icon{font-size:40px;text-shadow:0 0 20px #ecd3a884}.nc-game-choice strong{font-size:18px;letter-spacing:.08em}.nc-game-choice small{color:#d7e0d2;font-size:11px}.nc-game-choice[data-select-game="canasta"]{background:linear-gradient(145deg,#205e55,#102e31)}.nc-game-choice[data-select-game="blackjack"]{background:linear-gradient(145deg,#623536,#25171c)}.nc-game-choice[data-select-game="poker"]{background:linear-gradient(145deg,#594125,#23171c)}.nc-game-choice[data-select-game="solitaire"]{background:linear-gradient(145deg,#3a416c,#131d36)}
+#ncCloseChooser{position:absolute;right:14px;top:12px;background:transparent;color:#fff3cb;padding:4px 12px!important;font-size:27px}
+#ncChangeGame{background:linear-gradient(110deg,#f1cb8b,#b99055)!important;color:#241c14!important;border:1px solid #f7dca4!important;font-weight:850;letter-spacing:.02em;min-width:125px}
+#ncOtherRoot{max-width:1180px;margin:0 auto;min-height:75dvh;padding:22px 16px 30px;color:#e7eee8}#ncOtherRoot h2{font-size:clamp(22px,4.5vw,30px);letter-spacing:.045em;margin:0}#ncOtherRoot h3{margin:0 0 8px;color:#e8d2a3;font-size:13px}
+.nc-game-head{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#f5e0b8}.nc-game-head span{font-size:13px;text-align:right}.nc-sub{color:#b7ccc9;line-height:1.45;font-size:12px;margin:9px 0 16px}.nc-felt{border:8px solid #79583a;box-shadow:0 8px 40px #0008,inset 0 0 110px #001920;border-radius:30px;min-height:490px;padding:22px 12px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:radial-gradient(ellipse at center,#286055 0%,#183e3d 55%,#0d2832 100%);position:relative}.nc-seat{border:1px solid #bdbd9e50;border-radius:12px;background:#0b242890;min-height:91px;padding:12px;flex:1;min-width:0}.nc-seat.active{outline:2px solid #e5b978;box-shadow:0 0 20px #e5b97844}.nc-seat.folded{opacity:.45}.nc-cards{display:flex;gap:5px;justify-content:center;min-height:88px;flex-wrap:wrap}.nc-card{border-radius:6px;border:2px solid #eee8dc;background:#f9f7ef;color:#1c2730;width:56px;height:78px;flex:0 0 56px;font:20px Georgia,serif;box-shadow:1px 3px 5px #0006;display:flex;flex-direction:column;justify-content:space-between;padding:6px}.nc-card.red{color:#bf2839}.nc-card span{font-size:29px;align-self:center}.nc-card.back{justify-content:center;align-items:center;background:repeating-linear-gradient(45deg,#38264d,#38264d 6px,#af9164 6px,#af9164 9px);color:#e6d6b5;border:4px solid #f7ecc8;font-size:30px}.nc-card.slot{border:1px dashed #d4bc85;color:#d1bf99;background:#12333366;justify-content:center;align-items:center;font-size:18px}.nc-pot{text-align:center;color:#ffe5aa;padding:13px;font-weight:700;line-height:1.4}.nc-hands,.nc-poker-seats{display:flex;gap:10px;align-items:stretch}.nc-poker-seats .nc-seat{min-height:130px}.nc-seat small{display:block;text-align:center;color:#c3d8d1}.nc-board{text-align:center;padding:8px}.nc-board .nc-cards{min-height:75px}.nc-actions{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:14px 0}.nc-actions button{color:#f9edce;background:#26515a;font-weight:700;min-width:95px}.nc-actions .nc-primary{background:linear-gradient(120deg,#ecc982,#aa8051);color:#1e1710;min-width:142px}.nc-bet{display:flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;margin:8px 0}.nc-bet b{margin-right:12px}.nc-bet button{min-width:48px;font-size:12px;padding:7px!important}.nc-foot{margin:20px 0;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:11px;color:#adc6c3}.nc-foot .nc-quiet{background:transparent;border-color:#ffffff33;color:#cdd5d2;padding:8px!important;font-size:11px}.nc-info{background:#142f34;border:1px solid #cab27d70;border-radius:11px;text-align:center;padding:13px;color:#ffdf9c;font-size:13px;line-height:1.5;margin-top:13px}
+.nc-solitaire{background:radial-gradient(ellipse,#276957,#123737);border:7px solid #9a6f45;border-radius:22px;padding:14px 10px;min-height:510px;box-shadow:inset 0 0 100px #021819,0 10px 40px #0006}.nc-sol-top{display:flex;gap:7px;align-items:start;justify-content:space-between;margin-bottom:30px}.nc-foundations{display:flex;gap:5px;margin-left:auto}.nc-stock,.nc-waste,.nc-foundation{border:0!important;min-width:0!important;padding:0!important;border-radius:7px!important;background:transparent;color:#e8d2ad;display:flex;align-items:center;justify-content:center;width:54px;height:77px;position:relative}.nc-stock.back{border:3px solid #fff0c9!important;background:repeating-linear-gradient(45deg,#28264c,#28264c 8px,#9f7c56 8px,#9f7c56 10px);font-size:23px}.nc-stock small{position:absolute;right:4px;bottom:1px;font:10px system-ui;background:#0d2326bd;color:#fff;padding:0 3px;border-radius:5px}.nc-foundations .nc-card,.nc-waste .nc-card{pointer-events:none}.nc-foundations .nc-card,.nc-waste .nc-card{width:54px;height:75px;min-width:54px;flex-basis:54px}.nc-sol-cols{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(2px,1vw,12px)}.nc-sol-col{position:relative;min-height:360px;min-width:0}.nc-sol-card{position:absolute;left:0;width:100%;border:0!important;min-height:0!important;height:78px!important;padding:0!important;display:flex;align-items:start;justify-content:start;background:transparent!important}.nc-sol-card .nc-card{width:100%;height:78px;min-width:0;flex:0 1 100%;pointer-events:none;font-size:18px}.nc-sol-card .nc-card span{font-size:24px}.nc-sol-card.picked .nc-card,.nc-waste.picked,.nc-foundation.picked{outline:3px solid #ffe49d;border-radius:6px!important;filter:drop-shadow(0 0 8px #efd198)}
+@media(max-width:720px){.nc-game-grid{gap:8px}.nc-game-choice{min-height:143px;padding:12px!important}.nc-game-choice strong{font-size:16px}.nc-choice-icon{font-size:32px}.nc-game-head span{font-size:12px}.nc-felt{padding:13px 8px;border-width:5px;min-height:480px}.nc-seat{padding:6px}.nc-seat h3{font-size:10px}.nc-poker-seats{gap:4px}.nc-poker-seats .nc-card{width:34px;flex-basis:34px;height:49px;padding:3px;font-size:12px}.nc-poker-seats .nc-card span{font-size:17px}.nc-card{width:43px;flex-basis:43px;height:64px;font-size:15px}.nc-card span{font-size:25px}.nc-card.back{font-size:18px}.nc-solitaire{padding:8px 5px;border-width:4px;min-height:470px}.nc-stock,.nc-waste,.nc-foundation,.nc-foundations .nc-card,.nc-waste .nc-card{width:43px;height:63px;min-width:43px;flex-basis:43px}.nc-sol-card .nc-card{height:67px;font-size:13px;padding:3px}.nc-sol-card .nc-card span{font-size:18px}.nc-sol-card{height:67px!important}.nc-sol-cols{gap:3px}.nc-sol-col{min-height:370px}.masthead{padding:12px 10px}.masthead .logo h1{font-size:17px}.masthead .logo-mark{font-size:25px}.header-buttons{gap:5px;flex-wrap:wrap;justify-content:end}.header-buttons button{padding:6px!important;min-height:36px!important;font-size:11px}.header-buttons #ncChangeGame{width:100%;order:-1}}
+@media(max-width:380px){.nc-foundations{gap:2px}.nc-stock,.nc-waste,.nc-foundation,.nc-foundations .nc-card,.nc-waste .nc-card{width:39px;min-width:39px;flex-basis:39px}.nc-sol-card .nc-card{font-size:12px}.nc-actions button{padding:8px!important;min-width:72px}.nc-game-choice small{font-size:10px}}
+/* Keep the original Table & Cards gallery available in every game. */
+body[data-theme=velvet] .nc-felt, body[data-theme=velvet] .nc-solitaire{background:radial-gradient(ellipse,#79485c,#2b1c32)}
+body[data-theme=royal] .nc-felt, body[data-theme=royal] .nc-solitaire{background:radial-gradient(ellipse,#405f93,#141d3b)}
+body[data-theme=forest] .nc-felt, body[data-theme=forest] .nc-solitaire{background:radial-gradient(ellipse,#456a3e,#1a2d26)}
+body[data-theme=nebula] .nc-felt, body[data-theme=nebula] .nc-solitaire{background:radial-gradient(ellipse,#4c4780,#171438)}
+body[data-theme=ember] .nc-felt, body[data-theme=ember] .nc-solitaire{background:radial-gradient(ellipse,#a4552a,#281b1d)}
+body[data-theme=marble] .nc-felt, body[data-theme=marble] .nc-solitaire{background:radial-gradient(ellipse,#75888b,#26363b)}
+body[data-theme=mahogany] .nc-felt, body[data-theme=mahogany] .nc-solitaire{background:radial-gradient(ellipse,#9a6044,#36211c)}
+body[data-theme=ice] .nc-felt, body[data-theme=ice] .nc-solitaire{background:radial-gradient(ellipse,#72aab7,#1f4752)}
+body[data-theme=eclipse] .nc-felt, body[data-theme=eclipse] .nc-solitaire{background:radial-gradient(ellipse,#4d3c67,#151627)}
+body[data-back=starlight] .nc-card.back{background-image:var(--starlight-card);background-position:center;background-size:cover;color:transparent}
+body[data-back=starlight-lanternwood] .nc-card.back{background-image:var(--starlight-lanternwood);background-position:center;background-size:cover;color:transparent}
+body[data-back=starlight-astralclock] .nc-card.back{background-image:var(--starlight-astralclock);background-position:center;background-size:cover;color:transparent}
+body[data-back=starlight-velvetmasque] .nc-card.back{background-image:var(--starlight-velvetmasque);background-position:center;background-size:cover;color:transparent}
+body[data-back=rose] .nc-card.back{background:radial-gradient(#943e67,#291226)}
+body[data-back=gold] .nc-card.back{background:radial-gradient(#af8c39,#38210e)}
+body[data-back=jade] .nc-card.back{background:radial-gradient(#4fa485,#113b30)}
+body[data-back=dragon] .nc-card.back{background:repeating-linear-gradient(140deg,#0d2767,#164c85 10px,#0d2767 16px)}
+body[data-back=flames] .nc-card.back{background:linear-gradient(0deg,#ef9c2b,#7f191f 55%,#240a15)}
+body[data-back=moon] .nc-card.back{background:radial-gradient(circle at 35% 20%,#c8cbdb 3%,#435378 25%,#171b35)}
+body[data-back=obsidian] .nc-card.back{background:linear-gradient(140deg,#39363e,#090b18)}
+body[data-back=classicred] .nc-card.back{background:repeating-linear-gradient(45deg,#8d3041,#8d3041 5px,#cda76a 6px,#5d2034 10px)}
+body[data-back=classicblue] .nc-card.back{background:repeating-linear-gradient(45deg,#254c7f,#254c7f 5px,#d1c99c 6px,#162c56 10px)}
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
 <header class="masthead">
-  <div class="logo"><span class="logo-mark">✦</span><div><h1>NOVA <span>CARDS</span></h1><small>THE FAMILY COLLECTION <b>• EARLY CANASTA BUILD</b></small></div></div>
-  <div class="header-buttons"><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">🎨 Table &amp; Cards</button></div>
+  <div class="logo"><span class="logo-mark">✦</span><div><h1>NOVA <span>CARDS</span></h1><small>THE FAMILY COLLECTION <b>• <span id="ncGameTitle">CANASTA</span> • FOUR-GAME COLLECTION</b></small></div></div>
+  <div class="header-buttons"><button id="ncChangeGame">🃏 Change Games</button><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">🎨 Table &amp; Cards</button></div>
 </header>
-<section class="play-layout">
+<div id="ncCanastaRoot"><section class="play-layout">
   <aside class="side-panel">
     <div class="panel-heading">YOUR TABLE</div>
     <div class="settings-row"><label for="mode">Game mode</label><select id="mode"><option value="partnership_4p">Partners • 4 players</option><option value="cutthroat_2p">Cutthroat • 2 players</option><option value="cutthroat_3p">Cutthroat • 3 players</option><option value="cutthroat_4p">Cutthroat • 4 players</option></select></div>
@@ -158,6 +193,15 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
 </section>
 <footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Touch-first build 0.1.4</span></footer>
 </div>
+<div id="ncOtherRoot" class="hide"></div>
+</div>
+<div id="ncGameChooser" class="hide" role="dialog" aria-modal="true" aria-label="Choose a card game">
+ <div class="nc-chooser"><button id="ncCloseChooser" aria-label="Close game chooser">×</button><h2>✦ Dealer’s Choice ✦</h2><p>Four games, one collection. Choose your table.</p><div class="nc-game-grid">
+  <button class="nc-game-choice" data-select-game="canasta"><span class="nc-choice-icon">♣</span><strong>Canasta</strong><small>Completed family rules · Play with a partner</small></button>
+  <button class="nc-game-choice" data-select-game="blackjack"><span class="nc-choice-icon">♠</span><strong>Blackjack</strong><small>Beat the dealer · Virtual chip betting</small></button>
+  <button class="nc-game-choice" data-select-game="poker"><span class="nc-choice-icon">♥</span><strong>Texas Hold’em Poker</strong><small>Four seats · Raises, folds, showdowns</small></button>
+  <button class="nc-game-choice" data-select-game="solitaire"><span class="nc-choice-icon">♦</span><strong>Solitaire</strong><small>Classic Klondike · Draw one · Undo</small></button>
+ </div></div></div>
 <div id="modalShade" class="modal-shade hide" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close dialog">×</button><div id="modalBody"></div></div></div>
 <script>// Nova Card Collection: deterministic, offline house-rules engine.
 // The input handoff is the authoritative reference. Incomplete edge rules are tracked in README.
@@ -933,5 +977,212 @@ $('opponents').addEventListener('click',e=>{const b=e.target.closest('[data-oppo
 $('settingsBtn').onclick=settings;
 render();status(showStatus());if(game.turn!==0&&['draw','play'].includes(game.phase))scheduleAI();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), SUITS=['♠','♥','♦','♣'],rankNames=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const money=n=>`${Math.round(n).toLocaleString()} chips`, red=s=>['♥','♦'].includes(s);
+const store=(key,v)=>{try{localStorage.setItem('nova.collection.v020.'+key,JSON.stringify(v))}catch(e){}};
+const load=(key)=>{try{return JSON.parse(localStorage.getItem('nova.collection.v020.'+key)||'null')}catch(e){return null}};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a};
+const pack=()=>SUITS.flatMap(suit=>rankNames.map((rank,i)=>({id:`${suit}${rank}`,suit,rank,val:i+1})));
+const card=(c,back=false)=>`<span class="nc-card ${back?'back':red(c?.suit)?'red':''}" title="${back?'Face down':c.rank+c.suit}">${back?'✦':`<b>${c.rank}</b><span>${c.suit}</span>`}</span>`;
+const face=(cards,hidden=false)=>cards.map((c,i)=>card(c,hidden==='dealer' ? i===1 : Boolean(hidden))).join('');
+const saveAll=()=>{store('bj',bj);store('poker',pk);store('sol',sol)};
+let active=load('selectedGame')||'canasta';
+let bj=load('bj'),pk=load('poker'),sol=load('sol');
+const history=(a,s)=>{a.unshift(s);a.splice(6);};
+
+// BLACKJACK: six decks, 3:2 naturals, one split per round, dealer stands on soft 17.
+const bjShoe=()=>shuffle(Array.from({length:6},(_,p)=>pack().map(c=>({...c,id:`b${p}-${c.id}`}))).flat());
+function bjFresh(){return {bank:1000,bet:50,shoe:bjShoe(),dealer:[],hands:[],index:0,phase:'bet',message:'Choose your wager, then deal.',feed:[],round:0}};
+if(!bj||!['bet','play','result'].includes(bj.phase)||!Array.isArray(bj.shoe)) bj=bjFresh();
+const bjScore=hand=>{let total=hand.reduce((s,c)=>s+Math.min(c.val,10),0),aces=hand.filter(c=>c.val===1).length,soft=false;
+ if(aces&&total+10<=21){total+=10;soft=true;}return {total,soft};};
+const bjNatural=h=>h.cards.length===2&&!h.split&&bjScore(h.cards).total===21;
+function bjTake(){if(bj.shoe.length<45)bj.shoe=bjShoe();return bj.shoe.pop()}
+function bjSettle(message){const d=bjScore(bj.dealer).total,dNatural=bj.dealer.length===2&&d===21;
+ for(const h of bj.hands){let t=bjScore(h.cards).total,result='',gain=0;
+  if(t>21)result='Bust';else if(bjNatural(h)&&!dNatural){result='Blackjack pays 3:2';gain=h.bet*2.5;}
+  else if(dNatural&&!bjNatural(h))result='Dealer blackjack';
+  else if(t===d||bjNatural(h)&&dNatural){result='Push';gain=h.bet;}
+  else if(d>21||t>d){result='Win';gain=h.bet*2;}
+  else result='Dealer wins';
+  bj.bank+=gain;h.result=result;
+ }
+ bj.phase='result';bj.message=message||`Dealer has ${d}. Round settled.`;history(bj.feed,bj.message);saveAll();render();
+}
+function bjDeal(){if(!['bet','result'].includes(bj.phase))return;if(bj.bank<10){bj.message='Out of chips. Reset chips to play again.';render();return;}
+ bj.bet=Math.max(10,Math.min(bj.bet,bj.bank));if(bj.shoe.length<45)bj.shoe=bjShoe();bj.bank-=bj.bet;bj.round++;
+ bj.hands=[{cards:[bjTake(),bjTake()],bet:bj.bet,split:false,result:''}];bj.dealer=[bjTake(),bjTake()];bj.index=0;bj.phase='play';bj.message='Your turn. Hit, Stand, Double, or Split.';history(bj.feed,`Hand ${bj.round}: bet ${bj.bet} chips.`);
+ if(bjScore(bj.dealer).total===21||bjNatural(bj.hands[0])){bjSettle('Blackjack check complete.');return;}saveAll();render();}
+function bjNext(){let h=bj.hands[bj.index];if(h){h.done=true;}bj.index++;
+ if(bj.index<bj.hands.length){bj.message=`Playing hand ${bj.index+1} of ${bj.hands.length}.`;saveAll();render();return;}
+ if(bj.hands.some(h=>bjScore(h.cards).total<=21))while(bjScore(bj.dealer).total<17)bj.dealer.push(bjTake());
+ bjSettle();}
+function blackjackAction(action){if(action==='reset'){if(!confirm('Reset your Blackjack chips to 1,000?'))return;bj=bjFresh();saveAll();render();return;}
+ if(action==='clear'){if(bj.phase==='play')return;bj.bet=10;saveAll();render();return;}
+ if(action.startsWith('bet')){if(bj.phase==='play')return;let x=Number(action.slice(3));bj.bet=Math.max(10,Math.min(bj.bank,Math.round((bj.bet+x)/10)*10));saveAll();render();return;}
+ if(action==='deal'){bjDeal();return;}if(bj.phase!=='play')return;
+ const h=bj.hands[bj.index];
+ if(action==='hit'){h.cards.push(bjTake());bj.message=`Hit: ${bjScore(h.cards).total}.`;if(bjScore(h.cards).total>=21)bjNext();else{saveAll();render();}return;}
+ if(action==='stand'){bjNext();return;}
+ if(action==='double'&&h.cards.length===2&&bj.bank>=h.bet){bj.bank-=h.bet;h.bet*=2;h.cards.push(bjTake());history(bj.feed,`Doubled hand ${bj.index+1}.`);bjNext();return;}
+ if(action==='split'&&bj.hands.length===1&&h.cards.length===2&&Math.min(h.cards[0].val,10)===Math.min(h.cards[1].val,10)&&bj.bank>=h.bet){
+  bj.bank-=h.bet;const ace=h.cards[0].val===1;
+  const second={cards:[h.cards.pop(),bjTake()],bet:h.bet,split:true,result:''};h.cards.push(bjTake());h.split=true;bj.hands.push(second);
+  history(bj.feed,'Split pair into two hands.');if(ace){bj.index=1;bjNext();}else{saveAll();render();}return;
+ }
+}
+function blackjackHTML(){const hand=bj.hands[bj.index],playing=bj.phase==='play',hidden=playing;
+ return `<div class="nc-game-head"><h2>♠ Blackjack</h2><span>Bank: <b>${money(bj.bank)}</b></span></div>
+ <p class="nc-sub">Beat the dealer without going over 21. Naturals pay 3:2. Dealer stands on all 17s.</p>
+ <div class="nc-felt"><div class="nc-seat"><h3>Dealer ${hidden?'· '+(Math.min(bj.dealer[0]?.val||0,10)===1?'A':bj.dealer[0]?.rank||'')+' showing':'· '+(bj.dealer.length?bjScore(bj.dealer).total:'—')}</h3><div class="nc-cards">${face(bj.dealer,hidden?'dealer':false)}</div></div>
+ <div class="nc-pot">${bj.message}</div><div class="nc-hands">${bj.hands.map((h,i)=>`<div class="nc-seat ${playing&&i===bj.index?'active':''}"><h3>Hand ${i+1} · ${money(h.bet)} · ${bjScore(h.cards).total}${h.result?' · '+h.result:''}</h3><div class="nc-cards">${face(h.cards)}</div></div>`).join('')||'<p>Your hand appears after dealing.</p>'}</div></div>
+ <div class="nc-actions">${!playing?`<div class="nc-bet"><b>Bet: ${money(Math.min(bj.bet,bj.bank))}</b><button data-bj="bet-50">−50</button><button data-bj="bet-10">−10</button><button data-bj="bet10">+10</button><button data-bj="bet50">+50</button><button data-bj="bet100">+100</button><button data-bj="clear">Minimum</button></div><button class="nc-primary" data-bj="deal">${bj.phase==='result'?'Next hand':'Deal cards'}</button>`:
+ `<button class="nc-primary" data-bj="hit">Hit</button><button data-bj="stand">Stand</button><button data-bj="double" ${!hand||hand.cards.length!==2||bj.bank<hand.bet?'disabled':''}>Double</button><button data-bj="split" ${!hand||bj.hands.length!==1||hand.cards.length!==2||Math.min(hand.cards[0].val,10)!==Math.min(hand.cards[1].val,10)||bj.bank<hand.bet?'disabled':''}>Split</button>`}</div>
+ <div class="nc-foot"><span>${bj.feed.slice(0,2).join(' · ')}</span><button class="nc-quiet" data-bj="reset">Reset chips</button></div>`;
+}
+
+// TEXAS HOLD'EM: 4 seats, fixed-limit raises, blinds, betting streets, hand evaluator and side pots.
+const compare=(a,b)=>{for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d)return Math.sign(d);}return 0;};
+function evalFive(cards){const vals=cards.map(c=>c.val===1?14:c.val).sort((a,b)=>b-a),cnt=new Map();for(const v of vals)cnt.set(v,(cnt.get(v)||0)+1);
+ const groups=[...cnt].map(([v,n])=>({v,n})).sort((a,b)=>b.n-a.n||b.v-a.v);const flush=cards.every(c=>c.suit===cards[0].suit);
+ const uniques=[...new Set(vals)];if(uniques.includes(14))uniques.push(1);let straight=0;for(let i=0;i<=uniques.length-5;i++)if(uniques[i]-uniques[i+4]===4){straight=uniques[i];break;}
+ if(straight&&flush)return [8,straight];if(groups[0].n===4)return [7,groups[0].v,groups[1].v];
+ if(groups[0].n===3&&groups[1].n===2)return [6,groups[0].v,groups[1].v];if(flush)return [5,...vals];if(straight)return [4,straight];
+ if(groups[0].n===3)return [3,groups[0].v,...groups.slice(1).map(x=>x.v).sort((a,b)=>b-a)];
+ if(groups[0].n===2&&groups[1].n===2)return [2,Math.max(groups[0].v,groups[1].v),Math.min(groups[0].v,groups[1].v),groups[2].v];
+ if(groups[0].n===2)return [1,groups[0].v,...groups.slice(1).map(x=>x.v).sort((a,b)=>b-a)];return [0,...vals];}
+function evalHand(cards){if(cards.length<5)return [0,...cards.map(c=>c.val===1?14:c.val).sort((a,b)=>b-a)];let best=null;for(let a=0;a<cards.length-4;a++)for(let b=a+1;b<cards.length-3;b++)for(let c=b+1;c<cards.length-2;c++)for(let d=c+1;d<cards.length-1;d++)for(let e=d+1;e<cards.length;e++){let v=evalFive([cards[a],cards[b],cards[c],cards[d],cards[e]]);if(!best||compare(v,best)>0)best=v;}return best;}
+const pokerLabels=['High card','Pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
+function pokerFresh(){return {players:['You','Raven','Merchant','Veythar'].map((name,id)=>({name,id,stack:1000,hole:[],folded:false,streetBet:0,contribution:0,acted:false,allIn:false})),dealer:3,hand:0,street:'idle',board:[],shoe:[],turn:0,currentBet:0,raiseCount:0,message:'Start a hand to play Texas Hold’em.',history:[],winner:'',busy:false};}
+if(!pk||!Array.isArray(pk.players)||pk.players.length!==4)pk=pokerFresh();pk.busy=false;
+const pokerContenders=()=>pk.players.filter(p=>!p.folded&&p.contribution>0);
+const pokerPot=()=>pk.players.reduce((n,p)=>n+p.contribution,0);
+const pkPay=(p,n)=>{let amt=Math.min(n,p.stack);p.stack-=amt;p.streetBet+=amt;p.contribution+=amt;if(!p.stack)p.allIn=true;return amt};
+function pkSetStatus(msg){pk.message=msg;history(pk.history,msg);saveAll();render();}
+function pkStart(){let eligible=pk.players.filter(p=>p.stack>=20);if(eligible.length<2){pkSetStatus('Tournament complete. Reset chips to play again.');return;}
+ pk.hand++;pk.dealer=(pk.dealer+1)%4;let n=pk.players.length;for(const p of pk.players){p.hole=[];p.folded=p.stack===0;p.streetBet=0;p.contribution=0;p.acted=false;p.allIn=false;}
+ pk.shoe=shuffle(pack());pk.board=[];pk.raiseCount=0;pk.currentBet=0;pk.street='preflop';pk.winner='';
+ for(let i=0;i<2;i++)for(let j=0;j<4;j++)if(!pk.players[j].folded)pk.players[j].hole.push(pk.shoe.pop());
+ function nextEligible(from){for(let j=1;j<=4;j++){const x=(from+j)%4;if(!pk.players[x].folded)return x;}return from;}
+ const sb=nextEligible(pk.dealer),bb=nextEligible(sb);pkPay(pk.players[sb],10);pkPay(pk.players[bb],20);pk.currentBet=Math.max(pk.players[sb].streetBet,pk.players[bb].streetBet);
+ pk.turn=nextEligible(bb);pkSetStatus(`Hand ${pk.hand}. ${pk.players[sb].name} posts 10, ${pk.players[bb].name} posts 20.`);pkProcessAI();}
+function pkNextEligible(from){for(let j=1;j<=4;j++){const x=(from+j)%4;if(!pk.players[x].folded&&!pk.players[x].allIn)return x;}return -1;}
+function pkPending(p){return !p.folded&&!p.allIn&&(!p.acted||p.streetBet!==pk.currentBet)}
+function pkNextAfter(from){for(let j=1;j<=4;j++){let x=(from+j)%4;if(pkPending(pk.players[x]))return x;}return -1;}
+function pkAct(index,action){if(pk.street==='idle'||pk.street==='showdown'||pk.turn!==index)return;
+ const p=pk.players[index],owed=Math.max(0,pk.currentBet-p.streetBet),unit=pk.street==='turn'||pk.street==='river'?40:20;
+ if(action==='fold'){p.folded=true;p.acted=true;pk.message=`${p.name} folds.`;}
+ else if(action==='check'&&owed===0){p.acted=true;pk.message=`${p.name} checks.`;}
+ else if(action==='call'){let amt=pkPay(p,owed);p.acted=true;pk.message=owed?`${p.name} calls ${amt}.`:`${p.name} checks.`;}
+ else if(action==='raise'&&pk.raiseCount<3&&p.stack>=owed+unit){let total=owed+unit;pkPay(p,total);pk.currentBet=p.streetBet;pk.raiseCount++;for(const other of pk.players)if(!other.folded&&!other.allIn)other.acted=false;p.acted=true;pk.message=`${p.name} raises to ${pk.currentBet}.`;}
+ else return;
+ history(pk.history,pk.message);
+ let alive=pk.players.filter(q=>!q.folded&&q.contribution>0);if(alive.length===1){pkAward([[alive[0].id]],'All opponents folded.');return;}
+ let next=pkNextAfter(index);if(next<0){pkAdvanceStreet();return;}pk.turn=next;saveAll();render();pkProcessAI();}
+function pkAdvanceStreet(){let active=pk.players.filter(p=>!p.folded&&p.contribution>0);
+ if(pk.street==='river'){pkShowdown();return;}
+ if(pk.street==='preflop'){pk.shoe.pop();pk.board.push(pk.shoe.pop(),pk.shoe.pop(),pk.shoe.pop());pk.street='flop';}
+ else if(pk.street==='flop'){pk.shoe.pop();pk.board.push(pk.shoe.pop());pk.street='turn';}
+ else if(pk.street==='turn'){pk.shoe.pop();pk.board.push(pk.shoe.pop());pk.street='river';}
+ for(const p of pk.players){p.streetBet=0;p.acted=false;}pk.currentBet=0;pk.raiseCount=0;
+ pk.message=`${pk.street.toUpperCase()} dealt. ${active.length} players remain.`;history(pk.history,pk.message);
+ const x=pkNextEligible(pk.dealer);if(x<0){pkAdvanceStreet();return;}pk.turn=x;saveAll();render();pkProcessAI();}
+function pkAward(winnersBySidePot,msg){ // Used for fold victories; full side-pot resolution is done in showdown.
+ const amount=pokerPot(),winner=pk.players[winnersBySidePot[0][0]];winner.stack+=amount;pk.street='showdown';pk.winner=`${winner.name} wins ${money(amount)}. ${msg}`;pk.message=pk.winner;history(pk.history,pk.message);saveAll();render();}
+function pkShowdown(){pk.street='showdown';const contributions=pk.players.map(p=>p.contribution),levels=[...new Set(contributions.filter(v=>v>0))].sort((a,b)=>a-b);
+ let previous=0,reports=[];
+ for(const level of levels){const included=pk.players.filter(p=>p.contribution>=level);const sideAmount=(level-previous)*included.length;previous=level;
+  let eligible=included.filter(p=>!p.folded);if(!eligible.length)continue;
+  let best=null,wins=[];for(const p of eligible){let strength=evalHand([...p.hole,...pk.board]);let cmp=best?compare(strength,best):1;
+    if(cmp>0){best=strength;wins=[p];}else if(cmp===0)wins.push(p);}
+  const share=Math.floor(sideAmount/wins.length),remainder=sideAmount-share*wins.length;
+  wins.forEach((p,i)=>{p.stack+=share+(i<remainder?1:0)});reports.push(`${wins.map(w=>w.name).join(' & ')} +${sideAmount} (${pokerLabels[best[0]]})`);
+ }
+ pk.winner=reports.join(' · ');pk.message=pk.winner||'Showdown complete.';history(pk.history,pk.message);saveAll();render();}
+function pkAIDecision(p){const owed=Math.max(0,pk.currentBet-p.streetBet),hole=p.hole,vals=hole.map(c=>c.val===1?14:c.val),pair=vals[0]===vals[1],suited=hole[0]?.suit===hole[1]?.suit;
+ let strength=pk.board.length?evalHand([...hole,...pk.board])[0]*.16+(Math.max(...vals)/14)*.25:(pair?.50:0)+(suited?.15:0)+(vals.some(v=>v>=11)?.2:0)+(Math.min(...vals)/14)*.20;
+ const style=p.id===1?-.06:p.id===2?.05:.14;
+ let confidence=strength+style+Math.random()*.22-.11;const target=pk.currentBet+(pk.street==='turn'||pk.street==='river'?40:20);
+ if(owed>0 && confidence<.28 && owed>10 && Math.random()<.76)return 'fold';
+ if(confidence>.61 && pk.raiseCount<3 && p.stack>=target-p.streetBet && Math.random()<.42)return 'raise';
+ return 'call';}
+let aiTimer=null;
+function pkProcessAI(){clearTimeout(aiTimer);if(active!=='poker'||pk.street==='idle'||pk.street==='showdown'||pk.turn===0)return;
+ const actor=pk.turn;aiTimer=setTimeout(()=>{if(active!=='poker'||pk.turn!==actor||pk.street==='showdown')return;pkAct(actor,pkAIDecision(pk.players[actor]));},650);}
+function pokerAction(action){if(action==='reset'){if(!confirm('Reset Poker tournament chips for everyone?'))return;pk=pokerFresh();saveAll();render();return;}
+ if(action==='deal'){if(pk.street==='idle'||pk.street==='showdown')pkStart();return;}
+ if(pk.turn!==0||pk.street==='idle'||pk.street==='showdown')return;
+ if(action==='check')pkAct(0,'check');else if(action==='call')pkAct(0,'call');else if(action==='raise')pkAct(0,'raise');else if(action==='fold')pkAct(0,'fold');}
+function pokerHTML(){const playing=!['idle','showdown'].includes(pk.street),you=pk.players[0],owed=Math.max(0,pk.currentBet-you.streetBet);
+ let canRaise=pk.raiseCount<3&&you.stack>=owed+(pk.street==='turn'||pk.street==='river'?40:20);
+ return `<div class="nc-game-head"><h2>♥ Texas Hold’em Poker</h2><span>Pot: <b>${money(pokerPot())}</b></span></div>
+ <p class="nc-sub">Four seats • 10/20 blinds • fixed-limit raises • virtual chips • best five cards from seven.</p>
+ <div class="nc-felt"><div class="nc-poker-seats">${pk.players.slice(1).map(p=>`<div class="nc-seat ${pk.turn===p.id&&playing?'active':''} ${p.folded?'folded':''}"><h3>${p.name} · ${money(p.stack)} ${p.id===pk.dealer?'★':''}</h3><div class="nc-cards">${p.hole.length?face(p.hole,pk.street!=='showdown'||p.folded):''}</div><small>${p.folded?'Folded':p.allIn?'All in':`In: ${p.contribution}`}</small></div>`).join('')}</div>
+ <div class="nc-board"><h3>Board · ${pk.street.toUpperCase()} · Hand ${pk.hand}</h3><div class="nc-cards">${face(pk.board)}${Array.from({length:Math.max(0,5-pk.board.length)},()=>'<span class="nc-card slot">✦</span>').join('')}</div></div>
+ <div class="nc-seat ${pk.turn===0&&playing?'active':''}"><h3>You · ${money(you.stack)} ${pk.dealer===0?'★':''} ${you.folded?'· Folded':''}</h3><div class="nc-cards">${face(you.hole)}</div><small>${you.hole.length?`Your ${you.contribution} chips in pot`:'Deal to begin'}</small></div></div>
+ <div class="nc-info">${pk.winner||pk.message}</div>
+ <div class="nc-actions">${!playing?`<button class="nc-primary" data-pk="deal">${pk.street==='idle'?'Deal first hand':'Next hand'}</button>`:
+ pk.turn===0?`<button class="nc-primary" data-pk="${owed?'call':'check'}">${owed?'Call '+Math.min(owed,you.stack):'Check'}</button><button data-pk="raise" ${canRaise?'':'disabled'}>Raise ${pk.street==='turn'||pk.street==='river'?'40':'20'}</button><button data-pk="fold">Fold</button>`:'<span>Waiting for '+pk.players[pk.turn].name+'…</span>'}</div>
+ <div class="nc-foot"><span>${pk.history.slice(0,3).join(' · ')}</span><button class="nc-quiet" data-pk="reset">Reset tournament</button></div>`;
+}
+
+// KLONDIKE SOLITAIRE, DRAW ONE. Tap-to-select, tap destination. Double tap top card to auto-foundation.
+function solFresh(){let d=shuffle(pack()),columns=[];for(let i=0;i<7;i++){let c=[];for(let j=0;j<=i;j++){let x=d.pop();c.push({...x,up:j===i});}columns.push(c);}return {stock:d,waste:[],columns,foundations:Object.fromEntries(SUITS.map(s=>[s,[]])),selected:null,moves:0,message:'Tap stock to draw. Tap a card or stack, then its destination.',undo:[],win:false};}
+if(!sol||!Array.isArray(sol.columns)||sol.columns.length!==7)sol=solFresh();
+function solSnapshot(){const copy={...sol,undo:[]};delete copy.selected;return JSON.stringify(copy)}
+function solRecord(){sol.undo.push(solSnapshot());if(sol.undo.length>35)sol.undo.shift();}
+function solTop(source,index){if(source==='waste')return sol.waste.at(-1);if(source==='foundation')return sol.foundations[SUITS[index]].at(-1);return sol.columns[index]?.at(-1)}
+function solCanFoundation(c,suit){if(!c||c.suit!==suit)return false;return sol.foundations[suit].length+1===c.val;}
+function solCanTableau(c,col){if(!c)return false;let target=sol.columns[col].at(-1);return target?(red(target.suit)!==red(c.suit)&&target.val===c.val+1):c.val===13;}
+function solMove(src,dst){if(!src)return false;let cards=[],c;
+ if(src.where==='waste'){c=sol.waste.at(-1);if(c)cards=[c]}
+ else if(src.where==='foundation'){c=solTop('foundation',src.index);if(c)cards=[c]}
+ else if(src.where==='column'){const column=sol.columns[src.index];if(!column?.[src.card]||!column[src.card].up)return false;cards=column.slice(src.card);for(let i=1;i<cards.length;i++)if(!solCanRun(cards[i-1],cards[i]))return false;c=cards[0];}
+ if(!cards.length||!c)return false;
+ if(dst.where==='foundation'){if(cards.length!==1||!solCanFoundation(c,dst.suit))return false;}
+ else if(dst.where==='column'){if(src.where==='column'&&src.index===dst.index)return false;if(!solCanTableau(c,dst.index))return false;}
+ else return false;
+ solRecord();if(src.where==='waste')sol.waste.pop();else if(src.where==='foundation')sol.foundations[SUITS[src.index]].pop();else {sol.columns[src.index].splice(src.card);if(sol.columns[src.index].length)sol.columns[src.index].at(-1).up=true;}
+ if(dst.where==='foundation')sol.foundations[dst.suit].push(c);else sol.columns[dst.index].push(...cards);
+ sol.selected=null;sol.moves++;sol.win=SUITS.every(s=>sol.foundations[s].length===13);sol.message=sol.win?'You won! All four foundations complete. ✨':`Moved ${cards.length} card${cards.length>1?'s':''}.`;
+ saveAll();render();return true;
+}
+function solCanRun(upper,lower){return upper.val===lower.val+1&&red(upper.suit)!==red(lower.suit)}
+function solAutoFoundation(src){let c=src.where==='waste'?sol.waste.at(-1):src.where==='column'&&src.card===sol.columns[src.index].length-1?sol.columns[src.index].at(-1):null;if(!c)return false;return solMove(src,{where:'foundation',suit:c.suit})}
+function solitaireAction(action,index,sub){if(action==='new'){if(!confirm('Start a new Solitaire deal?'))return;sol=solFresh();saveAll();render();return;}
+ if(action==='undo'){if(sol.undo.length){let prev=JSON.parse(sol.undo.pop()),rest=sol.undo;sol={...prev,undo:rest,selected:null};saveAll();render();}return;}
+ if(action==='stock'){if(sol.stock.length){solRecord();sol.waste.push(sol.stock.pop());sol.selected=null;sol.moves++;sol.message='Drew one from stock.';}
+ else if(sol.waste.length){solRecord();sol.stock=sol.waste.reverse();sol.waste=[];sol.selected=null;sol.message='Recycled the waste to stock.';}saveAll();render();return;}
+ let dest=action==='foundation'?{where:'foundation',suit:SUITS[index]}:{where:'column',index};
+ if(sol.selected&&solMove(sol.selected,dest))return;
+ let src;if(action==='waste'){if(!sol.waste.length)return;src={where:'waste'};}
+ else if(action==='foundation'){if(!sol.foundations[SUITS[index]].length)return;src={where:'foundation',index};}
+ else if(action==='column'){let col=sol.columns[index];if(!col?.[sub]||!col[sub].up){sol.selected=null;render();return;}src={where:'column',index,card:sub};}else return;
+ if(sol.selected&&JSON.stringify(sol.selected)===JSON.stringify(src)){if(!solAutoFoundation(src)){sol.selected=null;render();}return;}
+ sol.selected=src;sol.message='Now tap a column or foundation to move the selected card(s).';saveAll();render();}
+function solHTML(){return `<div class="nc-game-head"><h2>♦ Klondike Solitaire</h2><span>Moves: <b>${sol.moves}</b></span></div><p class="nc-sub">Draw one • build down in alternating colors • foundations go Ace through King. Tap a stack then its destination; tap the same top card again to auto-foundation.</p>
+ <div class="nc-solitaire"><div class="nc-sol-top"><button class="nc-stock ${sol.stock.length?'back':''}" data-sol="stock" aria-label="Draw from stock">${sol.stock.length?'✦':sol.waste.length?'↶':'—'}<small>${sol.stock.length||'Recycle'}</small></button>
+ <button class="nc-waste ${sol.selected?.where==='waste'?'picked':''}" data-sol="waste">${sol.waste.length?card(sol.waste.at(-1)):'<span class="nc-card slot">Waste</span>'}</button><div class="nc-foundations">${SUITS.map((s,i)=>`<button class="nc-foundation ${sol.selected?.where==='foundation'&&sol.selected?.index===i?'picked':''}" data-sol="foundation" data-idx="${i}" aria-label="${s} foundation">${sol.foundations[s].length?card(sol.foundations[s].at(-1)):`<span class="nc-card slot">${s}</span>`}</button>`).join('')}</div></div>
+ <div class="nc-sol-cols">${sol.columns.map((col,i)=>`<div class="nc-sol-col" data-sol="column" data-idx="${i}">${col.length?col.map((c,j)=>`<button class="nc-sol-card ${sol.selected?.where==='column'&&sol.selected.index===i&&j>=sol.selected.card?'picked':''}" data-sol="column" data-idx="${i}" data-card="${j}" style="top:${j*25}px">${card(c,!c.up)}</button>`).join(''):`<button class="nc-sol-card" data-sol="column" data-idx="${i}" data-card="-1"><span class="nc-card slot">K</span></button>`}</div>`).join('')}</div></div>
+ <div class="nc-info">${sol.message}</div><div class="nc-actions"><button class="nc-primary" data-sol="undo" ${sol.undo.length?'':'disabled'}>↶ Undo</button><button data-sol="new">New deal</button></div>`;}
+
+function render(){if(active==='canasta')return;const root=$('ncOtherRoot');if(!root)return;root.innerHTML=active==='blackjack'?blackjackHTML():active==='poker'?pokerHTML():solHTML();}
+function select(name){if(!['canasta','blackjack','poker','solitaire'].includes(name))return;
+ clearTimeout(aiTimer);active=name;store('selectedGame',active);$('ncGameChooser').classList.add('hide');$('ncCanastaRoot').classList.toggle('hide',active!=='canasta');$('ncOtherRoot').classList.toggle('hide',active==='canasta');$('ncGameTitle').textContent=({canasta:'CANASTA',blackjack:'BLACKJACK',poker:'POKER',solitaire:'SOLITAIRE'})[active];
+ $('learnBtn').classList.toggle('hide',active!=='canasta');$('settingsBtn').classList.remove('hide');
+ // Shared art settings still apply to all games via inherited theme CSS variables.
+ saveAll();render();if(active==='poker')pkProcessAI();}
+$('ncChangeGame').addEventListener('click',()=>{$('ncGameChooser').classList.remove('hide')});
+$('ncGameChooser').addEventListener('click',e=>{const target=e.target.closest('[data-select-game]');if(target)select(target.dataset.selectGame);else if(e.target=== $('ncGameChooser'))$('ncGameChooser').classList.add('hide')});
+$('ncCloseChooser').addEventListener('click',()=>$('ncGameChooser').classList.add('hide'));
+$('ncOtherRoot').addEventListener('click',e=>{const b=e.target.closest('[data-bj],[data-pk],[data-sol]');if(!b)return;
+ if(b.dataset.bj)blackjackAction(b.dataset.bj);else if(b.dataset.pk)pokerAction(b.dataset.pk);else if(b.dataset.sol)solitaireAction(b.dataset.sol,Number(b.dataset.idx||0),Number(b.dataset.card??'-1'));});
+window.NovaCardCollectionTest={bjScore,evalFive,evalHand,compare,solCanRun,solCanFoundation,solCanTableau,peek:()=>({active,bj,pk,sol}),choose:select,actionBJ:blackjackAction,actionPK:pokerAction,actionSOL:solitaireAction,aiTick:()=>{clearTimeout(aiTimer);if(active==='poker'&&pk.turn!==0&&!['idle','showdown'].includes(pk.street))pkAct(pk.turn,pkAIDecision(pk.players[pk.turn]));}};
+select(active);if(!load('selectedOnce')){$('ncGameChooser').classList.remove('hide');store('selectedOnce',true)};
+})();
+
 </script>
 </body></html>
