@@ -1,10 +1,9 @@
-# Nova Card Collection 0.2.0 — four games, one Android APK
+# Nova Card Collection 0.2.1
+All four approved/playable offline games continue from 0.2.0.
+- **Change Games** now has a standalone sticky navigation row with a large, reliable touch target even when the game is scrolled.
+- Solitaire stock and all face-down tableau cards now display the same chosen card back as Canasta; designs update immediately when changed, without restarting Solitaire.
+- Original gold/purple fantasy dragon-and-playing-cards app icon now appears in the Android launcher (real mipmap resource). Icon derived from original generated artwork.
+- Gameplay, balances and house rules remain unchanged.
+Validated with phone-sized browser tests: switch games while scrolled on all four games, change Solitaire card backs for stock and tableau immediately, no JS errors. Existing 15 Blackjack rounds, 10 Poker hands with chip conservation, Solitaire undo, and prior Canasta tests passed.
 
-Canasta: preserved user-approved family house-rules engine, exactly as v0.1.5.
-Blackjack: six-deck shoe, 3:2 natural blackjack, dealer stands soft 17, virtual chips, Hit/Stand/Double/one Split per round.
-Texas Hold'em: four seats, 10/20 blinds, fixed-limit raises up to three per street, computer opponents, five-of-seven evaluator, split pots and side pots. Virtual chips.
-Klondike Solitaire: standard seven columns, draw-one stock recycling, alternating color descending runs, A-K foundations, tap-to-move, undo.
-One obvious Change Games button opens Dealer's Choice; original Table & Cards gallery remains available to all games. Each game's local state is independent.
-All games work offline and have no real-money wagers, accounts, or ads.
-Tests: 15 Blackjack rounds, 10 Poker hands with total chips conserved, 52-card Solitaire draw/undo, full UI mobile smoke tests, existing 31 Canasta rules tests. This is a family INSTALL TEST; three new games still need the owner's real phone test.
-Package identity site.novasky.cardcollection. The debug key is generated separately by each GitHub runner; future in-place updates require privately persistent signing, not configured yet. Do not promise an in-place upgrade. Live Family Store and main branch unchanged.
+Android v0.2.1 keeps package site.novasky.cardcollection. **Important:** GitHub Actions debug keys are ephemeral, so Android may require uninstalling v0.2.0 to install this APK. A persistent signing key is still needed for future true in-place upgrades. No changes to the official Nova Family Store or Starfall Defense main branch.

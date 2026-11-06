@@ -3,6 +3,7 @@
                android:fullBackupContent="false"
                android:usesCleartextTraffic="false"
                android:label="Nova Card Collection"
+               android:icon="@mipmap/ic_launcher"
                android:theme="@android:style/Theme.Material.Light.NoActionBar">
     <activity android:name=".MainActivity"
               android:exported="true"

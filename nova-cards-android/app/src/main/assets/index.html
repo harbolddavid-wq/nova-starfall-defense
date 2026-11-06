@@ -156,13 +156,25 @@ body[data-back=moon] .nc-card.back{background:radial-gradient(circle at 35% 20%,
 body[data-back=obsidian] .nc-card.back{background:linear-gradient(140deg,#39363e,#090b18)}
 body[data-back=classicred] .nc-card.back{background:repeating-linear-gradient(45deg,#8d3041,#8d3041 5px,#cda76a 6px,#5d2034 10px)}
 body[data-back=classicblue] .nc-card.back{background:repeating-linear-gradient(45deg,#254c7f,#254c7f 5px,#d1c99c 6px,#162c56 10px)}
+
+/* 0.2.1 — separate sticky game switcher: no overlap with controls, 50px tap target */
+#ncGameSwitchBar{position:sticky;top:0;z-index:82;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px max(14px,env(safe-area-inset-right));background:linear-gradient(100deg,rgba(8,28,37,.97),rgba(29,33,56,.97));border-block:1px solid rgba(230,193,128,.42);box-shadow:0 5px 20px #0008;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.nc-current-game{font-size:10px;color:#b9d1d5;letter-spacing:.1em;line-height:1.55}.nc-current-game strong{display:block;color:#f6d59d;font-size:15px;letter-spacing:.03em;white-space:nowrap}
+#ncGameSwitchBar #ncChangeGame{display:block;flex:0 0 auto;min-width:166px;min-height:50px;padding:10px 18px!important;border-radius:14px!important;font-size:14px!important;line-height:1.25;touch-action:manipulation;white-space:nowrap;position:relative;z-index:1;box-shadow:0 2px 12px #deb46939}
+#ncGameSwitchBar #ncChangeGame:active{transform:scale(.97)}
+/* Restore the 19 shared gallery designs on ALL face-down cards, including Solitaire stock. */
+.nc-card.back.card.card-back{width:56px;min-width:56px;height:78px;min-height:78px;flex:0 0 56px;margin:0;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0;overflow:hidden;pointer-events:none;transform:none;box-shadow:0 3px 5px #0008}
+.nc-card.back.card.card-back:before,.nc-card.back.card.card-back:after{pointer-events:none}
+.nc-stock .nc-card.back.card.card-back{width:100%;height:100%;min-width:0;min-height:0;flex:1}
+@media(max-width:720px){#ncGameSwitchBar{padding:7px 12px}.nc-current-game{font-size:9px}.nc-current-game strong{font-size:13px}#ncGameSwitchBar #ncChangeGame{min-width:162px;min-height:50px} .nc-card.back.card.card-back{width:43px;min-width:43px;height:64px;min-height:64px;flex:0 0 43px}.nc-stock .nc-card.back.card.card-back{width:100%;min-width:0;height:100%;min-height:0;flex:1}}
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
 <header class="masthead">
   <div class="logo"><span class="logo-mark">✦</span><div><h1>NOVA <span>CARDS</span></h1><small>THE FAMILY COLLECTION <b>• <span id="ncGameTitle">CANASTA</span> • FOUR-GAME COLLECTION</b></small></div></div>
-  <div class="header-buttons"><button id="ncChangeGame">🃏 Change Games</button><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">🎨 Table &amp; Cards</button></div>
+  <div class="header-buttons"><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">🎨 Table &amp; Cards</button></div>
 </header>
+<nav id="ncGameSwitchBar" aria-label="Card game navigation"><span class="nc-current-game">NOW PLAYING <strong id="ncCurrentGameName">Canasta</strong></span><button id="ncChangeGame" type="button" aria-controls="ncGameChooser" aria-haspopup="dialog">🃏 Change Games</button></nav>
 <div id="ncCanastaRoot"><section class="play-layout">
   <aside class="side-panel">
     <div class="panel-heading">YOUR TABLE</div>
@@ -986,7 +998,7 @@ const store=(key,v)=>{try{localStorage.setItem('nova.collection.v020.'+key,JSON.
 const load=(key)=>{try{return JSON.parse(localStorage.getItem('nova.collection.v020.'+key)||'null')}catch(e){return null}};
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a};
 const pack=()=>SUITS.flatMap(suit=>rankNames.map((rank,i)=>({id:`${suit}${rank}`,suit,rank,val:i+1})));
-const card=(c,back=false)=>`<span class="nc-card ${back?'back':red(c?.suit)?'red':''}" title="${back?'Face down':c.rank+c.suit}">${back?'✦':`<b>${c.rank}</b><span>${c.suit}</span>`}</span>`;
+const card=(c,back=false)=>back?`<span class="nc-card back card card-back" data-back="${document.body.dataset.back||'stars'}" title="Face-down card"><span class="sr-only">Face down</span></span>`:`<span class="nc-card ${red(c.suit)?'red':''}" title="${c.rank+c.suit}"><b>${c.rank}</b><span>${c.suit}</span></span>`;
 const face=(cards,hidden=false)=>cards.map((c,i)=>card(c,hidden==='dealer' ? i===1 : Boolean(hidden))).join('');
 const saveAll=()=>{store('bj',bj);store('poker',pk);store('sol',sol)};
 let active=load('selectedGame')||'canasta';
@@ -1164,7 +1176,7 @@ function solitaireAction(action,index,sub){if(action==='new'){if(!confirm('Start
  if(sol.selected&&JSON.stringify(sol.selected)===JSON.stringify(src)){if(!solAutoFoundation(src)){sol.selected=null;render();}return;}
  sol.selected=src;sol.message='Now tap a column or foundation to move the selected card(s).';saveAll();render();}
 function solHTML(){return `<div class="nc-game-head"><h2>♦ Klondike Solitaire</h2><span>Moves: <b>${sol.moves}</b></span></div><p class="nc-sub">Draw one • build down in alternating colors • foundations go Ace through King. Tap a stack then its destination; tap the same top card again to auto-foundation.</p>
- <div class="nc-solitaire"><div class="nc-sol-top"><button class="nc-stock ${sol.stock.length?'back':''}" data-sol="stock" aria-label="Draw from stock">${sol.stock.length?'✦':sol.waste.length?'↶':'—'}<small>${sol.stock.length||'Recycle'}</small></button>
+ <div class="nc-solitaire"><div class="nc-sol-top"><button class="nc-stock" data-sol="stock" aria-label="Draw from stock">${sol.stock.length?card(null,true):sol.waste.length?'↶':'—'}<small>${sol.stock.length||'Recycle'}</small></button>
  <button class="nc-waste ${sol.selected?.where==='waste'?'picked':''}" data-sol="waste">${sol.waste.length?card(sol.waste.at(-1)):'<span class="nc-card slot">Waste</span>'}</button><div class="nc-foundations">${SUITS.map((s,i)=>`<button class="nc-foundation ${sol.selected?.where==='foundation'&&sol.selected?.index===i?'picked':''}" data-sol="foundation" data-idx="${i}" aria-label="${s} foundation">${sol.foundations[s].length?card(sol.foundations[s].at(-1)):`<span class="nc-card slot">${s}</span>`}</button>`).join('')}</div></div>
  <div class="nc-sol-cols">${sol.columns.map((col,i)=>`<div class="nc-sol-col" data-sol="column" data-idx="${i}">${col.length?col.map((c,j)=>`<button class="nc-sol-card ${sol.selected?.where==='column'&&sol.selected.index===i&&j>=sol.selected.card?'picked':''}" data-sol="column" data-idx="${i}" data-card="${j}" style="top:${j*25}px">${card(c,!c.up)}</button>`).join(''):`<button class="nc-sol-card" data-sol="column" data-idx="${i}" data-card="-1"><span class="nc-card slot">K</span></button>`}</div>`).join('')}</div></div>
  <div class="nc-info">${sol.message}</div><div class="nc-actions"><button class="nc-primary" data-sol="undo" ${sol.undo.length?'':'disabled'}>↶ Undo</button><button data-sol="new">New deal</button></div>`;}
@@ -1172,9 +1184,12 @@ function solHTML(){return `<div class="nc-game-head"><h2>♦ Klondike Solitaire<
 function render(){if(active==='canasta')return;const root=$('ncOtherRoot');if(!root)return;root.innerHTML=active==='blackjack'?blackjackHTML():active==='poker'?pokerHTML():solHTML();}
 function select(name){if(!['canasta','blackjack','poker','solitaire'].includes(name))return;
  clearTimeout(aiTimer);active=name;store('selectedGame',active);$('ncGameChooser').classList.add('hide');$('ncCanastaRoot').classList.toggle('hide',active!=='canasta');$('ncOtherRoot').classList.toggle('hide',active==='canasta');$('ncGameTitle').textContent=({canasta:'CANASTA',blackjack:'BLACKJACK',poker:'POKER',solitaire:'SOLITAIRE'})[active];
- $('learnBtn').classList.toggle('hide',active!=='canasta');$('settingsBtn').classList.remove('hide');
+ $('learnBtn').classList.toggle('hide',active!=='canasta');$('settingsBtn').classList.remove('hide');$('ncCurrentGameName').textContent=({canasta:'Canasta',blackjack:'Blackjack',poker:'Texas Hold’em',solitaire:'Solitaire'})[active];
  // Shared art settings still apply to all games via inherited theme CSS variables.
  saveAll();render();if(active==='poker')pkProcessAI();}
+// The card gallery changes body[data-back] without rebuilding other game screens.
+// Update face-down cards in place, so Solitaire's stock and tableau change immediately.
+new MutationObserver(()=>{const design=document.body.dataset.back||'stars';document.querySelectorAll('#ncOtherRoot .nc-card.back').forEach(c=>{c.dataset.back=design})}).observe(document.body,{attributes:true,attributeFilter:['data-back']});
 $('ncChangeGame').addEventListener('click',()=>{$('ncGameChooser').classList.remove('hide')});
 $('ncGameChooser').addEventListener('click',e=>{const target=e.target.closest('[data-select-game]');if(target)select(target.dataset.selectGame);else if(e.target=== $('ncGameChooser'))$('ncGameChooser').classList.add('hide')});
 $('ncCloseChooser').addEventListener('click',()=>$('ncGameChooser').classList.add('hide'));
