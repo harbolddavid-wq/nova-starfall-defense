@@ -1,0 +1,53 @@
+name: Backup original Nova Pocket and obtain licensed homebrew test ROM
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-original-backup.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve original published static site and independent test cartridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=https://headless-qiekxafrnim-harbolddavid-140c.wix-site-host.com
+          mkdir -p original/core/video licensed-test
+          for f in index.html launcher.js styles.css COPYING.txt; do
+            curl -fL --retry 2 "$root/$f" -o "original/$f"
+          done
+          for f in arm.js audio.js core.js gba.js gpio.js io.js irq.js keypad.js mmu.js savedata.js sio.js thumb.js util.js video.js; do
+            curl -fL --retry 2 "$root/core/$f" -o "original/core/$f"
+          done
+          for f in proxy.js software.js; do
+            curl -fL --retry 2 "$root/core/video/$f" -o "original/core/video/$f"
+          done
+          curl -fL --retry 2 https://raw.githubusercontent.com/benoror/gbadev/master/LICENSE -o licensed-test/LICENSE.txt || echo "MIT license at github.com/benoror/gbadev" > licensed-test/LICENSE.txt
+          for url in \
+            https://raw.githubusercontent.com/benoror/gbadev/master/public/mystic_q.gba \
+            https://raw.githubusercontent.com/benoror/gbadev/main/public/mystic_q.gba \
+            https://raw.githubusercontent.com/benoror/gbadev/master/public/arkanoid.gba \
+            https://raw.githubusercontent.com/benoror/gbadev/main/public/arkanoid.gba \
+            https://raw.githubusercontent.com/benoror/gbadev/master/public/dexgex/mystic_q.gba; do
+              if curl -fLs --max-time 15 "$url" -o licensed-test/test.gba; then break; fi
+          done
+          if [ -f licensed-test/test.gba ] && [ $(stat -c%s licensed-test/test.gba) -gt 20000 ]; then
+            echo "Licensed homebrew test ROM obtained"
+          else
+            echo "Homebrew ROM candidate not located; preserve blank test dir"
+            rm -f licensed-test/test.gba
+          fi
+          find original licensed-test -type f -printf '%p %s bytes\n'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-pocket-original-backup-and-homebrew
+          path: |
+            original/
+            licensed-test/
+          if-no-files-found: error
+          retention-days: 7
