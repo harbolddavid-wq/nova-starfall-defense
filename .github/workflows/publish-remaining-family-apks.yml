@@ -1,0 +1,57 @@
+name: Publish remaining verified family APKs
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-remaining-family-apks.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'harbolddavid-wq/nova-starfall-defense'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify exact APK bytes from existing public storefront
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release parts
+          src='https://nova-family-store.hatchable.site/downloads'
+          get() { curl -fsSL --retry 2 --connect-timeout 20 -o "$2" "$src/$1"; }
+          get Lanternwake_0.4.0.apk release/Lanternwake_0.4.0.apk
+          get Nova_Companions_1.0.1.apk release/Nova_Companions_1.0.1.apk
+          get Nova_Installer_1.0.1_Tap_To_Launch.apk release/Nova_Installer_1.0.1_Tap_To_Launch.apk
+          for i in 1 2 3; do get "Mothlight_1.0.0.part$i" "parts/Mothlight_1.0.0.part$i"; done
+          for i in 1 2 3 4; do get "Starlight_Themes_0.5.1.part$i" "parts/Starlight_Themes_0.5.1.part$i"; done
+          sha256sum --check <<'EXPECTED'
+          722c2b863d581bc3b0f7cbedb986f3e218d6b5d0bf82b73eb3b2f42889b934aa  release/Lanternwake_0.4.0.apk
+          3b42b387f22aa9c288e91a48bd612ceaa02fe220331ffde7040fece62e7953dc  release/Nova_Companions_1.0.1.apk
+          b0058f55f1c7279f617ae7b7fc5fb0cbf893929411016201e3ff9f2809530d75  release/Nova_Installer_1.0.1_Tap_To_Launch.apk
+          f884dcee7969a43fa5aa36c7c56b0a03c65423db997c5c4b1a0a1295650fdef0  parts/Mothlight_1.0.0.part1
+          2deae577ae0f83f08e63bf6e15fc72b73a2cc2dbd04ff9779955b079b8487599  parts/Mothlight_1.0.0.part2
+          a6191b09ff816237a707b24be1a5e981243a187482d0416eaebb72f88eee7f52  parts/Mothlight_1.0.0.part3
+          4daac649885456f737dccf3a16d1bc2d442ac32fb96573ebd471b50b77e7d10e  parts/Starlight_Themes_0.5.1.part1
+          861531891e69518d3bc21f12effe0871b887c5634c55ab85e1e553cba86673ea  parts/Starlight_Themes_0.5.1.part2
+          e0b19c38af9884c14c6448fa01ff713ee0dcb58aaf95d321d0dae0cb85728b32  parts/Starlight_Themes_0.5.1.part3
+          91a0560200bfb2b0318d102e580641de8ab3561fe391305079b9fb9fbf6f181a  parts/Starlight_Themes_0.5.1.part4
+          EXPECTED
+          cat parts/Mothlight_1.0.0.part{1,2,3} > release/Mothlight_1.0.0.apk
+          cat parts/Starlight_Themes_0.5.1.part{1,2,3,4} > release/Starlight_Themes_0.5.1_Three_Theme_Pilot_SIGNED.apk
+          test "$(stat -c %s release/Lanternwake_0.4.0.apk)" -eq 3709021
+          test "$(stat -c %s release/Nova_Companions_1.0.1.apk)" -eq 7271062
+          test "$(stat -c %s release/Nova_Installer_1.0.1_Tap_To_Launch.apk)" -eq 3129889
+          test "$(stat -c %s release/Mothlight_1.0.0.apk)" -eq 13231023
+          test "$(stat -c %s release/Starlight_Themes_0.5.1_Three_Theme_Pilot_SIGNED.apk)" -eq 18257337
+          for apk in release/*.apk; do unzip -tqq "$apk"; done
+          sha256sum release/*.apk
+      - name: Publish five downloadable APKs to existing GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view family-store-apks-2026-11-05 >/dev/null
+          gh release upload family-store-apks-2026-11-05 release/*.apk
+          gh release view family-store-apks-2026-11-05 --json assets --jq '[.assets[].name]'
