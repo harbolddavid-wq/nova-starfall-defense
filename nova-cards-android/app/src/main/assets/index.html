@@ -102,6 +102,16 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
 .inspector-empty{font-size:16px;color:#e3d4b4;margin:30px}
 .inspector-return{display:block;margin:24px auto 10px;max-width:360px;width:100%;font-weight:bold}
 @media(max-width:560px){.table-melds{gap:5px}.meld-team-zone{padding:3px;gap:4px}.meld-team-heading{display:grid;gap:1px;font-size:9px;padding:4px!important}.meld-team-heading span:last-child{font-size:8px}.meld-tiles{gap:3px}.meld-stack{flex:1 1 75px;max-width:none;padding:4px!important;gap:3px!important}.tiny-face{min-width:15px;height:22px;font-size:8px;padding:5px 0;margin-right:-6px}.meld-stack small{font-size:7px}.inspector-card-row{gap:6px}.inspector-meld{padding:10px}.inspector-card-row .card{width:54px;min-width:54px;height:88px;min-height:88px}}
+
+/* House-rule audit: visible opening proof and each meld's individual points. */
+.meld-opening-label{font-size:10px;color:#f8deb5;padding:3px 8px 6px;letter-spacing:.02em}
+.inspector-opening{max-width:980px;margin:0 auto 18px;padding:13px 14px;border-radius:14px;border:1px solid #d8bf8e94;background:#13292c;color:#fbe6c3;display:grid;gap:7px;font-size:13px}
+.inspector-opening strong{font-size:16px;color:#ffdfa1}
+.inspector-opening p{margin:0}
+.inspector-opening small{font-size:11px;color:#c8d7d0}
+.inspector-opening .opening-cards{padding:7px 0 4px}
+.opening-breakdown,.point-breakdown{color:#d4d9c7;font-size:12px;margin:0 0 10px}
+@media(max-width:560px){.meld-opening-label{font-size:9px;padding:3px 6px 5px}.inspector-opening{padding:10px;font-size:12px}.inspector-opening strong{font-size:13px}}
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
@@ -137,7 +147,7 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
     </details><button id="nextBtn" class="primary hide wide">Next Round →</button><div id="status" class="status" role="alert">Choose draw pile or discard pile to begin.</div>
   </main>
 </section>
-<footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Touch-first build 0.1.3</span></footer>
+<footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Touch-first build 0.1.4</span></footer>
 </div>
 <div id="modalShade" class="modal-shade hide" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close dialog">×</button><div id="modalBody"></div></div></div>
 <script>// Nova Card Collection: deterministic, offline house-rules engine.
@@ -192,6 +202,8 @@ function clearRound(s) {
   s.redThrees=Array.from({length:scorekeeperCount(s.mode)},()=>[]);
   s.melds=Array.from({length:scorekeeperCount(s.mode)},()=>[]);
   s.opened=Array.from({length:scorekeeperCount(s.mode)},()=>false);
+  // Preserve inspectable proof of which single player legally opened each team.
+  s.openingInfo=Array.from({length:scorekeeperCount(s.mode)},()=>null);
   s.floater=null;s.outPlayer=null;s.roundSummary=null;s.phase='draw';s.turn=(s.round-1)%n;s.log=[];
   // Deal the ordinary count before replacing any dealt red threes.
   const size=roundHandSize(s.round);
@@ -229,6 +241,19 @@ function ownedCards(s,p,ids) {
 }
 function removeCards(s,p,ids) {const set=new Set(ids);s.hands[p]=s.hands[p].filter(c=>!set.has(c.id));}
 const groupAnalysis= groups => groups.map(cards=>{let a=analyzeMeld(cards);requireValid(a.valid,a.reason);return a;});
+// An opening may contain multiple legal groups, but ALL must be laid in ONE
+// action by ONE player.  The partner cannot supply cards to meet the minimum.
+function recordOpening(s,p,groups,{method='hand',discardTop=null}={}) {
+  const t=teamOf(s.mode,p),required=openingMinimum(s.score[t]);
+  const cards=groups.flat(),total=points(cards);
+  requireValid(!s.opened[t], 'The team is already open.');
+  requireValid(total>=required,`Initial meld needs ${required} points; selected melds total ${total}.`);
+  s.openingInfo ??= Array.from({length:scorekeeperCount(s.mode)},()=>null);
+  s.openingInfo[t]={player:p,round:s.round,method,priorScore:s.score[t],required,total,
+    groups:structuredClone(groups),discardTopId:discardTop?.id??null};
+  s.opened[t]=true;
+  note(s,`${playerLabel(p,s.mode)} opened alone: ${total} / ${required} points.`);
+}
 const teamHasCanasta=(s,t)=>s.melds[t].some(cards=>cards.length>=7);
 const legalOut=(s,p)=>teamHasCanasta(s,teamOf(s.mode,p));
 function performMeldGroups(s,p,groups,asOpening=false) {
@@ -237,14 +262,16 @@ function performMeldGroups(s,p,groups,asOpening=false) {
   const lookup=new Map(cards.map(c=>[c.id,c]));
   const material=groups.map(ids=>ids.map(id=>lookup.get(id)));
   const reports=groupAnalysis(material);
-  if(!s.opened[team]){
-    const need=openingMinimum(s.score[team]),sum=reports.reduce((v,r)=>v+r.points,0);
+  const firstOpening=!s.opened[team];
+  if(firstOpening){
+    const sum=reports.reduce((v,r)=>v+r.points,0),need=openingMinimum(s.score[team]);
     requireValid(sum>=need,`Initial meld needs ${need} points; selected melds total ${sum}.`);
   }
+  // All cards were verified by ownedCards against s.hands[p], not the shared team.
+  if(firstOpening)recordOpening(s,p,material);
   removeCards(s,p,allIds);
   s.melds[team].push(...material);
-  if(!s.opened[team]) {s.opened[team]=true;note(s,`${playerLabel(p,s.mode)} opened for ${reports.reduce((v,r)=>v+r.points,0)} points.`);}
-  else note(s,`${playerLabel(p,s.mode)} laid ${allIds.length} cards.`);
+  if(!firstOpening)note(s,`${playerLabel(p,s.mode)} laid ${allIds.length} cards.`);
   finishIfHandEmpty(s,p);
 }
 function performExtend(s,p,meldIndex,ids) {
@@ -303,7 +330,7 @@ function performPickup(s,p,proofIds,openingGroups=[]) {
   for(const c of all)if(isRedThree(c))collectRed(s,p,c);else s.hands[p].push(c);
   if(existing<0)s.melds[team].push(combined);else s.melds[team][existing]=[...s.melds[team][existing],...combined];
   s.melds[team].push(...extras);
-  if(!s.opened[team])s.opened[team]=true;
+  if(!s.opened[team]) recordOpening(s,p,[combined,...extras],{method:'discard pickup',discardTop:top});
   s.phase='play';note(s,`${playerLabel(p,s.mode)} took the discard pile (${all.length+1} cards).`);
   finishIfHandEmpty(s,p);
 }
@@ -604,12 +631,14 @@ function render(){
   $('tableMelds').innerHTML=game.melds.map((melds,t)=>{
     const mine=t===team;
     const teamName=partnership?(mine?'OUR SIDE · YOU + PARTNER':'THEIR SIDE · OPPONENTS'):(mine?'YOUR CARDS':`OPPONENT ${t} CARDS`);
+    const opening=game.openingInfo?.[t];
+    const openStatus=opening?`Opened by ${esc(opening.player===0?'you':profileOf(opening.player).name)} · ${opening.total}/${opening.required} pts`:game.opened[t]?'Opened · previous version did not record proof':`Not opened · needs ${openingMinimum(game.score[t])} pts`;
     const chips=melds.map((meld,i)=>{
       const a=analyzeMeld(meld),shown=meld.slice(0,3).map(c=>`<span class="tiny-face ${c.suit==='♥'||c.suit==='♦'?'red':''}">${esc(c.rank==='Joker'?'J':c.rank)}${esc(c.suit)}</span>`).join('');
-      return `<button class="meld-stack ${a.canasta?(a.wilds?'dirty':'clean'):''}" data-team="${t}" data-index="${i}" aria-label="View ${esc(a.rank)} meld of ${meld.length} cards, ${esc(teamName)}" title="Tap to see all cards"><strong>${esc(a.rank)}</strong><div class="tiny-faces">${shown}</div><div>${meld.length} cards<small>${a.canasta?(a.wilds?'DIRTY CANASTA':'CLEAN CANASTA'):'TAP TO VIEW'}</small></div></button>`;
+      return `<button class="meld-stack ${a.canasta?(a.wilds?'dirty':'clean'):''}" data-team="${t}" data-index="${i}" aria-label="View ${esc(a.rank)} meld of ${meld.length} cards worth ${a.points} points, ${esc(teamName)}" title="Tap to see all cards"><strong>${esc(a.rank)}</strong><div class="tiny-faces">${shown}</div><div>${meld.length} cards · ${a.points} pts<small>${a.canasta?(a.wilds?'DIRTY CANASTA':'CLEAN CANASTA'):'TAP TO VIEW'}</small></div></button>`;
     }).join('');
     const reds=game.redThrees[t].length?`<button class="red-three-chip" data-inspect-team="${t}" aria-label="View ${game.redThrees[t].length} red threes">♥ 3 × ${game.redThrees[t].length}</button>`:'';
-    return `<section class="meld-team-zone ${mine?'our-team':'rival-team'}" data-drop-team="${t}"><button class="meld-team-heading" data-inspect-team="${t}" aria-label="View all cards down for ${esc(teamName)}"><span>${esc(teamName)}</span><span>${melds.length} meld${melds.length===1?'':'s'} · 🔍 VIEW ALL</span></button><div class="meld-tiles">${chips||'<span class="no-melds">No melds placed yet</span>'}${reds}</div></section>`;
+    return `<section class="meld-team-zone ${mine?'our-team':'rival-team'}" data-drop-team="${t}"><button class="meld-team-heading" data-inspect-team="${t}" aria-label="View all cards down for ${esc(teamName)}"><span>${esc(teamName)}</span><span>${melds.length} meld${melds.length===1?'':'s'} · 🔍 VIEW ALL</span></button><div class="meld-opening-label">${openStatus}</div><div class="meld-tiles">${chips||'<span class="no-melds">No melds placed yet</span>'}${reds}</div></section>`;
   }).join('');
   const visible=new Set(game.hands[0].map(c=>c.id));selected=new Set([...selected].filter(id=>visible.has(id)));
   $('handCount').textContent=game.hands[0].length;
@@ -790,12 +819,18 @@ function inspectorHtml(t){
   const own=t===teamOf(game.mode,0),partners=game.mode==='partnership_4p';
   const title=partners?(own?'YOUR TEAM · YOU + PARTNER':'OPPONENT TEAM'):(own?'YOUR CARDS':`OPPONENT ${t} CARDS`);
   const melds=game.melds[t]||[],reds=game.redThrees[t]||[];
+  const opening=game.openingInfo?.[t];
+  const opener=opening?(opening.player===0?'You':profileOf(opening.player).name):'';
+  const openingCards=opening?.groups.flat()||[];
+  const openingProof=opening?`<section class="inspector-opening"><strong>✓ OPENED LEGALLY BY ${esc(opener)}</strong><div>Round ${opening.round} · Prior team score ${opening.priorScore} · Needed ${opening.required} pts · Played <b>${opening.total} pts</b> in one turn</div><div class="opening-breakdown">${opening.groups.map((g,i)=>`Group ${i+1}: ${g.map(c=>value(c)).join(' + ')} = ${points(g)} pts`).join(' · ')}</div><div class="inspector-card-row opening-cards">${openingCards.map(c=>cardHtml(c)).join('')}</div>${opening.method==='discard pickup'?'<small>Opening included the exposed discard-pile card.</small>':''}<small>Both partners share melds only AFTER one partner opens.</small></section>`:
+    game.opened[t]?`<section class="inspector-opening"><strong>Opened · Historical proof unavailable</strong><p>This round was started in an older app version, which did not save who opened or with which cards. New rounds record the opening automatically.</p></section>`:
+    `<section class="inspector-opening"><strong>NOT OPEN YET · NEEDS ${openingMinimum(game.score[t])} POINTS</strong><p>One player must lay enough legal cards in one opening move. Their partner cannot combine hands to reach the opening minimum.</p></section>`;
   const groups=melds.map((meld,i)=>{
     const a=analyzeMeld(meld),type=a.canasta?(a.wilds?'Dirty Canasta · +300':'Clean Canasta · +500'):'Meld';
-    return `<section class="inspector-meld"><h3>${esc(a.rank)} · ${meld.length} cards <span>${type}</span></h3><div class="inspector-card-row" aria-label="${esc(a.rank)} meld cards">${meld.map(c=>cardHtml(c)).join('')}</div></section>`;
+    return `<section class="inspector-meld"><h3>${esc(a.rank)} · ${meld.length} cards · ${a.points} points <span>${type}</span></h3><div class="point-breakdown">Card values: ${meld.map(c=>value(c)).join(' + ')} = ${a.points}. ${game.opened[t]?'After opening, smaller melds are allowed.':''}</div><div class="inspector-card-row" aria-label="${esc(a.rank)} meld cards">${meld.map(c=>cardHtml(c)).join('')}</div></section>`;
   }).join('');
-  const redGroup=reds.length?`<section class="inspector-meld"><h3>Red threes · ${reds.length} <span>Bonus cards</span></h3><div class="inspector-card-row">${reds.map(c=>cardHtml(c)).join('')}</div></section>`:'';
-  return `<div class="inspector-header"><span class="panel-heading">CARDS PLACED ON THE TABLE</span><h2 id="modalTitle">${esc(title)}</h2><p>One shared meld collection per team. Every card below belongs to this side of the table.</p></div><div class="inspector-meld-list">${groups}${redGroup||''}${!groups&&!redGroup?'<p class="inspector-empty">Nothing placed down on this side yet.</p>':''}</div><button id="returnToTable" class="primary inspector-return">← Back to table</button>`;
+  const redGroup=reds.length?`<section class="inspector-meld"><h3>Red threes · ${reds.length} <span>Bonus cards (not opening points)</span></h3><div class="inspector-card-row">${reds.map(c=>cardHtml(c)).join('')}</div></section>`:'';
+  return `<div class="inspector-header"><span class="panel-heading">CARDS PLACED ON THE TABLE</span><h2 id="modalTitle">${esc(title)}</h2><p>One shared collection per team, but opening requires ONE player's legal move.</p></div>${openingProof}<div class="inspector-meld-list">${groups}${redGroup||''}${!groups&&!redGroup?'<p class="inspector-empty">Nothing placed down on this side yet.</p>':''}</div><button id="returnToTable" class="primary inspector-return">← Back to table</button>`;
 }
 function refreshTeamInspector(){
   if(inspectedTeam===null)return;
