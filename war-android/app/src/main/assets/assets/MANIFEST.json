@@ -1,0 +1,186 @@
+{
+  "name": "WAR The Visual Challenge",
+  "provenance": "Original generated artwork created during this user challenge, transformed into runtime components, no external licensed content",
+  "files": [
+    {
+      "file": "back_eagle.webp",
+      "size": 36860,
+      "dimensions": [
+        350,
+        328
+      ],
+      "sha256": "e35471955fb8dc51db59ce7f0c049f6dc0aaa0edbf49b8362c5801da7cfa6793",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "back_lion.webp",
+      "size": 40032,
+      "dimensions": [
+        350,
+        408
+      ],
+      "sha256": "52b4b014cbd1fa160300d7d6153bf0e6821717b29f43b741bea8d7a0897aaa8b",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "banner_tall.webp",
+      "size": 48424,
+      "dimensions": [
+        810,
+        258
+      ],
+      "sha256": "0e1286b53de849254340ca1e69e5695f2ec20ef3f103f6e570a8ba889ce6d6bc",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "banner_wide.webp",
+      "size": 40190,
+      "dimensions": [
+        1120,
+        136
+      ],
+      "sha256": "655b9a5b983c966d6065e43c7a568ccf568e5f91bf4d90da251568f0ebfa053b",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "felt_battle.webp",
+      "size": 7390,
+      "dimensions": [
+        760,
+        733
+      ],
+      "sha256": "8d1ce5fd1f1d2c295b58dfae9ef157e9a406802bd4abeeb00d1ef1580341c15a",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "felt_storm.webp",
+      "size": 13904,
+      "dimensions": [
+        990,
+        557
+      ],
+      "sha256": "e5cef267373cdf7a11d69a93b5b7bd871b0993485929101d4b9301a2604480c5",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "gilded_rim.webp",
+      "size": 5356,
+      "dimensions": [
+        800,
+        37
+      ],
+      "sha256": "2e442a9a81dbefb1166e430e75043793f0b3b4a7c47de1272468107f0b440a4f",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "portrait_jack.webp",
+      "size": 15826,
+      "dimensions": [
+        220,
+        289
+      ],
+      "sha256": "7346a4afac2a2376450320232155355dd61a5e70273adbe293a1af49f8a392d2",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "portrait_king.webp",
+      "size": 19262,
+      "dimensions": [
+        220,
+        296
+      ],
+      "sha256": "08d3b957430f8cee0e915d6a29e7eb53811d4fc1665b9304a17445088b681c1c",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "portrait_knight.webp",
+      "size": 20492,
+      "dimensions": [
+        220,
+        315
+      ],
+      "sha256": "9e1ec3e3278edadb6984814052061e419e16d378267101dcc08cbc4e6106cf19",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "portrait_queen.webp",
+      "size": 18722,
+      "dimensions": [
+        220,
+        307
+      ],
+      "sha256": "3d44e1785a66a9160189cd4215015ba1ce5dba751cbaa359acab3a494d2f1f80",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "portrait_scenic.webp",
+      "size": 7904,
+      "dimensions": [
+        220,
+        287
+      ],
+      "sha256": "75648715c7ecc65e2bdd61805cdfbac3b977f7a616847cd43a9903b9555374d8",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "red_velvet.webp",
+      "size": 29658,
+      "dimensions": [
+        800,
+        210
+      ],
+      "sha256": "cb240a4247ac94686c7a074bd121a709d9dffce6cabdd2c872d0ca38e133430c",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "siege_landscape.webp",
+      "size": 154702,
+      "dimensions": [
+        1040,
+        780
+      ],
+      "sha256": "dbe7fd987db8bfd74ab6abbf61f4e48af48b74dd950c82265882ce14a4cd8eeb",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "siege_portrait.webp",
+      "size": 138638,
+      "dimensions": [
+        640,
+        1137
+      ],
+      "sha256": "de1ecfd3ab86c5b257280bccbc44d8cc8acd8439f1e5befab68f154856efa9a9",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "war_icon.png",
+      "size": 446966,
+      "dimensions": [
+        512,
+        512
+      ],
+      "sha256": "5edb54c060c376cd381c4df8f61d63b173a7e19fe75215494687c928a583dbe1",
+      "source": "Original WAR artwork composited into an icon"
+    },
+    {
+      "file": "war_icon_192.png",
+      "size": 90413,
+      "dimensions": [
+        192,
+        192
+      ],
+      "sha256": "4e66dd18e1aae724c8e268f3f59c41027392d162b83a555fa02b676ff0a7e71b",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    },
+    {
+      "file": "war_impact.webp",
+      "size": 140722,
+      "dimensions": [
+        1120,
+        379
+      ],
+      "sha256": "040ac8b6187c48b6eaa8078f214a6bd74446c208786471758beef8741c895722",
+      "source": "Original generated WAR concepts (2026-11-06); cropped/reframed by Nova"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+name: Build WAR — The Visual Challenge APK
+on:
+  push:
+    branches:
+      - war-visual-challenge-build
+    paths:
+      - 'war-android/**'
+      - '.github/workflows/build-war-visual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 35 SDK components
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          if [ -z "$SDKMANAGER" ]; then echo 'Android SDK manager missing'; exit 1; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Test real two-player War engine
+        run: node war-android/tests/engine.test.js
+      - name: Compile signed Android install-test APK
+        run: gradle -p war-android :app:assembleDebug --no-daemon
+      - name: Check APK archive integrity
+        run: unzip -t war-android/app/build/outputs/apk/debug/app-debug.apk | tail -n 2
+      - name: Deliver install-test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WAR-The-Visual-Challenge-debug-APK
+          path: war-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

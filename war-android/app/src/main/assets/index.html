@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0b1524">
+  <meta name="description" content="WAR — The Visual Challenge. An offline, fully animated two-player card battle.">
+  <title>WAR — The Visual Challenge</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app" class="theme-siege">
+  <div class="atmosphere" aria-hidden="true"></div>
+  <header class="masthead">
+    <div class="header-rim"></div>
+    <div class="header-tools">
+      <button id="soundButton" class="jewel-button" aria-label="Toggle sound" title="Sound">♫</button>
+      <button id="settingsButton" class="jewel-button" aria-label="Settings" title="Settings">⚙</button>
+      <button id="helpButton" class="jewel-button" aria-label="How to play" title="How to play">?</button>
+    </div>
+    <span class="eyebrow">TWO BANNERS · ONE VICTOR</span>
+  </header>
+  <main class="game-shell">
+    <div class="briefing" id="briefing">
+      <div class="signal flame-blue"><span class="sigil">♛</span><span>THE EAGLE</span><b id="computerCount">26</b></div>
+      <div class="theater-status"><span id="roundLabel">ROUND I</span><strong id="battleMessage" aria-live="polite">Two banners enter. Only one prevails.</strong><span id="stakeLabel">52 cards · Victory takes all</span></div>
+      <div class="signal flame-red"><span class="sigil">♛</span><span>YOUR LION</span><b id="playerCount">26</b></div>
+    </div>
+    <div class="campaign-bar" aria-label="Cards held by each side"><div id="campaignFill" class="campaign-fill"></div><span>ROYAL SIEGE</span></div>
+    <section class="arena" id="arena" aria-label="The card battle arena">
+      <div class="arena-vignette"></div>
+      <div class="arena-ornament top"></div>
+      <div class="turn-mark">✦ <span id="roundMarker">BATTLE 01</span> ✦</div>
+      <div class="deck-row" aria-hidden="true">
+        <div class="deck-panel blue"><img src="assets/back_eagle.webp" alt=""><span>THE EAGLE'S DECK</span></div>
+        <div class="center-insignia">⚔</div>
+        <div class="deck-panel red"><img src="assets/back_lion.webp" alt=""><span>YOUR DECK</span></div>
+      </div>
+      <div class="duel-cards" id="duelCards">
+        <div class="battle-card cpu" id="computerCard" aria-label="Computer revealed card">
+          <div class="card-rotor" id="cpuRotor"><div class="card-side rear"><img src="assets/back_eagle.webp" alt="Face down"></div><div class="card-side face" id="cpuFace"></div></div>
+        </div>
+        <div class="versus-medallion" id="versusMedallion"><i>VS</i><small>✦</small></div>
+        <div class="battle-card player" id="playerCard" aria-label="Your revealed card">
+          <div class="card-rotor" id="playerRotor"><div class="card-side rear"><img src="assets/back_lion.webp" alt="Face down"></div><div class="card-side face" id="playerFace"></div></div>
+        </div>
+      </div>
+      <div class="battle-outcome" id="battleOutcome" role="status">Tap the banner below to begin.</div>
+      <div class="war-count" id="potCounter"><span>✦</span> THE SPOILS <b>0</b> CARDS <span>✦</span></div>
+      <div class="arena-ornament bottom"></div>
+      <div id="clashOverlay" class="clash-overlay" aria-hidden="true"><div class="clash-inner"><div class="clash-word">WAR!</div><div class="clash-caption">THE STAKES HAVE RISEN</div><div class="clash-stakes" id="clashStakes">⚔︎ 4 cards at stake ⚔︎</div></div></div>
+      <div id="stakePile" class="stake-pile" aria-hidden="true"></div>
+      <div id="finishOverlay" class="finish-overlay hidden" role="status"><div class="laurel">❧</div><div id="finishTitle" class="finish-title"></div><div id="finishCopy" class="finish-copy"></div><button id="finishRestart" class="action-button gold">RAISE THE BANNERS AGAIN</button></div>
+    </section>
+    <div class="action-dock">
+      <button id="dealButton" class="action-button deal"><span class="button-mark">♛</span><span id="dealLabel">TAP TO DEAL</span><span class="button-mark">♛</span></button>
+      <div class="secondary-row">
+        <button id="autoButton" class="small-command" aria-pressed="false">▶ AUTO BATTLE: OFF</button>
+        <span id="record" class="record">0 WON · 0 LOST</span>
+        <button id="newButton" class="small-command">↻ NEW WAR</button>
+      </div>
+      <p class="under-note">Original illustrated art · Offline two-player War · No ads · No purchases</p>
+    </div>
+  </main>
+</div>
+<canvas id="sparkCanvas" aria-hidden="true"></canvas>
+<div id="dialogShade" class="dialog-shade hidden" aria-hidden="true">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <button id="closeDialog" class="dialog-close" aria-label="Close">×</button>
+    <div class="dialog-kicker">THE WAR COUNCIL</div>
+    <h2 id="dialogTitle">Field Manual</h2>
+    <div id="dialogBody"></div>
+  </div>
+</div>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
