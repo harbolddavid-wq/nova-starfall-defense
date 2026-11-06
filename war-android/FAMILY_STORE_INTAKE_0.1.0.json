@@ -1,0 +1,22 @@
+{
+  "title": "WAR: The Visual Challenge",
+  "status": "ready_for_deployment_not_yet_published",
+  "approval": "David approved visual feel and touch animations after testing on Android, November 6, 2026",
+  "version": "0.1.0",
+  "versionCode": 1,
+  "packageName": "site.novasky.warvisual",
+  "section": "Games",
+  "description": "Classic offline two-player War on an illustrated red-vs-blue battlefield. Animated simultaneous card reveals, dramatic WAR clashes, sound, particles, two painted themes, and optional autoplay. Portrait and landscape support. No ads or internet required.",
+  "apkLibraryPath": "/WAR — The Visual Challenge/WAR_The_Visual_Challenge_v0.1.0_Android_Playtest.apk",
+  "apkSha256": "0cb5e08cc0e97f6a5e18daf5325c5f5bb468a11438b52313e38d5424e0f3d1b6",
+  "archiveLibraryPath": "/WAR — The Visual Challenge/WAR_Visual_Challenge_v0.1.0_Complete_Playtest_Archive.zip",
+  "sourceRepo": "harbolddavid-wq/nova-starfall-defense",
+  "sourceBranch": "war-visual-challenge-build",
+  "buildCommit": "29b565b87f6ea8e4b856e7099c9a399c26accb7c",
+  "workflowRunId": 42295773394,
+  "storeUrl": "https://nova-family-store.hatchable.site/",
+  "hatchableProjectId": "proj_ba1OSj9QpeR5",
+  "storeDownloadUrl": null,
+  "storePublished": false,
+  "signingNote": "Ephemeral debug signing; updates may require reinstalling. Do not sign or rebuild during upload unless explicitly authorized."
+}
