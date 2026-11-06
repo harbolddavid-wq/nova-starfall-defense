@@ -68,6 +68,40 @@ body[data-back=starlight-velvetmasque] .card.card-back,.gallery-option .card.car
 body[data-back=starlight-velvetmasque] .card.card-back:before,.gallery-option .card.card-back[data-back=starlight-velvetmasque]:before{content:"";border:1px solid #e2cb93;inset:4px}
 body[data-back=starlight-velvetmasque] .card.card-back:after,.gallery-option .card.card-back[data-back=starlight-velvetmasque]:after{display:none}
 body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starlight-velvetmasque)}
+
+/* 0.1.3: shared partnership melds and accessible touch-first examination */
+#hand,#hand .hand-card{touch-action:pan-x;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#hand .hand-card{-webkit-tap-highlight-color:transparent}
+.table-melds{width:min(760px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:9px;min-height:98px;padding:4px 0}
+.meld-team-zone{border:1px solid #c5ad786b;background:#071819aa;border-radius:14px;padding:5px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.meld-team-zone.our-team{border-color:#e8c37ba1;background:#163b38c9}
+.meld-team-heading{min-height:29px!important;padding:5px 7px!important;background:#152c37ee;color:#f5deaf;display:flex;justify-content:space-between;gap:6px;align-items:center;text-align:left;width:100%;font-size:10px;font-weight:750;letter-spacing:.02em}
+.meld-team-heading span:last-child{color:#f4dba0;font-size:9px;white-space:nowrap}
+.meld-tiles{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;min-height:46px}
+.meld-stack{min-width:0!important;flex:1 1 90px;max-width:180px;min-height:46px!important;padding:5px 6px!important;gap:6px!important;color:#f5f1db!important;text-align:left}
+.meld-stack>strong{font-size:18px}
+.meld-stack>div:last-child{font-size:10px}
+.meld-stack small{display:block;white-space:nowrap;font-size:8px}
+.tiny-faces{display:flex;gap:0;min-width:20px}
+.tiny-face{display:inline-block;min-width:20px;height:27px;background:#f7f3e7;border:1px solid #776e60;border-radius:3px;color:#18202c;font-size:10px;font-weight:bold;text-align:center;padding:6px 0;box-shadow:1px 1px 2px #0008;margin-right:-8px}
+.tiny-face.red{color:#c52a33}
+.no-melds{color:#c1caba;padding:7px 4px;font-size:10px;font-style:italic}
+.meld-team-zone .red-three-chip{min-height:30px!important;border:1px solid #d9a4a4aa!important;padding:4px 7px!important}
+.modal-shade.inspector-mode{padding:0;z-index:200;background:#02090dee}
+.modal-shade.inspector-mode .modal{width:100vw;height:100dvh;max-height:100dvh;max-width:none;border-radius:0;border:0;padding:clamp(16px,4vw,32px);padding-top:clamp(45px,10vw,68px);overflow:auto;overscroll-behavior:contain}
+.inspector-mode .modal-close{position:fixed;top:10px;right:12px;z-index:201;background:#483833!important;border:2px solid #eed2a0!important;border-radius:50%;width:44px;height:44px;min-height:44px!important;font-size:27px;line-height:27px;padding:0!important}
+.inspector-mode h2{font-size:clamp(20px,5vw,29px)}
+.inspector-header{max-width:980px;margin:0 auto 20px}
+.inspector-header p{margin:0;color:#d4d5ce}
+.inspector-meld-list{max-width:1000px;margin:0 auto;display:grid;gap:16px}
+.inspector-meld{border:1px solid #cab5897a;border-radius:16px;background:#0a1c26dd;padding:12px 14px 18px}
+.inspector-meld h3{font-size:17px;margin:1px 0 12px!important;color:#ffe1aa;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.inspector-meld h3 span{font-size:11px;color:#cdd8d7;font-weight:normal}
+.inspector-card-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.inspector-card-row .card{width:clamp(54px,13vw,85px);min-width:clamp(54px,13vw,85px);height:clamp(88px,22vw,125px);min-height:clamp(88px,22vw,125px)}
+.inspector-empty{font-size:16px;color:#e3d4b4;margin:30px}
+.inspector-return{display:block;margin:24px auto 10px;max-width:360px;width:100%;font-weight:bold}
+@media(max-width:560px){.table-melds{gap:5px}.meld-team-zone{padding:3px;gap:4px}.meld-team-heading{display:grid;gap:1px;font-size:9px;padding:4px!important}.meld-team-heading span:last-child{font-size:8px}.meld-tiles{gap:3px}.meld-stack{flex:1 1 75px;max-width:none;padding:4px!important;gap:3px!important}.tiny-face{min-width:15px;height:22px;font-size:8px;padding:5px 0;margin-right:-6px}.meld-stack small{font-size:7px}.inspector-card-row{gap:6px}.inspector-meld{padding:10px}.inspector-card-row .card{width:54px;min-width:54px;height:88px;min-height:88px}}
 </style>
 </head><body data-theme="midnight" data-back="stars">
 <div id="app">
@@ -97,13 +131,13 @@ body[data-back=starlight-velvetmasque] .back-mini{--back-mini-image:var(--starli
         <div class="pile-slot"><div class="pile-frame" id="discardPile" tabindex="0" role="button" aria-label="Take discard pile"></div><span class="pile-label">DISCARD <b id="discardCount">1</b></span></div>
       </div>
       <div id="tableMelds" class="table-melds"></div>
-      <div class="player-zone"><div class="turn-ribbon" id="turnRibbon">YOUR TURN · DRAW OR TAKE</div><div class="hand-title"><span>YOUR HAND <strong id="handCount">9</strong></span><span id="selectionInfo">Tap cards to group · drag to table or discard</span></div><div class="hand" id="hand" aria-label="Your playing cards"></div></div>
+      <div class="player-zone"><div class="turn-ribbon" id="turnRibbon">YOUR TURN · DRAW OR TAKE</div><div class="hand-title"><span>YOUR HAND <strong id="handCount">9</strong></span><span id="selectionInfo">Tap to group · double-tap to discard</span></div><div class="hand" id="hand" aria-label="Your playing cards"></div></div>
     </div>
     <details class="helper-controls"><summary>✦ Tutorial controls &amp; assistance</summary><div class="action-panel"><div class="action-row"><button id="drawBtn" class="primary">✦ Draw Card</button><button id="pickupBtn" class="secondary">⇧ Take Discard</button><button id="meldBtn" class="secondary">♣ Meld Selected</button><button id="extendBtn" class="secondary">＋ Add to Meld</button></div><div class="action-row"><button id="openBtn" class="outline">✧ Help Me Open</button><button id="hintBtn" class="outline">☼ Hint</button><button id="undoBtn" class="outline">↶ Undo Meld</button><button id="discardBtn" class="danger">Discard Selected →</button></div></div>
     </details><button id="nextBtn" class="primary hide wide">Next Round →</button><div id="status" class="status" role="alert">Choose draw pile or discard pile to begin.</div>
   </main>
 </section>
-<footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Touch-first build 0.1.2</span></footer>
+<footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Touch-first build 0.1.3</span></footer>
 </div>
 <div id="modalShade" class="modal-shade hide" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close dialog">×</button><div id="modalBody"></div></div></div>
 <script>// Nova Card Collection: deterministic, offline house-rules engine.
@@ -563,13 +597,23 @@ function render(){
   $('discardPile').innerHTML=game.discard.length?cardHtml(game.discard.at(-1)):'<span class="empty">◇</span>';
   const top=game.discard.at(-1),frozen=isFrozenFor(game,0);
   $('discardPile').title=`${game.discard.length} cards. ${isBlackThree(top)?'Black three blocks pickup.':frozen?'Frozen: two matching natural cards needed.':'Not frozen.'}`;
-  $('tableMelds').innerHTML=game.melds.flatMap((melds,t)=>[
-    ...melds.map((meld,i)=>{const a=analyzeMeld(meld),mine=t===team;return `<button class="meld-stack ${a.canasta?(a.wilds?'dirty':'clean'):''}" data-team="${t}" data-index="${i}" title="${mine?'Select cards and tap Add to Meld':'Opponent meld'}"><strong>${esc(a.rank)}</strong><div>${meld.length} cards<small>${a.canasta?(a.wilds?'DIRTY +300':'CLEAN +500'):(mine?'YOUR TEAM':'OPPONENT')}</small></div></button>`;}),
-    game.redThrees[t].length?`<span class="red-three-chip">♥ 3 × ${game.redThrees[t].length} (${t===team?'you':'other'})</span>`:''
-  ]).join('')||'<span style="font-size:11px;color:#a3c4bc">Played melds appear here</span>';
+  // Melds belong to TEAMS, not individual partners.  In partnership mode
+  // players 0+2 share game.melds[0], while players 1+3 share game.melds[1].
+  // Keep each complete team pile together and independently inspectable.
+  const partnership=game.mode==='partnership_4p';
+  $('tableMelds').innerHTML=game.melds.map((melds,t)=>{
+    const mine=t===team;
+    const teamName=partnership?(mine?'OUR SIDE · YOU + PARTNER':'THEIR SIDE · OPPONENTS'):(mine?'YOUR CARDS':`OPPONENT ${t} CARDS`);
+    const chips=melds.map((meld,i)=>{
+      const a=analyzeMeld(meld),shown=meld.slice(0,3).map(c=>`<span class="tiny-face ${c.suit==='♥'||c.suit==='♦'?'red':''}">${esc(c.rank==='Joker'?'J':c.rank)}${esc(c.suit)}</span>`).join('');
+      return `<button class="meld-stack ${a.canasta?(a.wilds?'dirty':'clean'):''}" data-team="${t}" data-index="${i}" aria-label="View ${esc(a.rank)} meld of ${meld.length} cards, ${esc(teamName)}" title="Tap to see all cards"><strong>${esc(a.rank)}</strong><div class="tiny-faces">${shown}</div><div>${meld.length} cards<small>${a.canasta?(a.wilds?'DIRTY CANASTA':'CLEAN CANASTA'):'TAP TO VIEW'}</small></div></button>`;
+    }).join('');
+    const reds=game.redThrees[t].length?`<button class="red-three-chip" data-inspect-team="${t}" aria-label="View ${game.redThrees[t].length} red threes">♥ 3 × ${game.redThrees[t].length}</button>`:'';
+    return `<section class="meld-team-zone ${mine?'our-team':'rival-team'}" data-drop-team="${t}"><button class="meld-team-heading" data-inspect-team="${t}" aria-label="View all cards down for ${esc(teamName)}"><span>${esc(teamName)}</span><span>${melds.length} meld${melds.length===1?'':'s'} · 🔍 VIEW ALL</span></button><div class="meld-tiles">${chips||'<span class="no-melds">No melds placed yet</span>'}${reds}</div></section>`;
+  }).join('');
   const visible=new Set(game.hands[0].map(c=>c.id));selected=new Set([...selected].filter(id=>visible.has(id)));
   $('handCount').textContent=game.hands[0].length;
-  $('selectionInfo').textContent=selected.size?`${selected.size} selected · Drag group to table`:'Tap to group · drag to meld or discard';
+  $('selectionInfo').textContent=selected.size?`${selected.size} selected · Double-tap a card to discard`:'Tap cards to group · DOUBLE-TAP to discard';
   $('hand').innerHTML=game.hands[0].map(c=>`<button class="hand-card" data-id="${esc(c.id)}" aria-pressed="${selected.has(c.id)}" title="${esc(c.rank+c.suit)}">${cardHtml(c,false,selected.has(c.id))}</button>`).join('');
   const human=game.turn===0&&!aiBusy,draw=human&&game.phase==='draw',play=human&&game.phase==='play';
   for(const id of ['drawBtn','pickupBtn'])$(id).disabled=!draw;
@@ -578,6 +622,7 @@ function render(){
   $('nextBtn').classList.toggle('hide',game.phase!=='round_end');
   $('turnRibbon').textContent=game.phase==='round_end'?'ROUND COMPLETED':game.phase==='game_end'?'GAME FINISHED':human?(draw?'YOUR TURN • DRAW OR TAKE':'YOUR TURN • MELD & DISCARD'): `${playerLabel(game.turn,game.mode).toUpperCase()} • PLAYING`;
   save();
+  if(inspectedTeam!==null && !$('modalShade').classList.contains('hide'))refreshTeamInspector();
 }
 function dispatch(action,{undoable=false}={}){
   try {
@@ -613,11 +658,17 @@ function scheduleAI(){
   setTimeout(run,750);
 }
 function selectedIds(){return [...selected];}
-let suppressHandClick=false,activeDrag=null;
+let suppressHandClick=false,activeDrag=null,lastCardTap=null;
 $('hand').addEventListener('click',e=>{
   if(suppressHandClick){suppressHandClick=false;return;}
   const button=e.target.closest('[data-id]');if(!button)return;
-  const id=button.dataset.id;
+  const id=button.dataset.id,now=Date.now();
+  const doubleTapped=lastCardTap?.id===id && now-lastCardTap.time<480;
+  lastCardTap=doubleTapped?null:{id,time:now};
+  if(doubleTapped && game.turn===0 && game.phase==='play' && !aiBusy){
+    tryDiscardDragged(id);
+    return;
+  }
   if(selected.has(id))selected.delete(id);else selected.add(id);
   sound();render();
 });
@@ -650,7 +701,7 @@ $('hand').addEventListener('pointerdown',e=>{
 window.addEventListener('pointermove',e=>{
  const d=activeDrag;if(!d||d.pointerId!==e.pointerId)return;
  if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<14)return;
- if(!d.moved){d.moved=true;d.ghost=d.el.querySelector('.card')?.cloneNode(true);if(d.ghost){d.ghost.classList.add('drag-ghost');document.body.append(d.ghost);} }
+ if(!d.moved){lastCardTap=null;d.moved=true;d.ghost=d.el.querySelector('.card')?.cloneNode(true);if(d.ghost){d.ghost.classList.add('drag-ghost');document.body.append(d.ghost);} }
  if(d.ghost){d.ghost.style.left=e.clientX+'px';d.ghost.style.top=e.clientY+'px';}
  $('tableMelds').classList.add('drop-ready');$('discardPile').classList.add('drop-ready');
 });
@@ -667,7 +718,7 @@ window.addEventListener('pointerup',e=>{
    if(b&&Number(b.dataset.team)===team)tryMeldDragged(d.id,Number(b.dataset.index));
    else tryMeldDragged(d.id);
  }
- else status('Card returned to your hand. Drag onto the discard pile or table.');
+ else status('Card returned to hand. Double-tap to discard, or drag a group to your team melds.');
 });
 window.addEventListener('pointercancel',()=>{activeDrag?.ghost?.remove();activeDrag=null;$('tableMelds').classList.remove('drop-ready');$('discardPile').classList.remove('drop-ready');});
 
@@ -690,10 +741,10 @@ $('extendBtn').onclick=()=>{
   dispatch({type:'extend',player:0,meldIndex:index,ids},{undoable:true});
 };
 $('tableMelds').addEventListener('click',e=>{
-  const b=e.target.closest('[data-team]');if(!b){if(selected.size)tryMeldDragged(selectedIds()[0]);return;}
-  if(Number(b.dataset.team)!==teamOf(game.mode,0))return status('Those belong to the other scorekeeper.',true);
-  if(!selected.size)return status('Select one or more cards from your hand to add to this meld.');
-  dispatch({type:'extend',player:0,meldIndex:Number(b.dataset.index),ids:selectedIds()},{undoable:true});
+  const b=e.target.closest('[data-inspect-team], [data-team][data-index]');
+  if(!b)return;
+  const t=Number(b.dataset.inspectTeam ?? b.dataset.team);
+  if(Number.isInteger(t) && t>=0 && t<game.melds.length)openTeamInspector(t);
 });
 $('openBtn').onclick=()=>{
   const o=observe(game,0);
@@ -715,13 +766,47 @@ $('nextBtn').onclick=()=>dispatch({type:'nextRound'});
 $('newGame').onclick=()=>{
   if(!window.confirm('Start a new Canasta game? Your current local game will be replaced.'))return;
   game=createGame({mode:$('mode').value,difficulty:'medium',seed:Math.floor(Math.random()*0xffffffff)});
-  selected.clear();undoState=null;render();status('New game dealt. Your family house rules are active.');if(game.turn!==0)scheduleAI();
+  selected.clear();lastCardTap=null;undoState=null;render();status('New game dealt. Your family house rules are active.');if(game.turn!==0)scheduleAI();
 };
 $('mode').onchange=()=>status('Choose New game to use the selected mode.');
 
-function showModal(html){$('modalBody').innerHTML=html;$('modalShade').classList.remove('hide');$('modalShade').setAttribute('aria-hidden','false');}
-function closeModal(){$('modalShade').classList.add('hide');$('modalShade').setAttribute('aria-hidden','true');}
-$('closeModal').onclick=closeModal;$('modalShade').onclick=e=>{if(e.target===$('modalShade'))closeModal();};
+let inspectedTeam=null;
+function showModal(html,{inspector=false}={}){
+  if(!inspector)inspectedTeam=null;
+  $('modalBody').innerHTML=html;
+  $('modalShade').classList.remove('hide');
+  $('modalShade').classList.toggle('inspector-mode',inspector);
+  $('modalShade').setAttribute('aria-hidden','false');
+  $('closeModal').focus();
+}
+function closeModal(){
+  inspectedTeam=null;$('modalShade').classList.remove('inspector-mode');
+  $('modalShade').classList.add('hide');$('modalShade').setAttribute('aria-hidden','true');
+}
+$('closeModal').onclick=closeModal;
+$('modalShade').onclick=e=>{if(e.target===$('modalShade'))closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape' && !$('modalShade').classList.contains('hide'))closeModal();});
+function inspectorHtml(t){
+  const own=t===teamOf(game.mode,0),partners=game.mode==='partnership_4p';
+  const title=partners?(own?'YOUR TEAM · YOU + PARTNER':'OPPONENT TEAM'):(own?'YOUR CARDS':`OPPONENT ${t} CARDS`);
+  const melds=game.melds[t]||[],reds=game.redThrees[t]||[];
+  const groups=melds.map((meld,i)=>{
+    const a=analyzeMeld(meld),type=a.canasta?(a.wilds?'Dirty Canasta · +300':'Clean Canasta · +500'):'Meld';
+    return `<section class="inspector-meld"><h3>${esc(a.rank)} · ${meld.length} cards <span>${type}</span></h3><div class="inspector-card-row" aria-label="${esc(a.rank)} meld cards">${meld.map(c=>cardHtml(c)).join('')}</div></section>`;
+  }).join('');
+  const redGroup=reds.length?`<section class="inspector-meld"><h3>Red threes · ${reds.length} <span>Bonus cards</span></h3><div class="inspector-card-row">${reds.map(c=>cardHtml(c)).join('')}</div></section>`:'';
+  return `<div class="inspector-header"><span class="panel-heading">CARDS PLACED ON THE TABLE</span><h2 id="modalTitle">${esc(title)}</h2><p>One shared meld collection per team. Every card below belongs to this side of the table.</p></div><div class="inspector-meld-list">${groups}${redGroup||''}${!groups&&!redGroup?'<p class="inspector-empty">Nothing placed down on this side yet.</p>':''}</div><button id="returnToTable" class="primary inspector-return">← Back to table</button>`;
+}
+function refreshTeamInspector(){
+  if(inspectedTeam===null)return;
+  $('modalBody').innerHTML=inspectorHtml(inspectedTeam);
+  $('returnToTable').onclick=closeModal;
+}
+function openTeamInspector(t){
+  inspectedTeam=t;
+  showModal(inspectorHtml(t),{inspector:true});
+  $('returnToTable').onclick=closeModal;
+}
 const lessons=[
  {title:'The Natural-Majority Rule',q:'Can you lay two natural Kings with one Joker?',choices:['Yes, three cards make a legal meld.','No, Jokers are always banned.','Only after Round 5.'],correct:0,why:'Exactly. Two natural Kings outnumber the one wild Joker.'},
  {title:'Beware the Wild Cards',q:'Can one King and two Jokers form a meld?',choices:['Yes, because the point value is high.','No, there are more wilds than naturals.','Only in partnership play.'],correct:1,why:'Your family requires strictly more natural cards than wilds at all times.'},
