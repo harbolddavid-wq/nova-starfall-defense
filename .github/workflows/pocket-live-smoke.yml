@@ -84,6 +84,7 @@ jobs:
           })().catch(e=>{console.error('TEST ERROR',e);process.exit(3)});
           NODE
           node smoke.cjs
+          # Recheck after mGBA legacy-core runtime bundle update.
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@v4
