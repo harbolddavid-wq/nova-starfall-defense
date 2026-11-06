@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#122c33"><meta name="description" content="Nova Card Collection – family Canasta practice table">
+
+<title>Nova Card Collection • Canasta</title><style>:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:#07141b;color:#e8edf0;font-size:14px;--gold:#e5bb72;--muted:#a7b6bc;--edge:rgba(225,237,240,.11);--felt:#193d41;--felt2:#102d33;--bright:#d7aa63}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 40% -5%,#193942 0,transparent 65%),#07141b}button,select{font:inherit}button{touch-action:manipulation;cursor:pointer}button:disabled{cursor:not-allowed;opacity:.32}button:focus-visible,select:focus-visible,.card:focus-visible{outline:2px solid #fff3b5;outline-offset:3px}button:not(.card){border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:11px 14px;transition:transform .13s,background .15s;min-height:42px}button:not(:disabled):active{transform:scale(.96)}.hide{display:none!important}
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:1700px;margin:auto;padding:20px 24px 16px;border-bottom:1px solid var(--edge)}.logo{display:flex;gap:13px;align-items:center}.logo-mark{font-size:36px;color:var(--gold);text-shadow:0 0 18px #e9b35b55}.logo h1{font-size:22px;margin:0;letter-spacing:.14em;font-weight:800}.logo h1 span{color:var(--gold)}.logo small{display:block;margin-top:3px;color:var(--muted);letter-spacing:.2em;font-size:9px}.logo small b{font-weight:400;color:#d8b374}.header-buttons{display:flex;gap:8px}
+.ghost,.outline{color:#e9d4ab;background:rgba(255,255,255,.05)}.ghost:hover,.outline:hover{background:rgba(255,255,255,.1)}.play-layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:17px;max-width:1700px;padding:18px 23px;margin:auto}.side-panel{border:1px solid var(--edge);border-radius:17px;background:linear-gradient(160deg,#132630,#0b1d25);padding:20px;display:flex;flex-direction:column;gap:11px;min-width:0}.panel-heading{color:var(--gold);letter-spacing:.18em;font-size:10px;font-weight:700}.settings-row{display:grid;gap:7px}.settings-row label{color:var(--muted);font-size:11px}.settings-row select,.modal select{width:100%;background:#182d34;color:#f0f4f4;border:1px solid #405059;padding:12px 9px;border-radius:9px}.wide{width:100%}.hairline{height:1px;background:var(--edge);margin:8px 0}.scores{display:grid;gap:8px}.score-row{display:flex;justify-content:space-between;align-items:center;border-radius:8px;padding:9px 10px;background:rgba(255,255,255,.04);color:#d7e2e4;font-size:12px}.score-row.current{outline:1px solid rgba(231,184,99,.5)}.score-row b{font-variant-numeric:tabular-nums;color:#f1d2a0}.score-row small{font-size:9px;color:var(--muted);display:block}.log{display:flex;flex-direction:column;gap:6px;max-height:215px;overflow:auto;color:#aec1c6;font-size:11px;line-height:1.5}.log div{border-left:2px solid #698486;padding-left:8px}.fineprint{margin-top:auto;color:#6c8b91;font-size:10px;line-height:1.7}
+.table-wrap{min-width:0}.felt-table{min-height:710px;border:8px solid #74533a;box-shadow:0 0 0 2px #392a24,0 2px 0 5px #b08b5b,0 14px 46px #0009,inset 0 0 150px #061a1a;position:relative;border-radius:180px;background:radial-gradient(ellipse at center,#24544e 0%,var(--felt) 50%,var(--felt2) 100%);overflow:hidden;display:flex;flex-direction:column;padding:24px 24px 14px;isolation:isolate}.table-pattern{position:absolute;inset:0;pointer-events:none;opacity:.1;background-image:radial-gradient(#d2be8c 1px,transparent 1px);background-size:20px 20px}.table-glow{position:absolute;inset:28px;border:1px solid rgba(232,207,154,.18);border-radius:140px;pointer-events:none}.round-tag{position:relative;z-index:1;margin:auto;text-align:center;color:var(--gold);font-weight:700;letter-spacing:.18em;font-size:12px}.round-tag span{color:#cddbd3;font-size:9px}.opponents{position:relative;z-index:1;display:flex;gap:12px;align-items:start;justify-content:space-evenly;margin:22px auto 6px;min-height:130px;width:100%;max-width:770px}.seat{text-align:center;min-width:90px;max-width:180px;flex:1}.seat-name{color:#e6e8db;font-size:11px;letter-spacing:.09em}.seat.team .seat-name{color:#f1c87d}.seat-count{margin:2px 0 8px;color:#c2d4cf;font-size:10px}.mini-hand{display:flex;justify-content:center;padding-right:17px}.back-mini{width:41px;height:58px;border-radius:5px;background:repeating-linear-gradient(45deg,#2b4068,#2b4068 5px,#7392ab 5px,#7392ab 7px);border:3px solid #edf1f0;box-shadow:1px 3px 4px #0007;margin-right:-17px;transform:rotate(-4deg);position:relative}.back-mini:nth-child(even){transform:rotate(5deg)}.back-mini:after{content:'✦';position:absolute;inset:5px;border:1px solid #ffffff87;display:grid;place-items:center;color:#d5e8ed}.central-area{display:flex;flex:1;align-items:center;justify-content:center;gap:clamp(12px,4vw,66px);min-height:174px;position:relative;z-index:1}.pile-slot{text-align:center;display:flex;align-items:center;flex-direction:column;gap:10px}.pile-frame{height:111px;width:78px;border:2px dashed #e5d0a45e;border-radius:9px;display:grid;place-items:center;cursor:pointer}.pile-frame .card{pointer-events:none;width:68px;height:99px;min-width:68px;min-height:99px}.pile-frame .empty{color:#9bb3ad;font-size:25px}.pile-label{color:#d8ded0;letter-spacing:.12em;font-size:10px}.pile-label b{background:#061b2080;border-radius:12px;padding:2px 6px;color:#eccc92}.table-badge{text-align:center;color:#e5c994;font-size:19px;letter-spacing:.23em;text-shadow:0 2px 15px #0006;min-width:130px}.badge-icon{font-size:30px}.table-badge small{display:block;font-size:8px;letter-spacing:.2em;color:#c1d8ce;margin-top:6px}.table-melds{width:min(760px,100%);margin:auto;display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;min-height:84px;z-index:1}.meld-stack{border-radius:8px;border:1px solid #b6cebd77;background:#071f2380;min-width:90px;display:flex;align-items:center;gap:6px;padding:6px;color:#c7d1c3;cursor:pointer}.meld-stack strong{font-size:17px}.meld-stack small{font-size:9px}.meld-stack.clean{border-color:#efd38ba6}.meld-stack.dirty{border-color:#cb89ada6}.red-three-chip{font-size:10px;background:#6e3037;border-radius:30px;padding:6px 9px;color:#ffded4}.player-zone{z-index:1;position:relative;margin-top:auto}.turn-ribbon{text-align:center;color:#f8dfa6;font-size:11px;font-weight:750;letter-spacing:.2em;margin:6px auto 10px}.hand-title{display:flex;justify-content:space-between;align-items:center;padding:0 6px 11px;color:#dfdcbd;font-size:11px;letter-spacing:.09em}.hand-title strong{color:#e8c27f;background:#1b3435;border-radius:30px;padding:3px 7px}.hand-title span:last-child{font-size:10px;color:#b6d1c9;letter-spacing:0}.hand{display:flex;align-items:end;gap:2px;overflow-x:auto;overflow-y:hidden;padding:14px 5px 11px;min-height:133px;scrollbar-width:thin;scrollbar-color:#9ab2a36f transparent}.hand .card{flex:0 0 70px;margin-right:-18px}.hand .card:last-child{margin-right:0}.card{height:108px;width:73px;min-height:108px;min-width:73px;border:2px solid #d7d6d0;border-radius:7px;background:#f9f8f1;color:#202630;display:flex;align-items:center;flex-direction:column;justify-content:space-between;box-shadow:1px 5px 8px #0006;transition:transform .15s,box-shadow .15s;position:relative;font-family:Georgia,serif;text-align:center;overflow:hidden;cursor:pointer;user-select:none}.card:hover{box-shadow:1px 4px 12px #0008}.card .corner{display:block;align-self:start;font-size:17px;font-weight:bold;line-height:.85;padding:7px 0 0 6px;letter-spacing:-.05em}.card .corner small{font-size:14px;display:block;line-height:1.5;letter-spacing:0}.card .center{font-size:34px;margin:auto}.card .flourish{position:absolute;bottom:5px;right:7px;font-size:11px;opacity:.35}.card.red{color:#bd353b}.card.joker{color:#643d84}.card.joker .center{font-size:22px}.card.selected{transform:translateY(-14px);box-shadow:0 0 0 3px #eecf80,0 4px 20px #0009;z-index:3}.card.card-back{border:4px solid #e4e4d9;background:linear-gradient(125deg,#36587b,#193451);box-shadow:0 4px 9px #0008}.card.card-back:before{content:'✦';border:2px solid #b1ccd5;position:absolute;inset:6px;display:grid;place-items:center;color:#d6e9e2;font-size:28px}.card.card-back:after{content:'';inset:12px;position:absolute;border:1px dashed #d7e5e0}.card[data-back=rose]{background:linear-gradient(125deg,#5d2d49,#301522)}.card[data-back=gold]{background:linear-gradient(125deg,#8f6334,#38241d)}.card[data-back=moth]{background:linear-gradient(125deg,#4a567c,#22263d)}.card[data-back=jade]{background:linear-gradient(125deg,#2a695c,#14352e)}
+.action-panel{display:grid;gap:8px;margin:18px 0 8px}.action-row{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}.action-row button{flex:1;min-width:108px;font-weight:650}.primary{background:linear-gradient(120deg,#e1bb79,#af854a);color:#201b16;border-color:#e2bc80!important}.secondary{background:#254d52;color:#f2f0dd}.danger{color:#f4d9d1;background:#743b40}.status{min-height:32px;padding:9px 12px;text-align:center;color:#bad0cf;font-size:12px}.status.error{color:#eaa7a4}.status.success{color:#efcc8b}footer{max-width:1700px;margin:auto;padding:0 23px 18px;font-size:10px;letter-spacing:.15em;color:#c1a56e;display:flex;justify-content:space-between;gap:10px}footer span{letter-spacing:0;color:#6f8a8e}
+.modal-shade{position:fixed;inset:0;background:#02090cdd;z-index:100;display:grid;place-items:center;padding:20px}.modal{position:relative;width:min(560px,100%);max-height:90dvh;overflow:auto;background:linear-gradient(150deg,#1c353b,#0e2027);border:1px solid #7d877d;color:#e6edec;border-radius:17px;padding:30px;box-shadow:0 20px 100px #000c}.modal-close{position:absolute;right:12px;top:10px;font-size:21px;background:none;color:#f6e5ca;border:none!important}.modal h2{color:#f2d092;font-size:23px;margin:0 0 8px}.modal h3{color:#e9cc91;font-size:14px}.modal p{color:#b8cac9;line-height:1.6}.modal .choice{display:block;width:100%;text-align:left;background:#233a42;color:#eaf0ee;margin:7px 0}.modal .choice.correct{background:#284f48}.modal .choice.wrong{background:#653939}.modal .quiz-feedback{font-weight:600;color:#efcc8b;margin-top:12px}.modal .setting-grid{display:grid;gap:16px;margin-top:20px}.modal label{font-size:12px;color:#c9d5d5}.modal .switch{display:flex;justify-content:space-between;align-items:center;gap:15px}.modal .switch input{width:20px;height:20px;accent-color:#d8b574}
+body[data-theme=velvet]{--felt:#553544;--felt2:#30202c}body[data-theme=royal]{--felt:#273c5b;--felt2:#101c35}body[data-theme=forest]{--felt:#33543f;--felt2:#1a322c}body[data-theme=midnight]{--felt:#193d41;--felt2:#102d33}
+@media(max-width:880px){.play-layout{grid-template-columns:1fr;padding:9px 10px}.side-panel{order:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:13px}.side-panel .panel-heading,.side-panel .hairline,.side-panel .fineprint{grid-column:1/-1}.scores{grid-column:1/-1;grid-template-columns:repeat(2,1fr)}.log{grid-column:1/-1;max-height:60px}.felt-table{min-height:620px;border-radius:90px;padding:20px 12px 12px}.table-glow{border-radius:74px;inset:16px}.opponents{margin:20px auto 0}.central-area{gap:20px}.table-badge{font-size:14px;min-width:90px}.table-badge small{font-size:7px}.masthead{padding:12px}.logo h1{font-size:19px}}
+@media(max-width:520px){.header-buttons .ghost{padding:8px!important;font-size:11px;min-height:34px}.logo-mark{font-size:26px}.logo h1{font-size:16px}.logo small{font-size:7px;letter-spacing:.12em}.logo small b{display:none}.felt-table{min-height:565px;border-width:5px;border-radius:50px;padding:19px 10px 10px}.table-glow{border-radius:40px;inset:11px}.round-tag{font-size:10px}.opponents{gap:4px;margin:18px auto 0;min-height:103px}.seat{min-width:0}.seat-name{font-size:9px}.seat-count{font-size:8px}.back-mini{width:30px;height:43px;margin-right:-13px}.central-area{min-height:130px;gap:12px}.pile-frame{width:60px;height:91px}.pile-frame .card{width:52px;height:84px;min-width:52px;min-height:84px}.pile-frame .card .center{font-size:23px}.pile-frame .card .corner{font-size:12px}.pile-frame .card .corner small{font-size:11px}.table-badge{font-size:11px;min-width:75px}.badge-icon{font-size:22px}.table-badge small{font-size:6px}.pile-label{font-size:8px}.table-melds{min-height:75px;max-height:115px;overflow-y:auto}.meld-stack{min-width:67px;padding:4px;font-size:9px}.meld-stack strong{font-size:12px}.hand-title{font-size:10px}.hand-title span:last-child{font-size:9px}.hand .card{flex-basis:57px;margin-right:-16px}.card{height:92px;width:59px;min-height:92px;min-width:59px}.card .center{font-size:27px}.card .corner{font-size:14px}.card .corner small{font-size:12px}.hand{min-height:112px}.action-panel{margin-top:13px}.action-row button{min-width:95px;padding:9px!important;font-size:11px}footer{padding:0 12px 12px}footer span{display:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}body.reduce-motion *,body.reduce-motion *:before,body.reduce-motion *:after{animation:none!important;transition:none!important}
+.hand-card{flex:0 0 auto;border:none!important;background:transparent!important;padding:0!important;min-height:0!important;border-radius:7px!important;display:block;box-shadow:none!important}.hand-card .card{pointer-events:none}.hand-card:focus-visible{outline:2px solid #ffe6ad;outline-offset:4px}.hand .hand-card{flex-basis:70px;margin-right:-18px}.hand .hand-card:last-child{margin-right:0}.hand .hand-card.selected .card{transform:translateY(-14px)}.hand .hand-card .card.selected{transform:translateY(-14px)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(max-width:520px){.hand .hand-card{flex-basis:57px;margin-right:-16px}}
+</style>
+</head><body data-theme="midnight" data-back="stars">
+<div id="app">
+<header class="masthead">
+  <div class="logo"><span class="logo-mark">✦</span><div><h1>NOVA <span>CARDS</span></h1><small>THE FAMILY COLLECTION <b>• EARLY CANASTA BUILD</b></small></div></div>
+  <div class="header-buttons"><button class="ghost" id="learnBtn">✧ Learning Lab</button><button class="ghost" id="settingsBtn" aria-label="Table settings">⚙ Settings</button></div>
+</header>
+<section class="play-layout">
+  <aside class="side-panel">
+    <div class="panel-heading">YOUR TABLE</div>
+    <div class="settings-row"><label for="mode">Game mode</label><select id="mode"><option value="partnership_4p">Partners • 4 players</option><option value="cutthroat_2p">Cutthroat • 2 players</option><option value="cutthroat_3p">Cutthroat • 3 players</option><option value="cutthroat_4p">Cutthroat • 4 players</option></select></div>
+    <div class="settings-row"><label for="difficulty">Opponent difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></div>
+    <button id="newGame" class="outline wide">↻ New game</button>
+    <div class="hairline"></div><div class="panel-heading">SCOREBOARD</div><div id="scores" class="scores"></div>
+    <div class="hairline"></div><div class="panel-heading">ROUND NOTES</div><div id="log" class="log" role="status" aria-live="polite"></div>
+    <span class="fineprint">Offline • virtual cards only • house rules in testing</span>
+  </aside>
+  <main class="table-wrap">
+    <div class="felt-table">
+      <div class="table-pattern"></div>
+      <div class="table-glow"></div>
+      <div class="round-tag" id="roundTag">ROUND 1 <span>• OPENING 50</span></div>
+      <div class="opponents" id="opponents"></div>
+      <div class="central-area">
+        <div class="pile-slot"><div class="pile-frame" id="stockPile" tabindex="0" role="button" aria-label="Draw one card from stock"></div><span class="pile-label">DRAW PILE <b id="stockCount">108</b></span></div>
+        <div class="table-badge"><div class="badge-icon">✦</div><div>CANASTA</div><small>DAVID'S HOUSE RULES</small></div>
+        <div class="pile-slot"><div class="pile-frame" id="discardPile" tabindex="0" role="button" aria-label="Take discard pile"></div><span class="pile-label">DISCARD <b id="discardCount">1</b></span></div>
+      </div>
+      <div id="tableMelds" class="table-melds"></div>
+      <div class="player-zone"><div class="turn-ribbon" id="turnRibbon">YOUR TURN · DRAW OR TAKE</div><div class="hand-title"><span>YOUR HAND <strong id="handCount">9</strong></span><span id="selectionInfo">Tap a card to select it</span></div><div class="hand" id="hand" aria-label="Your playing cards"></div></div>
+    </div>
+    <div class="action-panel"><div class="action-row"><button id="drawBtn" class="primary">✦ Draw Card</button><button id="pickupBtn" class="secondary">⇧ Take Discard</button><button id="meldBtn" class="secondary">♣ Meld Selected</button><button id="extendBtn" class="secondary">＋ Add to Meld</button></div><div class="action-row"><button id="openBtn" class="outline">✧ Help Me Open</button><button id="hintBtn" class="outline">☼ Hint</button><button id="undoBtn" class="outline">↶ Undo Meld</button><button id="discardBtn" class="danger">Discard Selected →</button><button id="nextBtn" class="primary hide">Next Round →</button></div></div>
+    <div id="status" class="status" role="alert">Choose draw pile or discard pile to begin.</div>
+  </main>
+</section>
+<footer>✧ A LITTLE MAGIC IN EVERY HAND <span>Nova Card Collection • Work-in-progress build 0.1.0</span></footer>
+</div>
+<div id="modalShade" class="modal-shade hide" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close dialog">×</button><div id="modalBody"></div></div></div>
+<script>// Nova Card Collection: deterministic, offline house-rules engine.
+// The input handoff is the authoritative reference. Incomplete edge rules are tracked in README.
+const MODES = Object.freeze({cutthroat_2p:2, cutthroat_3p:3,cutthroat_4p:4, partnership_4p:4});
+const SUITS = ['♠','♥','♣','♦'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const isRedThree = c => c.rank==='3' && (c.suit==='♥'||c.suit==='♦');
+const isBlackThree = c => c.rank==='3' && !isRedThree(c);
+const isWild = c => c.rank==='2'||c.rank==='Joker';
+const value = c => c.rank==='Joker'?50: c.rank==='2'||c.rank==='A'?20: ['8','9','10','J','Q','K'].includes(c.rank)?10: c.rank==='3'? (isRedThree(c)?0:5):5;
+const points = cards => cards.reduce((n,c)=>n+value(c),0);
+const roundHandSize = round => round<=2?9:round<=4?12:15;
+const openingMinimum = score => score<0?15:score<1500?50:score<3000?90:120;
+const scorekeeperCount = mode=> mode==='partnership_4p'?2:MODES[mode];
+const teamOf = (mode,p) => mode==='partnership_4p'?p%2:p;
+const playerLabel = (p,mode) => p===0?'You': mode==='partnership_4p'&&p===2?'Your Partner':`Opponent ${p}`;
+function deck(jokersPerDeck=2) {
+  const cards=[];
+  for(let pack=0;pack<2;pack++) {
+    for(const suit of SUITS) for(const rank of RANKS) cards.push({id:`d${pack}-${rank}-${suit}`,rank,suit});
+    for(let j=0;j<jokersPerDeck;j++) cards.push({id:`d${pack}-joker-${j}`,rank:'Joker',suit:'★'});
+  }
+  return cards;
+}
+function rand(s) {let x=s.rng>>>0; x^=x<<13;x^=x>>>17;x^=x<<5;s.rng=(x>>>0)||0x9e3779b9;return s.rng/4294967296;}
+function shuffle(s,a) {for(let i=a.length-1;i>0;i--){const j=Math.floor(rand(s)*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function requireValid(condition,message) { if(!condition) throw Error(message); }
+function note(s,message) {s.log.unshift(message);s.log=s.log.slice(0,30);}
+function collectRed(s,player,c) {s.redThrees[teamOf(s.mode,player)].push(c);note(s,`${playerLabel(player,s.mode)} collected a red three.`);}
+function drawPhysical(s) {
+  if(s.stock.length===0) recycleStock(s);
+  requireValid(s.stock.length>0,'Cannot draw: stock and recyclable pile are exhausted. House-rule edge case requires a decision.');
+  return s.stock.pop();
+}
+function drawReplacingRed(s,player) {
+  let c=drawPhysical(s), guard=0;
+  while(isRedThree(c)) {collectRed(s,player,c);c=drawPhysical(s);requireValid(++guard<10,'Unusual chain of red threes.');}
+  s.hands[player].push(c);
+  return c;
+}
+function exposeFirstUpcard(s) {
+  let guard=0;
+  while(s.stock.length){
+    const c=s.stock.pop(); s.discard.push(c);
+    if(isBlackThree(c) || (!isWild(c)&&!isRedThree(c))) break;
+    requireValid(++guard<12,'Unusual opening upcard sequence.');
+  }
+}
+function clearRound(s) {
+  const n=MODES[s.mode];s.stock=shuffle(s,deck(s.jokersPerDeck));s.discard=[];s.hands=Array.from({length:n},()=>[]);
+  s.redThrees=Array.from({length:scorekeeperCount(s.mode)},()=>[]);
+  s.melds=Array.from({length:scorekeeperCount(s.mode)},()=>[]);
+  s.opened=Array.from({length:scorekeeperCount(s.mode)},()=>false);
+  s.floater=null;s.outPlayer=null;s.roundSummary=null;s.phase='draw';s.turn=(s.round-1)%n;s.log=[];
+  // Deal the ordinary count before replacing any dealt red threes.
+  const size=roundHandSize(s.round);
+  for(let i=0;i<size;i++) for(let p=0;p<n;p++) s.hands[p].push(s.stock.pop());
+  for(let p=0;p<n;p++){
+    const clean=[];
+    for(const c of s.hands[p]) if(isRedThree(c))collectRed(s,p,c);else clean.push(c);
+    s.hands[p]=clean;
+    while(s.hands[p].length<size)drawReplacingRed(s,p);
+  }
+  exposeFirstUpcard(s);note(s,`Round ${s.round}: ${size} cards dealt per player.`);
+  return s;
+}
+function createGame({mode='partnership_4p', difficulty='medium', seed=Date.now(), jokersPerDeck=2}={}) {
+  requireValid(!!MODES[mode],'Unknown mode');requireValid(['easy','medium','hard'].includes(difficulty),'Unknown difficulty');
+  requireValid(Number.isInteger(jokersPerDeck)&&jokersPerDeck>=0&&jokersPerDeck<=4,'Joker count out of range');
+  const s={version:1,mode,difficulty,round:1,score:Array(scorekeeperCount(mode)).fill(0),rng:(seed>>>0)||0xabcdef01,jokersPerDeck,won:null};
+  return clearRound(s);
+}
+function analyzeMeld(cards) {
+  if(cards.length<3) return {valid:false,reason:'A new meld needs at least three cards.'};
+  if(cards.some(c=>isRedThree(c)||isBlackThree(c))) return {valid:false,reason:'Threes cannot form ordinary melds.'};
+  const naturals=cards.filter(c=>!isWild(c));const ranks=[...new Set(naturals.map(c=>c.rank))];
+  if(ranks.length!==1)return {valid:false,reason:'All natural cards must have the same rank.'};
+  const wilds=cards.length-naturals.length;
+  if(naturals.length<=wilds)return {valid:false,reason:'The meld must have strictly more natural cards than wilds.'};
+  return {valid:true,rank:ranks[0],naturals:naturals.length,wilds,points:points(cards),canasta:cards.length>=7,bonus:cards.length>=7?(wilds?300:500):0};
+}
+function ownedCards(s,p,ids) {
+  requireValid(Array.isArray(ids)&&ids.length>0,'Select cards first.');
+  const unique=new Set(ids);requireValid(unique.size===ids.length,'Card selected twice.');
+  const byId=new Map(s.hands[p].map(c=>[c.id,c]));
+  const cards=ids.map(id=>byId.get(id));requireValid(cards.every(Boolean),'One or more selected cards are not in this hand.');
+  return cards;
+}
+function removeCards(s,p,ids) {const set=new Set(ids);s.hands[p]=s.hands[p].filter(c=>!set.has(c.id));}
+const groupAnalysis= groups => groups.map(cards=>{let a=analyzeMeld(cards);requireValid(a.valid,a.reason);return a;});
+const teamHasCanasta=(s,t)=>s.melds[t].some(cards=>cards.length>=7);
+const legalOut=(s,p)=>teamHasCanasta(s,teamOf(s.mode,p));
+function performMeldGroups(s,p,groups,asOpening=false) {
+  const team=teamOf(s.mode,p);
+  const allIds=groups.flat(), cards=ownedCards(s,p,allIds);
+  const lookup=new Map(cards.map(c=>[c.id,c]));
+  const material=groups.map(ids=>ids.map(id=>lookup.get(id)));
+  const reports=groupAnalysis(material);
+  if(!s.opened[team]){
+    const need=openingMinimum(s.score[team]),sum=reports.reduce((v,r)=>v+r.points,0);
+    requireValid(sum>=need,`Initial meld needs ${need} points; selected melds total ${sum}.`);
+  }
+  removeCards(s,p,allIds);
+  s.melds[team].push(...material);
+  if(!s.opened[team]) {s.opened[team]=true;note(s,`${playerLabel(p,s.mode)} opened for ${reports.reduce((v,r)=>v+r.points,0)} points.`);}
+  else note(s,`${playerLabel(p,s.mode)} laid ${allIds.length} cards.`);
+  finishIfHandEmpty(s,p);
+}
+function performExtend(s,p,meldIndex,ids) {
+  const team=teamOf(s.mode,p);requireValid(s.opened[team],'Open before extending a meld.');
+  const old=s.melds[team][meldIndex];requireValid(!!old,'Unknown table meld.');
+  const cards=ownedCards(s,p,ids),before=analyzeMeld(old),after=analyzeMeld([...old,...cards]);
+  requireValid(after.valid,after.reason);
+  requireValid(before.rank===after.rank,'Cards must match the meld rank.');
+  requireValid(!(before.canasta&&before.wilds===0&&after.wilds>0),'Adding a wild to a completed clean Canasta is held pending house-rule confirmation.');
+  removeCards(s,p,ids);s.melds[team][meldIndex]=[...old,...cards];note(s,`${playerLabel(p,s.mode)} added ${ids.length} to ${after.rank}.`);
+  finishIfHandEmpty(s,p);
+}
+function isFrozenFor(s,p) {return !s.opened[teamOf(s.mode,p)] || s.discard.some(isWild);}
+function canPickup(s,p,proofIds=[],openingGroups=[]) {
+  try {validatePickup(s,p,proofIds,openingGroups);return true;}catch{return false;}
+}
+function validatePickup(s,p,proofIds,openingGroups=[]) {
+  requireValid(s.phase==='draw'&&s.turn===p,'Pile pickup only at start of your turn.');
+  const top=s.discard.at(-1);requireValid(!!top,'Discard pile is empty.');
+  requireValid(!isBlackThree(top),'A black three blocks pickup.');
+  requireValid(!isWild(top)&&!isRedThree(top),'The exposed top card cannot be taken as an ordinary meld.');
+  const frozen=isFrozenFor(s,p),team=teamOf(s.mode,p),existing=s.melds[team].findIndex(m=>analyzeMeld(m).rank===top.rank && (frozen||m.length<7));
+  const proof=proofIds.length?ownedCards(s,p,proofIds):[];
+  if(frozen)requireValid(proof.length>=2 && proof.filter(c=>c.rank===top.rank&&!isWild(c)).length>=2,'Frozen pickup requires two matching natural cards in hand.');
+  else if(existing<0) requireValid(proof.some(c=>c.rank===top.rank&&!isWild(c))&&proof.some(isWild),'Unfrozen pickup needs a matching natural and wild, or an eligible existing meld.');
+  if(proof.length) {
+    const result=analyzeMeld([top,...proof]);
+    if(existing<0)requireValid(result.valid,result.reason);
+    else {
+      const combined=analyzeMeld([...s.melds[team][existing],top,...proof]);
+      requireValid(combined.valid,combined.reason);
+    }
+  }
+  const extras=openingGroups.map(ids=>ownedCards(s,p,ids));
+  requireValid(new Set([...proofIds,...openingGroups.flat()]).size===proofIds.length+openingGroups.flat().length,'Duplicated pickup proof card.');
+  if(!s.opened[team]) {
+    const rest=groupAnalysis(extras), sum=points([top,...proof])+rest.reduce((n,m)=>n+m.points,0);
+    requireValid(sum>=openingMinimum(s.score[team]),`Pickup opening has ${sum} points; needs ${openingMinimum(s.score[team])}.`);
+  }
+  return {top,proof,existing,extras};
+}
+function recycleStock(s) {
+  // Keeping the sole buried wild as the exposed freezer is the documented family rule.
+  const wildIndex=s.discard.findIndex(isWild);
+  requireValid(wildIndex>=0 && s.discard.length>=2,'Stock recycling needs a wild within the discard pile; unresolved edge case.');
+  const [wild]=s.discard.splice(wildIndex,1);
+  s.stock=shuffle(s,s.discard.splice(0));s.discard=[wild];
+  note(s,'Stock exhausted: discard pile recycled; wild card keeps it frozen.');
+}
+function performPickup(s,p,proofIds,openingGroups=[]) {
+  const {top,proof,existing,extras}=validatePickup(s,p,proofIds,openingGroups);
+  const team=teamOf(s.mode,p);
+  const combined=[top,...proof], all=s.discard.slice(0,-1);
+  removeCards(s,p,[...proofIds,...openingGroups.flat()]);
+  s.discard=[];
+  for(const c of all)if(isRedThree(c))collectRed(s,p,c);else s.hands[p].push(c);
+  if(existing<0)s.melds[team].push(combined);else s.melds[team][existing]=[...s.melds[team][existing],...combined];
+  s.melds[team].push(...extras);
+  if(!s.opened[team])s.opened[team]=true;
+  s.phase='play';note(s,`${playerLabel(p,s.mode)} took the discard pile (${all.length+1} cards).`);
+  finishIfHandEmpty(s,p);
+}
+function nextTurn(s) {
+  const n=MODES[s.mode],next=(s.turn+1)%n;
+  if(s.floater!==null&&next===s.floater){endRound(s);return;}
+  s.turn=next;s.phase='draw';
+}
+function finishIfHandEmpty(s,p) {
+  if(s.hands[p].length>0)return;
+  if(s.floater===null) {
+    requireValid(legalOut(s,p),'You cannot empty your hand before your team has a completed Canasta.');
+    s.floater=p;s.outPlayer=p;note(s,`${playerLabel(p,s.mode)} is floating! Everyone else gets one last turn.`);
+  } else note(s,`${playerLabel(p,s.mode)} emptied their hand in the final circuit.`);
+  nextTurn(s);
+}
+function performDiscard(s,p,id) {
+  const [c]=ownedCards(s,p,[id]);removeCards(s,p,[id]);s.discard.push(c);
+  note(s,`${playerLabel(p,s.mode)} discarded ${c.rank}${c.suit}.`);
+  if(s.hands[p].length===0 && s.floater===null){requireValid(legalOut(s,p),'You need a completed Canasta before going out.');s.outPlayer=p;endRound(s);return;}
+  if(s.hands[p].length===0 && s.floater!==null)note(s,'Final discard: original floater keeps going-out credit.');
+  nextTurn(s);
+}
+function computeRoundScore(s) {
+  return s.score.map((prior,t)=>{
+    const meld=points(s.melds[t].flat());
+    const canasta=s.melds[t].reduce((n,c)=>n+analyzeMeld(c).bonus,0);
+    const reds=s.redThrees[t].length;
+    const redScore=(reds===4?1200:reds*100)*(s.opened[t]?1:-1);
+    const penalty=points(s.hands.flatMap((hand,p)=>teamOf(s.mode,p)===t?hand:[]));
+    const outBonus=s.outPlayer!==null&&teamOf(s.mode,s.outPlayer)===t?100:0;
+    return {team:t,prior,meld,canasta,redScore,penalty,outBonus,change:meld+canasta+redScore-penalty+outBonus,
+      total:prior+meld+canasta+redScore-penalty+outBonus};
+  });
+}
+function endRound(s){
+  const rows=computeRoundScore(s);s.score=rows.map(r=>r.total);s.roundSummary=rows;s.phase='round_end';
+  const maximum=Math.max(...s.score);
+  if(maximum>=5000){const leaders=s.score.map((n,i)=>n===maximum?i:-1).filter(n=>n>=0);s.won=leaders.length===1?{team:leaders[0]}:{draw:true};s.phase='game_end';}
+  note(s,`Round ${s.round} complete. ${s.won?(s.won.draw?'Exact tie: drawn game!':'The game has a winner!'):'Next round awaits.'}`);
+}
+function applyAction(state,action) {
+  const s=structuredClone(state), p=action.player??s.turn;
+  requireValid(Number.isInteger(p)&&p>=0&&p<MODES[s.mode],'Invalid player');
+  switch(action.type){
+    case 'draw':requireValid(s.phase==='draw'&&s.turn===p,'Cannot draw now.');drawReplacingRed(s,p);s.phase='play';break;
+    case 'pickup':performPickup(s,p,action.proof||[],action.openingGroups||[]);break;
+    case 'meld':requireValid(s.phase==='play'&&s.turn===p,'Cannot meld now.');performMeldGroups(s,p,action.groups||[]);break;
+    case 'extend':requireValid(s.phase==='play'&&s.turn===p,'Cannot extend now.');performExtend(s,p,action.meldIndex,action.ids||[]);break;
+    case 'discard':requireValid(s.phase==='play'&&s.turn===p,'Cannot discard now.');performDiscard(s,p,action.id);break;
+    case 'nextRound':requireValid(s.phase==='round_end','Round is not finished.');s.round++;clearRound(s);break;
+    default:throw Error(`Unknown action ${action.type}`);
+  }
+  return s;
+}
+function observe(state,p) {
+  const t=teamOf(state.mode,p);
+  return {mode:state.mode,difficulty:state.difficulty,round:state.round,phase:state.phase,turn:state.turn,player:p,
+    score:[...state.score],opened:[...state.opened],stockCount:state.stock.length,
+    discard:structuredClone(state.discard),melds:structuredClone(state.melds),redCounts:state.redThrees.map(a=>a.length),
+    hand:structuredClone(state.hands[p]),handCounts:state.hands.map(h=>h.length),team:t,floater:state.floater,
+    outPlayer:state.outPlayer,canGoOut:teamHasCanasta(state,t),openingMinimum:openingMinimum(state.score[t])};
+}
+
+;
+// Strategy receives *only* observe() data. No access to other hands or stock order.
+
+const natural = c => !isWild(c)&&!isRedThree(c)&&!isBlackThree(c);
+const byRank = hand => {
+  const groups=new Map();
+  for(const c of hand.filter(natural)){if(!groups.has(c.rank))groups.set(c.rank,[]);groups.get(c.rank).push(c);}
+  return groups;
+};
+function openingPlan(hand,target) {
+  const grouped=[...byRank(hand).values()].filter(a=>a.length>=2).sort((a,b)=>points(b)-points(a));
+  const spareWild=hand.filter(isWild).sort((a,b)=>value(b)-value(a));
+  const candidates=[];
+  for(const nat of grouped){
+    const cards=[...nat];
+    // A pair needs a wild as its third card. Preserve wilds for two-card groups first.
+    if(cards.length===2){if(!spareWild.length)continue;cards.push(spareWild.shift());}
+    candidates.push(cards);
+  }
+  const required=Math.max(target,1);
+  let total=0;const result=[];
+  for(const cards of candidates){if(total>=required)break;result.push(cards.map(c=>c.id));total+=points(cards);}
+  // If existing groups don't reach the minimum, use extra wilds within natural-majority.
+  if(total<required){
+    for(const group of result){
+      if(total>=required)break;
+      const naturals=group.filter(id=>!hand.find(c=>c.id===id&&isWild(c))).length;
+      let wilds=group.length-naturals;
+      while(spareWild.length && naturals>wilds+1 && total<required){const c=spareWild.shift();group.push(c.id);total+=value(c);wilds++;}
+    }
+  }
+  return total>=required?result:null;
+}
+function pickupProposal(o){
+  const top=o.discard.at(-1);
+  if(!top||isWild(top)||isRedThree(top)||isBlackThree(top))return null;
+  const matching=o.hand.filter(c=>natural(c)&&c.rank===top.rank);
+  const wild=o.hand.filter(isWild);
+  const frozen=!o.opened[o.team] || o.discard.some(isWild);
+  const existing=o.melds[o.team].find(m=>analyzeMeld(m).rank===top.rank&&(frozen||m.length<7));
+  let proof=[];
+  if(frozen) {
+    if(matching.length<2)return null;
+    proof=matching.slice(0,2);
+  } else if(!existing) {
+    if(!matching.length||!wild.length)return null;
+    proof=[matching[0],wild[0]];
+  }
+  const remaining=o.hand.filter(c=>!proof.some(d=>d.id===c.id));
+  const openingGroups=[];
+  if(!o.opened[o.team]) {
+    const required=o.openingMinimum-points([top,...proof]);
+    if(required>0){
+      // Optional same-rank naturals may join the proof before other opening melds.
+      for(const c of remaining.filter(c=>natural(c)&&c.rank===top.rank)){
+        proof.push(c);
+        if(points([top,...proof])>=o.openingMinimum)break;
+      }
+      const used=new Set(proof.map(c=>c.id));
+      const need=o.openingMinimum-points([top,...proof]);
+      if(need>0){const plan=openingPlan(o.hand.filter(c=>!used.has(c.id)),need);if(!plan)return null;openingGroups.push(...plan);}
+    }
+  }
+  return {type:'pickup',proof:proof.map(c=>c.id),openingGroups};
+}
+function canAdd(o,m,c) {
+  const before=analyzeMeld(m);
+  if(!before.valid)return false;
+  if(before.canasta && before.wilds===0 && isWild(c))return false;
+  const after=analyzeMeld([...m,c]);
+  return after.valid && before.rank===after.rank;
+}
+function discardsRankThreat(o,c){
+  const opposing=o.melds.some((melds,t)=>t!==o.team&&melds.some(m=>analyzeMeld(m).rank===c.rank&&m.length<7));
+  return opposing?110:0;
+}
+function discardScore(o,c){
+  const same=o.hand.filter(x=>x.rank===c.rank).length;
+  const individual=value(c);
+  if(isBlackThree(c))return -250;
+  if(isWild(c))return 350+individual;
+  return (same-1)*45+individual+discardsRankThreat(o,c);
+}
+function safeMeld(o,groups){
+  if(!groups || !groups.length)return null;
+  const total=groups.flat().length;
+  if(o.canGoOut||groups.some(g=>g.length>=7)||o.hand.length-total>=2)return groups;
+  // Without a Canasta, retain at least two cards so a discard won't illegally go out.
+  const revised=groups.map(g=>[...g]);
+  while(o.hand.length-revised.flat().length<2){
+    let changed=false;
+    for(let i=0;i<revised.length;i++){
+      const ids=revised[i];
+      for(const id of ids){
+        const rest=ids.filter(x=>x!==id).map(x=>o.hand.find(c=>c.id===x));
+        if(analyzeMeld(rest).valid){revised[i]=ids.filter(x=>x!==id);changed=true;break;}
+      }
+      if(changed)break;
+    }
+    if(!changed)return null;
+  }
+  return revised;
+}
+function chooseAIAction(o) {
+  const hand=o.hand;
+  if(o.phase==='draw'){
+    const plan=pickupProposal(o);
+    if(plan && o.difficulty!=='easy')return {...plan,player:o.player};
+    if(plan && o.difficulty==='easy'&&o.discard.length>=5)return {...plan,player:o.player};
+    return {type:'draw',player:o.player};
+  }
+  if(o.phase!=='play')return null;
+  if(!o.opened[o.team]){
+    const groups=openingPlan(hand,o.openingMinimum);
+    const safe=safeMeld(o,groups);
+    if(safe)return {type:'meld',groups:safe,player:o.player};
+  } else {
+    // Preserve clean completed Canastas. Only extend an opened team meld.
+    for(let i=0;i<o.melds[o.team].length;i++){
+      const meld=o.melds[o.team][i];const compatible=hand.filter(c=>canAdd(o,meld,c));
+      if(compatible.length){
+        // Keep high cards to form a potential new meld when three matching naturals exist.
+        const first=compatible.find(c=> (hand.length>2 || o.canGoOut || meld.length>=6) && natural(c) && hand.filter(x=>natural(x)&&x.rank===c.rank).length<3) || compatible.find(c=>(hand.length>2||o.canGoOut||meld.length>=6) && !isWild(c)) || compatible.find(c=>isWild(c) && meld.length>=6);
+        if(first)return {type:'extend',player:o.player,meldIndex:i,ids:[first.id]};
+      }
+    }
+    const groups=openingPlan(hand,0);
+    if(groups&&groups.length){
+      const candidates=groups.filter(ids=>ids.length>=3);
+      if(candidates.length && (o.difficulty==='hard'||o.difficulty==='medium')){const safe=safeMeld(o,[candidates[0]]);if(safe)return {type:'meld',groups:safe,player:o.player};}
+    }
+  }
+  if(!hand.length)return null;
+  const ordered=[...hand].sort((a,b)=>discardScore(o,a)-discardScore(o,b));
+  // When a discard will empty the hand, the same legal-move validator protects going out.
+  const card=hand.length===1&&!o.canGoOut&&o.floater===null?null:ordered[0];
+  if(card)return {type:'discard',player:o.player,id:card.id};
+  return null;
+}
+function suggestedAction(o){return chooseAIAction({...o,difficulty:'hard'});}
+
+;
+
+
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const GAME_KEY='nova-cards-game-v1',PREF_KEY='nova-cards-preferences-v1';
+let prefs={theme:'midnight',back:'stars',sound:true,reduced:false};
+try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREF_KEY)||'{}')};}catch{}
+let game=null,selected=new Set(),undoState=null,aiBusy=false,lessonIndex=0;
+try{const cached=JSON.parse(localStorage.getItem(GAME_KEY)||'null');if(cached?.version===1&&cached.hands&&cached.mode in MODES)game=cached;}catch{}
+if(!game)game=createGame({seed:Math.floor(Math.random()*0xffffffff)});
+function save(){try{localStorage.setItem(GAME_KEY,JSON.stringify(game));}catch{}}
+function savePrefs(){localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}
+function sound(name='click'){
+  if(!prefs.sound)return;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=name==='win'?'sine':'triangle';osc.frequency.value=name==='error'?170:name==='meld'?620:name==='win'?820:410;
+    gain.gain.setValueAtTime(.055,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.17);
+    osc.connect(gain).connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.18);osc.onended=()=>ctx.close();
+  }catch{}
+}
+function status(message,error=false){const el=$('status');el.textContent=message;el.className='status'+(error?' error':' success');if(error)sound('error');}
+function cardHtml(c,back=false,selectedCard=false){
+  if(back)return `<span class="card card-back" data-back="${esc(prefs.back)}"><span class="sr-only">Face-down card</span></span>`;
+  if(!c)return '<span class="empty">◇</span>';
+  const red=c.suit==='♥'||c.suit==='♦',joker=c.rank==='Joker';
+  const face=joker?'J':c.rank;
+  return `<span class="card ${red?'red':''} ${joker?'joker':''} ${selectedCard?'selected':''}"><span class="corner">${esc(face)}<small>${esc(c.suit)}</small></span><span class="center">${joker?'✦':esc(c.suit)}</span><span class="flourish">${esc(face)}</span></span>`;
+}
+function showStatus(){
+  if(game.phase==='game_end')return `Game complete: ${game.won?.draw?'exact tie — a draw':game.won?.team===teamOf(game.mode,0)?'you won!':'another player/team won'}.`;
+  if(game.phase==='round_end')return 'Round scored. Check the scoreboard and continue to the next round.';
+  if(game.turn===0)return game.phase==='draw'?'Your turn: draw one stock card or legally take the discard pile.':'Your turn: meld, add cards, then discard one card to end your turn.';
+  return `${playerLabel(game.turn,game.mode)} is choosing a move.`;
+}
+function render(){
+  document.body.dataset.theme=prefs.theme;document.body.dataset.back=prefs.back;document.body.classList.toggle('reduce-motion',prefs.reduced);
+  $('mode').value=game.mode;$('difficulty').value=game.difficulty;
+  const team=teamOf(game.mode,0),n=MODES[game.mode];
+  $('roundTag').innerHTML=`ROUND ${game.round} <span>• OPENING ${game.opened[team]?'COMPLETE':observe(game,0).openingMinimum}</span>`;
+  $('scores').innerHTML=game.score.map((score,t)=>{
+    const label=game.mode==='partnership_4p'?(t===0?'You + Partner':'Opponents'):(t===0?'You':`Opponent ${t}`);
+    return `<div class="score-row ${t===team?'current':''}"><span>${label}<small>${game.opened[t]?'Opened':'Not opened'} · ${game.redThrees[t].length} red 3s</small></span><b>${score.toLocaleString()}</b></div>`;
+  }).join('');
+  $('log').innerHTML=game.log.slice(0,7).map(s=>`<div>${esc(s)}</div>`).join('');
+  $('opponents').innerHTML=Array.from({length:n-1},(_,i)=>i+1).map(p=>{
+    const partner=teamOf(game.mode,p)===team,hand=game.hands[p];
+    return `<div class="seat ${partner?'team':''}"><div class="seat-name">${esc(playerLabel(p,game.mode))}</div><div class="seat-count">${hand.length} cards${game.turn===p?' • PLAYING':''}</div><div class="mini-hand">${Array.from({length:Math.min(hand.length,4)},()=>'<span class="back-mini"></span>').join('')}</div></div>`;
+  }).join('');
+  $('stockCount').textContent=game.stock.length;$('discardCount').textContent=game.discard.length;
+  $('stockPile').innerHTML=game.stock.length?cardHtml(null,true):'<span class="empty">↻</span>';
+  $('discardPile').innerHTML=game.discard.length?cardHtml(game.discard.at(-1)):'<span class="empty">◇</span>';
+  const top=game.discard.at(-1),frozen=isFrozenFor(game,0);
+  $('discardPile').title=`${game.discard.length} cards. ${isBlackThree(top)?'Black three blocks pickup.':frozen?'Frozen: two matching natural cards needed.':'Not frozen.'}`;
+  $('tableMelds').innerHTML=game.melds.flatMap((melds,t)=>[
+    ...melds.map((meld,i)=>{const a=analyzeMeld(meld),mine=t===team;return `<button class="meld-stack ${a.canasta?(a.wilds?'dirty':'clean'):''}" data-team="${t}" data-index="${i}" title="${mine?'Select cards and tap Add to Meld':'Opponent meld'}"><strong>${esc(a.rank)}</strong><div>${meld.length} cards<small>${a.canasta?(a.wilds?'DIRTY +300':'CLEAN +500'):(mine?'YOUR TEAM':'OPPONENT')}</small></div></button>`;}),
+    game.redThrees[t].length?`<span class="red-three-chip">♥ 3 × ${game.redThrees[t].length} (${t===team?'you':'other'})</span>`:''
+  ]).join('')||'<span style="font-size:11px;color:#a3c4bc">Played melds appear here</span>';
+  const visible=new Set(game.hands[0].map(c=>c.id));selected=new Set([...selected].filter(id=>visible.has(id)));
+  $('handCount').textContent=game.hands[0].length;
+  $('selectionInfo').textContent=selected.size?`${selected.size} selected • ${points(game.hands[0].filter(c=>selected.has(c.id)))} points`:'Tap to select cards';
+  $('hand').innerHTML=game.hands[0].map(c=>`<button class="hand-card" data-id="${esc(c.id)}" aria-pressed="${selected.has(c.id)}" title="${esc(c.rank+c.suit)}">${cardHtml(c,false,selected.has(c.id))}</button>`).join('');
+  const human=game.turn===0&&!aiBusy,draw=human&&game.phase==='draw',play=human&&game.phase==='play';
+  for(const id of ['drawBtn','pickupBtn'])$(id).disabled=!draw;
+  for(const id of ['meldBtn','extendBtn','openBtn','discardBtn','hintBtn'])$(id).disabled=!play;
+  $('undoBtn').disabled=!undoState||!play;
+  $('nextBtn').classList.toggle('hide',game.phase!=='round_end');
+  $('turnRibbon').textContent=game.phase==='round_end'?'ROUND COMPLETED':game.phase==='game_end'?'GAME FINISHED':human?(draw?'YOUR TURN • DRAW OR TAKE':'YOUR TURN • MELD & DISCARD'): `${playerLabel(game.turn,game.mode).toUpperCase()} • PLAYING`;
+  save();
+}
+function dispatch(action,{undoable=false}={}){
+  try {
+    const prior=undoable?structuredClone(game):null;
+    game=applyAction(game,action);
+    if(undoable)undoState=prior;
+    else if(action.type==='discard'||action.type==='nextRound'||action.type==='draw'||action.type==='pickup')undoState=null;
+    selected.clear();sound(action.type==='meld'||action.type==='extend'?'meld':'click');render();status(showStatus());
+    if(game.turn!==0&&['draw','play'].includes(game.phase))scheduleAI();
+    return true;
+  }catch(e){status(e.message,true);return false;}
+}
+function scheduleAI(){
+  if(aiBusy)return;
+  aiBusy=true;render();let steps=0;
+  function run(){
+    if(!['draw','play'].includes(game.phase)||game.turn===0){aiBusy=false;render();status(showStatus());return;}
+    if(++steps>120){aiBusy=false;render();status('AI safety stop: this turn needs a rules decision.',true);return;}
+    const o=observe(game,game.turn),move=chooseAIAction(o);
+    if(!move){aiBusy=false;render();status('Computer cannot find a legal move. This edge case needs repair.',true);return;}
+    try{game=applyAction(game,move);sound(move.type==='meld'?'meld':'click');render();}
+    catch(e){aiBusy=false;render();status(`Computer move blocked: ${e.message}`,true);return;}
+    setTimeout(run,prefs.reduced?15:170);
+  }
+  setTimeout(run,220);
+}
+function selectedIds(){return [...selected];}
+$('hand').addEventListener('click',e=>{
+  const button=e.target.closest('[data-id]');if(!button)return;
+  const id=button.dataset.id;
+  if(selected.has(id))selected.delete(id);else selected.add(id);
+  sound();render();
+});
+function doDraw(){if(game.turn!==0||game.phase!=='draw')return;dispatch({type:'draw',player:0});}
+function doPickup(){
+  if(game.turn!==0||game.phase!=='draw')return;
+  const o=observe(game,0),recommendation=pickupProposal(o),proof=selected.size?selectedIds():(recommendation?.proof||[]);
+  const openingGroups=selected.size?[]:(recommendation?.openingGroups||[]);
+  dispatch({type:'pickup',player:0,proof,openingGroups});
+}
+$('drawBtn').onclick=doDraw;$('pickupBtn').onclick=doPickup;
+$('stockPile').onclick=doDraw;$('discardPile').onclick=doPickup;
+for(const id of ['stockPile','discardPile'])$(id).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();(id==='stockPile'?doDraw:doPickup)();}});
+$('meldBtn').onclick=()=>dispatch({type:'meld',player:0,groups:[selectedIds()]},{undoable:true});
+$('extendBtn').onclick=()=>{
+  const ids=selectedIds(),team=teamOf(game.mode,0),cards=game.hands[0].filter(c=>selected.has(c.id));
+  if(!ids.length){status('Select the cards to add first.',true);return;}
+  const index=game.melds[team].findIndex(m=>{const a=analyzeMeld(m),b=analyzeMeld([...m,...cards]);return a.valid&&b.valid&&a.rank===b.rank;});
+  if(index<0){status('None of your open melds can accept those cards.',true);return;}
+  dispatch({type:'extend',player:0,meldIndex:index,ids},{undoable:true});
+};
+$('tableMelds').addEventListener('click',e=>{
+  const b=e.target.closest('[data-team]');if(!b)return;
+  if(Number(b.dataset.team)!==teamOf(game.mode,0))return status('Those belong to the other scorekeeper.',true);
+  if(!selected.size)return status('Select one or more cards from your hand to add to this meld.');
+  dispatch({type:'extend',player:0,meldIndex:Number(b.dataset.index),ids:selectedIds()},{undoable:true});
+});
+$('openBtn').onclick=()=>{
+  const o=observe(game,0);
+  if(o.opened[o.team])return status('You have already opened. Select a rank to meld or add cards to your table.');
+  const plan=openingPlan(o.hand,o.openingMinimum);
+  if(!plan)return status(`No legal combination currently reaches ${o.openingMinimum} opening points.`,true);
+  dispatch({type:'meld',player:0,groups:plan},{undoable:true});
+};
+$('discardBtn').onclick=()=>{const ids=selectedIds();if(ids.length!==1)return status('Select exactly one card to discard.',true);dispatch({type:'discard',player:0,id:ids[0]});};
+$('hintBtn').onclick=()=>{
+  const action=suggestedAction(observe(game,0));if(!action)return status('No clear legal suggestion.');
+  if(action.type==='meld'){const chosen=action.groups.flat(),cards=game.hands[0].filter(c=>chosen.includes(c.id));selected=new Set(chosen);render();status(`Try laying ${cards.map(c=>c.rank+c.suit).join(' ')} — worth ${points(cards)} points.`);}
+  else if(action.type==='extend'){selected=new Set(action.ids);render();status('These selected cards can extend a team meld.');}
+  else if(action.type==='discard'){selected=new Set([action.id]);render();status('Consider discarding the highlighted card.');}
+  else status('Try drawing from the stock.');
+};
+$('undoBtn').onclick=()=>{if(!undoState||game.turn!==0||game.phase!=='play')return;game=undoState;undoState=null;selected.clear();render();status('Last meld reversed. Stock draws and discards cannot be undone.');};
+$('nextBtn').onclick=()=>dispatch({type:'nextRound'});
+$('newGame').onclick=()=>{
+  if(!window.confirm('Start a new Canasta game? Your current local game will be replaced.'))return;
+  game=createGame({mode:$('mode').value,difficulty:$('difficulty').value,seed:Math.floor(Math.random()*0xffffffff)});
+  selected.clear();undoState=null;render();status('New game dealt. Your family house rules are active.');if(game.turn!==0)scheduleAI();
+};
+$('mode').onchange=()=>status('Choose New game to use the selected mode.');
+$('difficulty').onchange=()=>{game.difficulty=$('difficulty').value;render();status('AI difficulty changed.');};
+function showModal(html){$('modalBody').innerHTML=html;$('modalShade').classList.remove('hide');$('modalShade').setAttribute('aria-hidden','false');}
+function closeModal(){$('modalShade').classList.add('hide');$('modalShade').setAttribute('aria-hidden','true');}
+$('closeModal').onclick=closeModal;$('modalShade').onclick=e=>{if(e.target===$('modalShade'))closeModal();};
+const lessons=[
+ {title:'The Natural-Majority Rule',q:'Can you lay two natural Kings with one Joker?',choices:['Yes, three cards make a legal meld.','No, Jokers are always banned.','Only after Round 5.'],correct:0,why:'Exactly. Two natural Kings outnumber the one wild Joker.'},
+ {title:'Beware the Wild Cards',q:'Can one King and two Jokers form a meld?',choices:['Yes, because the point value is high.','No, there are more wilds than naturals.','Only in partnership play.'],correct:1,why:'Your family requires strictly more natural cards than wilds at all times.'},
+ {title:'Frozen Discard Pile',q:'A Joker is buried in the discard pile. The top card is a 9. What do you need in hand?',choices:['A 9 and a Joker.','Two natural 9s.','Any two cards worth 50 points.'],correct:1,why:'Show two natural 9s first. Wild cards cannot substitute for this proof.'},
+ {title:'The Red Three Surprise',q:'You pick up a discard pile containing a red three. Do you draw a replacement from the stock?',choices:['Yes, always.','No, only naturally drawn or dealt red threes are replaced.','Only when you have a Canasta.'],correct:1,why:'The red three scores, but collecting it from the discard pile does not trigger another stock draw.'},
+ {title:'Clean or Dirty?',q:'You have a seven-card Canasta with no wilds. What is the bonus?',choices:['300 points.','500 points.','1,200 points.'],correct:1,why:'Clean Canastas earn +500; those containing wild cards earn +300.'},
+ {title:'The Floater',q:'You meld your last card without discarding. Your team has a Canasta. What happens?',choices:['Round ends with no other turns.','Everyone else gets one final turn; you keep the +100 going-out bonus.','Another player may steal the going-out bonus.'],correct:1,why:'That is floating! The original floater keeps the going-out credit while everyone else plays one final turn.'}
+];
+function lesson(){
+  const l=lessons[lessonIndex];
+  showModal(`<div class="panel-heading">LEARNING LAB · EXERCISE ${lessonIndex+1} OF ${lessons.length}</div><h2>${esc(l.title)}</h2><p>${esc(l.q)}</p><div id="answers">${l.choices.map((text,i)=>`<button class="choice" data-answer="${i}">${esc(text)}</button>`).join('')}</div><div id="lessonFeedback" class="quiz-feedback"></div><button id="lessonNext" class="primary hide">${lessonIndex+1===lessons.length?'Finish lesson':'Next exercise →'}</button><p class="fineprint">Interactive rule practice. Full scripted table tutorials are still in development.</p>`);
+  $('answers').onclick=e=>{const b=e.target.closest('[data-answer]');if(!b)return;const i=Number(b.dataset.answer);
+    [...$('answers').children].forEach(el=>el.disabled=true);
+    b.classList.add(i===l.correct?'correct':'wrong');$('answers').children[l.correct].classList.add('correct');
+    $('lessonFeedback').textContent=(i===l.correct?'✓ Correct. ':'Not quite. ')+l.why;
+    $('lessonNext').classList.remove('hide');sound(i===l.correct?'win':'error');
+  };
+  $('lessonNext').onclick=()=>{if(lessonIndex+1===lessons.length){closeModal();return;}lessonIndex++;lesson();};
+}
+$('learnBtn').onclick=()=>{lessonIndex=0;lesson();};
+function settings(){showModal(`<h2>Dress Your Table</h2><p>Every card night deserves the right atmosphere. Preferences stay on this device.</p><div class="setting-grid"><div class="settings-row"><label for="themeSelect">Table surface</label><select id="themeSelect"><option value="midnight">Moonlit Teal</option><option value="velvet">Velvet & Wine</option><option value="royal">Royal Midnight</option><option value="forest">Enchanted Forest</option></select></div><div class="settings-row"><label for="backSelect">Playing-card backs</label><select id="backSelect"><option value="stars">Starfall</option><option value="rose">Gothic Rose</option><option value="gold">Antique Gold</option><option value="moth">Moon Moth</option><option value="jade">Jade Garden</option></select></div><label class="switch">Sound effects <input id="soundToggle" type="checkbox"></label><label class="switch">Reduce motion <input id="motionToggle" type="checkbox"></label></div>`);
+  $('themeSelect').value=prefs.theme;$('backSelect').value=prefs.back;$('soundToggle').checked=prefs.sound;$('motionToggle').checked=prefs.reduced;
+  $('themeSelect').onchange=e=>{prefs.theme=e.target.value;savePrefs();render();};
+  $('backSelect').onchange=e=>{prefs.back=e.target.value;savePrefs();render();};
+  $('soundToggle').onchange=e=>{prefs.sound=e.target.checked;savePrefs();};
+  $('motionToggle').onchange=e=>{prefs.reduced=e.target.checked;savePrefs();render();};
+}
+$('settingsBtn').onclick=settings;
+render();status(showStatus());if(game.turn!==0&&['draw','play'].includes(game.phase))scheduleAI();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
