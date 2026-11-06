@@ -90,7 +90,7 @@ jobs:
             fs.writeFileSync('result.json',JSON.stringify(result,null,2));
             console.log('RESULT',JSON.stringify(result).slice(0,7000));
             await browser.close();
-            if(!details.manager || !details.started || mapped.length<4 || !/saved/i.test(saveStatus) || !/restored/i.test(loadStatus) || !/Cartridge loaded/.test(oldDemoStatus))process.exit(2);
+            if(!details.manager || !details.started || mapped.length<4 || !/saved/i.test(saveStatus) || !/restored/i.test(loadStatus) || !/Cartridge loaded/.test(oldDemoStatus) || bad.some(x=>x.includes('mgba-legacy-wasm.data')) || errors.some(x=>x.includes('FAILSAFE')))process.exit(2);
           })().catch(e=>{console.error('TEST ERROR',e);process.exit(3)});
           NODE
           node smoke.cjs
