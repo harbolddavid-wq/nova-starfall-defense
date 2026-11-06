@@ -659,7 +659,7 @@ window.addEventListener('pointerup',e=>{
  const element=document.elementFromPoint(e.clientX,e.clientY);
  d.ghost?.remove();$('tableMelds').classList.remove('drop-ready');$('discardPile').classList.remove('drop-ready');
  if(!d.moved)return;
- suppressHandClick=true;
+ suppressHandClick=true;setTimeout(()=>{suppressHandClick=false;},100);
  if(element?.closest('#discardPile'))tryDiscardDragged(d.id);
  else if(element?.closest('#tableMelds')){
    const b=element.closest('[data-team][data-index]');
