@@ -1,0 +1,59 @@
+name: Build Nova Cards Grand Table Reforged Android Test
+on:
+  push:
+    branches: [nova-cards-grand-reforged-test]
+    paths:
+      - 'nova-grand/**'
+      - '.github/workflows/build-nova-grand.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          if [ -z "$SDKMANAGER" ]; then echo "SDK manager missing"; exit 1; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore full validated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p nova-grand/project
+          base64 -d nova-grand/Android_Source.zip.b64.txt > /tmp/nova-grand.zip
+          unzip -tq /tmp/nova-grand.zip
+          unzip -oq /tmp/nova-grand.zip -d nova-grand/project
+          test -s nova-grand/project/app/src/main/assets/index.html
+          test -s nova-grand/project/app/src/main/java/site/novasky/cards/MainActivity.java
+          grep -q "site.novasky.cards.grandtable" nova-grand/project/app/build.gradle
+          grep -q 'Grand Table Reforged' nova-grand/project/app/src/main/assets/index.html
+      - name: Compile side-by-side Android test APK
+        run: gradle -p nova-grand/project :app:assembleDebug --no-daemon --stacktrace
+      - name: Verify APK contents and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=nova-grand/project/app/build/outputs/apk/debug/app-debug.apk
+          unzip -tq "$apk"
+          unzip -l "$apk" | grep 'assets/index.html'
+          sha256sum "$apk"
+          cp "$apk" Nova_Cards_Grand_Table_Reforged_v0.2.3_TEST.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Cards-Grand-Table-Reforged-Test-APK
+          path: Nova_Cards_Grand_Table_Reforged_v0.2.3_TEST.apk
+          if-no-files-found: error
+          retention-days: 14
