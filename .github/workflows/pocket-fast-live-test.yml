@@ -33,7 +33,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:430,height:932}});
             const errors=[];page.on('pageerror',e=>errors.push(String(e)));
             page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text());});
-            const url='https://headless-qiekxafrnim-harbolddavid-140c.wix-site-host.com/pocket-speed-test.html';
+            const url='https://headless-qiekxafrnim-harbolddavid-140c.wix-site-host.com/';
             await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForSelector('#pocket-fast-mode');
             if(await page.locator('#pocket-fast-mode').inputValue()!=='fast')throw Error('Fast core not selected');
