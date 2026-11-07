@@ -38,6 +38,8 @@ jobs:
           test -f astral-relics/source/app/src/main/assets/game.js
           test -f astral-relics/source/app/src/main/assets/assets/astral_pack.webp
           test -f astral-relics/source/app/src/main/res/mipmap-nodpi/ic_launcher.png
+      - name: Apply mobile landscape touch-layout refinement
+        run: cat astral-relics/landscape_fix.css >> astral-relics/source/app/src/main/assets/styles.css
       - name: Build Android APK
         run: gradle -p astral-relics/source :app:assembleDebug --no-daemon --stacktrace
       - name: Verify packaged game, native icon and integrity

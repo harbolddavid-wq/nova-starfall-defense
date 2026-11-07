@@ -1,0 +1,6 @@
+/* Landscape: separate the gesture invitation from the pack instead of layering words over the artwork. */
+@media (orientation:landscape) and (max-height:620px){
+  .opening-hint{left:72%;right:2%;bottom:39%;font-size:10px;line-height:1.4}
+  .opening-hint strong{font-size:18px;margin-top:7px}
+  .result-hint,.stage-footer{display:none}
+}
