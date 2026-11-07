@@ -1,0 +1,88 @@
+name: Nova Pocket fast GBA live browser acceptance
+on:
+  push:
+    branches: [nova-pocket-emulator-repair]
+    paths: [.github/workflows/pocket-fast-live-test.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Install Chromium test environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/pocket-test
+          cd /tmp/pocket-test
+          npm init -y >/dev/null
+          npm install playwright@1.56.1 --silent
+          npx playwright install chromium --with-deps >/dev/null
+          curl -fsSL https://raw.githubusercontent.com/maximilian8181/The-Axe-GBA/master/theAxe.gba -o homebrew.gba
+          test $(stat -c%s homebrew.gba) -gt 20000
+      - name: Exercise mGBA directly in the published Wix performance preview
+        shell: bash
+        run: |
+          cat >/tmp/pocket-test/test.cjs <<'TESTJS'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async () => {
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
+            const page=await browser.newPage({viewport:{width:430,height:932}});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+            page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text());});
+            const url='https://headless-qiekxafrnim-harbolddavid-140c.wix-site-host.com/pocket-speed-test.html';
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForSelector('#pocket-fast-mode');
+            if(await page.locator('#pocket-fast-mode').inputValue()!=='fast')throw Error('Fast core not selected');
+            await page.locator('#romLoader').setInputFiles('/tmp/pocket-test/homebrew.gba');
+            await page.waitForFunction(()=>window.NovaPocketFast?.loaded,{timeout:35000});
+            console.log('Loaded status:',await page.locator('#status').innerText());
+            await page.locator('#start').click();
+            await page.waitForTimeout(6500);
+            let fps=await page.evaluate(()=>window.NovaPocketFast.fps);
+            console.log('Fast mGBA FPS:',fps);
+            const pixels=await page.locator('#pocket-fast-canvas').evaluate(c=>{
+              const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+              let sampled=new Set();
+              for(let i=0;i<d.length;i+=24)sampled.add(d[i]+','+d[i+1]+','+d[i+2]);
+              return sampled.size;
+            });
+            console.log('Canvas distinct pixel colors:',pixels);
+            await page.locator('.action.a').dispatchEvent('pointerdown',{pointerId:5});
+            await page.waitForTimeout(160);
+            await page.locator('.action.a').dispatchEvent('pointerup',{pointerId:5});
+            await page.locator('#pocket-fast-save-btn').click();
+            await page.waitForTimeout(500);
+            const saved=await page.locator('#status').innerText();console.log('Save:',saved);
+            await page.locator('#pocket-fast-load-btn').click();
+            await page.waitForTimeout(500);
+            const restored=await page.locator('#status').innerText();console.log('Load:',restored);
+            await page.screenshot({path:'/tmp/pocket-test/pocket_fast.png',fullPage:true});
+            await page.locator('#back').click();
+            const library=await page.locator('#library').isVisible();
+            await page.locator('[data-game="lantern"]').click();
+            const original=await page.locator('#gameTitle').innerText();
+            console.log('Legacy homebrew title:',original);
+            fs.writeFileSync('/tmp/pocket-test/results.json',JSON.stringify({fps,pixels,saved,restored,library,original,errors},null,2));
+            await browser.close();
+            if(!fps||fps<15)throw Error('Insufficient or no emulation FPS: '+fps);
+            if(pixels<20)throw Error('Emulator canvas lacks game graphics');
+            if(!saved.includes('stored')||!restored.includes('restored'))throw Error('Save or load failed');
+            if(!library||original!=='Lantern Hunt')throw Error('Existing demo was broken');
+            if(errors.length)throw Error('JS errors: '+errors.slice(0,3).join('; '));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          TESTJS
+          cd /tmp/pocket-test
+          node test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nova-pocket-fast-test-results
+          path: |
+            /tmp/pocket-test/results.json
+            /tmp/pocket-test/pocket_fast.png
+          if-no-files-found: ignore
+          retention-days: 7
