@@ -1,0 +1,50 @@
+name: Build Astral Relics one-pack Android test APK
+on:
+  push:
+    branches: [astral-relics-one-pack-build]
+    paths:
+      - 'astral-relics/**'
+      - '.github/workflows/build-astral-relics.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install pinned Android SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Extract complete self-contained source project
+        run: |
+          set -euo pipefail
+          base64 -d astral-relics/Android_Complete_Source.zip.b64.txt > /tmp/astral-relics.zip
+          mkdir -p astral-relics/source
+          unzip -oq /tmp/astral-relics.zip -d astral-relics/source
+          test -f astral-relics/source/app/src/main/assets/index.html
+          test -f astral-relics/source/app/src/main/assets/game.js
+          test -f astral-relics/source/app/src/main/assets/assets/astral_pack.webp
+          test -f astral-relics/source/app/src/main/res/mipmap-nodpi/ic_launcher.png
+      - name: Build Android APK
+        run: gradle -p astral-relics/source :app:assembleDebug --no-daemon --stacktrace
+      - name: Verify packaged game, native icon and integrity
+        run: |
+          set -euo pipefail
+          apk=astral-relics/source/app/build/outputs/apk/debug/app-debug.apk
+          unzip -tq "$apk"
+          unzip -l "$apk" | grep -E 'assets/index.html|assets/game.js|assets/assets/astral_pack.webp|res/mipmap-nodpi-v4/ic_launcher.png'
+          sha256sum "$apk"
+          cp "$apk" Astral_Relics_One_Pack_v0.1.0_Android_Test.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Astral-Relics-One-Pack-Android-APK
+          path: Astral_Relics_One_Pack_v0.1.0_Android_Test.apk
+          if-no-files-found: error
+          retention-days: 14
