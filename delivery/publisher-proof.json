@@ -1,0 +1,8 @@
+{
+  "world": "portal-bloom",
+  "versionCode": 1,
+  "publishedCommit": "9ca415330281259a7f918adb0f50bad5f400e7bf",
+  "draftId": "77e9cd1fab4b4be8d8c264884959e7aaa55ed42ac1d67e1f66e6be614b18c95a",
+  "hostVersion": "0.2.0",
+  "purpose": "Verify the plugin-published world on the unchanged released host."
+}
