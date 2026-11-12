@@ -1,0 +1,41 @@
+name: Seal Holodeck signing recovery backup
+on:
+  push:
+    branches: [work/pocket-holodeck]
+    paths:
+      - 'delivery/recovery-public.pem'
+      - '.github/workflows/seal-holodeck-signer.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/cache/restore@v4
+        with:
+          path: .signing/candidate.keystore
+          key: pocket-holodeck-candidate-signer-v2
+          fail-on-cache-miss: true
+      - name: Seal original signer for the owner's private recovery key
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p recovery-sealed
+          openssl cms -encrypt -aes-256-gcm -binary -in .signing/candidate.keystore -outform DER -out recovery-sealed/candidate-key.cms -recip delivery/recovery-public.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_oaep_md:sha256
+          keytool -exportcert -keystore .signing/candidate.keystore -storepass android -alias androiddebugkey -file /tmp/holodeck-signer.der
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          cert=pathlib.Path('/tmp/holodeck-signer.der').read_bytes()
+          sealed=pathlib.Path('recovery-sealed/candidate-key.cms').read_bytes()
+          data={'schema':1,'certificateSha256':hashlib.sha256(cert).hexdigest(),'sealedSha256':hashlib.sha256(sealed).hexdigest(),'encryption':'CMS AES-256-GCM / RSA-OAEP-SHA256','contains':'Encrypted original Holodeck app/catalog signer; private recovery key stays with the owner.'}
+          pathlib.Path('recovery-sealed/signer-backup.json').write_text(json.dumps(data,indent=2))
+          PY
+          gh release view holodeck-recovery >/dev/null 2>&1 || gh release create holodeck-recovery --title 'Holodeck encrypted recovery material' --notes 'Encrypted signer backup and public recovery metadata only. The owner recovery private key is never published.'
+          gh release upload holodeck-recovery recovery-sealed/candidate-key.cms recovery-sealed/signer-backup.json --clobber

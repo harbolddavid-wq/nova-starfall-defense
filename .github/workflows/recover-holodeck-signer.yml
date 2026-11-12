@@ -1,0 +1,80 @@
+name: Recover original Holodeck signer through encrypted owner exchange
+on:
+  push:
+    branches: [work/pocket-holodeck]
+    paths: ['delivery/recovery-request.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Validate owner request
+        id: request
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          r=json.loads(pathlib.Path('delivery/recovery-request.json').read_text())
+          assert re.fullmatch('[a-f0-9]{32}',r['id'])
+          assert r['stage'] in ('request','restore')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:out.write('id='+r['id']+'\nstage='+r['stage']+'\n')
+          PY
+      - name: Restore this exchange's private half
+        id: exchange
+        uses: actions/cache/restore@v4
+        with:
+          path: .recovery-exchange/
+          key: holodeck-owner-exchange-${{ steps.request.outputs.id }}
+      - name: Generate a temporary exchange recipient
+        if: steps.request.outputs.stage == 'request' && steps.exchange.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .recovery-exchange
+          openssl req -x509 -newkey rsa:3072 -nodes -keyout .recovery-exchange/private.pem -out .recovery-exchange/public.pem -days 7 -subj '/CN=Holodeck temporary owner exchange' 2>/dev/null
+      - uses: actions/cache/save@v4
+        if: steps.request.outputs.stage == 'request' && steps.exchange.outputs.cache-hit != 'true'
+        with:
+          path: .recovery-exchange/
+          key: holodeck-owner-exchange-${{ steps.request.outputs.id }}
+      - name: Publish only the temporary public certificate
+        if: steps.request.outputs.stage == 'request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXCHANGE_ID: ${{ steps.request.outputs.id }}
+        run: |
+          cp .recovery-exchange/public.pem "exchange-${EXCHANGE_ID}.pem"
+          gh release upload holodeck-recovery "exchange-${EXCHANGE_ID}.pem" --clobber
+      - name: Restore and validate the original signer privately
+        if: steps.request.outputs.stage == 'restore'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CACHE_HIT: ${{ steps.exchange.outputs.cache-hit }}
+        run: |
+          test "$CACHE_HIT" = true
+          mkdir -p .signing
+          python3 - <<'PY'
+          import base64,json,pathlib
+          r=json.loads(pathlib.Path('delivery/recovery-request.json').read_text())
+          data=base64.b64decode(r['ciphertext'],validate=True);assert len(data)<32768
+          pathlib.Path('.recovery-exchange/recovered.cms').write_bytes(data)
+          PY
+          openssl cms -decrypt -binary -inform DER -in .recovery-exchange/recovered.cms -recip .recovery-exchange/public.pem -inkey .recovery-exchange/private.pem -out .signing/candidate.keystore
+          keytool -exportcert -keystore .signing/candidate.keystore -storepass android -alias androiddebugkey -file /tmp/restored-signer.der
+          gh release download holodeck-recovery --pattern signer-backup.json --dir .recovery-exchange
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          expected=json.loads(pathlib.Path('.recovery-exchange/signer-backup.json').read_text())['certificateSha256']
+          assert hashlib.sha256(pathlib.Path('/tmp/restored-signer.der').read_bytes()).hexdigest()==expected
+          PY
+      - name: Preserve the recovered signer under its original cache identity
+        if: steps.request.outputs.stage == 'restore'
+        uses: actions/cache/save@v4
+        with:
+          path: .signing/candidate.keystore
+          key: pocket-holodeck-candidate-signer-v2
