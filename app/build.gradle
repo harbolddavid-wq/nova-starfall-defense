@@ -10,6 +10,7 @@ android {
   versionName '0.1.0'
   testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
  }
+ signingConfigs { debug { if(rootProject.file('.signing/candidate.keystore').exists()) { storeFile rootProject.file('.signing/candidate.keystore'); storePassword 'android'; keyAlias 'androiddebugkey'; keyPassword 'android' } } }
  buildTypes { release { minifyEnabled false } }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

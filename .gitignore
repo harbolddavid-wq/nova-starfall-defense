@@ -8,3 +8,5 @@ release/
 evidence/
 
 node_modules/
+
+.signing/

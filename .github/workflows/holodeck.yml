@@ -28,8 +28,8 @@ jobs:
         id: signer
         uses: actions/cache/restore@v4
         with:
-          path: ~/.android/debug.keystore
-          key: pocket-holodeck-candidate-signer-v1
+          path: .signing/candidate.keystore
+          key: pocket-holodeck-candidate-signer-v2
       - name: Guard signing continuity
         env:
           GH_TOKEN: ${{ github.token }}
@@ -39,6 +39,13 @@ jobs:
             echo 'Existing APK found but original candidate signer unavailable; refusing a mismatched update.'
             exit 1
           fi
+      - name: Create isolated candidate signer on first build
+        run: |
+          mkdir -p .signing
+          if [ ! -f .signing/candidate.keystore ]; then
+            keytool -genkeypair -keystore .signing/candidate.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Nova Pocket Holodeck Test,O=Nova,C=US'
+          fi
+          test -s .signing/candidate.keystore
       - name: Browser playthrough and sound engine
         run: |
           mkdir -p evidence
@@ -52,8 +59,8 @@ jobs:
         if: steps.signer.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ~/.android/debug.keystore
-          key: pocket-holodeck-candidate-signer-v1
+          path: .signing/candidate.keystore
+          key: pocket-holodeck-candidate-signer-v2
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
