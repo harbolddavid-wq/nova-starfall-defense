@@ -64,10 +64,10 @@ public class MainActivity extends Activity {
  }
  void settings(LinearLayout b){
   b.addView(text("Make it yours",32,TEXT));b.addView(text("A little control over your universe.",15,MUTED));space(b,20);
-  setting(b,"Soundscape","Musical starlight and gentle ambient tones",SOUND,sound(),v->{prefs.edit().putBoolean("sound",v).apply();audioEngine.enabled(v);});
+  setting(b,"Soundscape","Entrance chimes and musical touch feedback",SOUND,sound(),v->{prefs.edit().putBoolean("sound",v).apply();audioEngine.enabled(v);});
   setting(b,"Living motion","Portal orbits, drifting stars and touch trails",MOTION,motion(),v->{prefs.edit().putBoolean("motion",v).apply();show("settings");});
   b.addView(button("Hear a test chime",TEST_SOUND,false,()->{prefs.edit().putBoolean("sound",true).apply();audioEngine.enabled(true);audioEngine.cue("start");Switch toggle=findViewById(SOUND);if(toggle!=null)toggle.setChecked(true);new Handler().postDelayed(()->{if(player==null)audioEngine.stopScene();},1600);Toast.makeText(this,"Use the phone’s volume buttons for media sound",Toast.LENGTH_SHORT).show();}));
-  space(b,22);b.addView(text("PRIVATE BY DESIGN",11,MINT));b.addView(text("This first edition works entirely offline. No accounts, ads, tracking, or phone permissions.",15,MUTED));space(b,20);b.addView(text("Nova Pocket Holodeck 0.1.1\nBuilt for small adventures and big imaginations.",13,MUTED));
+  space(b,22);b.addView(text("PRIVATE BY DESIGN",11,MINT));b.addView(text("This first edition works entirely offline. No accounts, ads, tracking, or phone permissions.",15,MUTED));space(b,20);b.addView(text("Nova Pocket Holodeck 0.1.2\nBuilt for small adventures and big imaginations.",13,MUTED));
  }
  interface Changed{void value(boolean v);}
  void setting(LinearLayout b,String label,String subtitle,int id,boolean checked,Changed changed){

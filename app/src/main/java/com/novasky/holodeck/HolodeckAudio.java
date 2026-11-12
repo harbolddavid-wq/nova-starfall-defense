@@ -13,24 +13,23 @@ final class HolodeckAudio {
  final HandlerThread thread=new HandlerThread("Holodeck audio");
  final Handler worker;final AudioManager manager;final AudioFocusRequest focus;
  final ArrayList<AudioTrack> voices=new ArrayList<>();
- AudioTrack bed;boolean enabled=true,foreground=true,scene=false,hasFocus=false,closed=false;
+ long completedFrames=0;volatile int activeVoices=0;boolean enabled=true,foreground=true,scene=false,hasFocus=false,closed=false;
  volatile String status="idle",error="";
  volatile long renderedFrames=0;volatile int acceptedCues=0;
  volatile double toneRms=0,ambientRms=0;long lastCue=0;int generation=0;
  HolodeckAudio(Context c){
   manager=(AudioManager)c.getSystemService(Context.AUDIO_SERVICE);thread.start();worker=new Handler(thread.getLooper());
   focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(attributes()).setOnAudioFocusChangeListener(change->worker.post(()->{
-   if(change==AudioManager.AUDIOFOCUS_GAIN){hasFocus=true;if(scene&&enabled&&foreground)startBed();}
+   if(change==AudioManager.AUDIOFOCUS_GAIN){hasFocus=true;if(scene&&enabled&&foreground)status="playing";}
    else{hasFocus=false;silence("interrupted");}
   }),worker).build();
  }
  static AudioAttributes attributes(){return new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();}
- static short[] samples(double frequency,boolean ambient){
-  int count=ambient?RATE*2:(int)(RATE*.85);short[] pcm=new short[count];
+ static short[] samples(double frequency){
+  int count=(int)(RATE*.85);short[] pcm=new short[count];
   for(int n=0;n<count;n++){
    double t=n/(double)RATE,v;
-   if(ambient){v=.035*(Math.sin(2*Math.PI*330*t)+Math.sin(2*Math.PI*440*t)+Math.sin(2*Math.PI*550*t)+Math.sin(2*Math.PI*660*t));}
-   else{double envelope=Math.min(1,t/.012)*Math.exp(-5*t/.85)*Math.min(1,(.85-t)/.04);v=.44*envelope*(Math.sin(2*Math.PI*frequency*t)+.32*Math.sin(4*Math.PI*frequency*t)+.12*Math.sin(6*Math.PI*frequency*t));}
+   {double envelope=Math.min(1,t/.012)*Math.exp(-5*t/.85)*Math.min(1,(.85-t)/.04);v=.44*envelope*(Math.sin(2*Math.PI*frequency*t)+.32*Math.sin(4*Math.PI*frequency*t)+.12*Math.sin(6*Math.PI*frequency*t));}
    pcm[n]=(short)Math.round(Math.max(-.95,Math.min(.95,v))*32767);
   }return pcm;
  }
@@ -45,31 +44,32 @@ final class HolodeckAudio {
    if(!foreground||!enabled||closed)return;
    long now=SystemClock.uptimeMillis();if(now-lastCue<45)return;lastCue=now;acceptedCues++;
    if(!ensureFocus())return;
-   scene=true;if(bed==null||bed.getPlayState()!=AudioTrack.PLAYSTATE_PLAYING)startBed();
-   if(name.equals("start")){startBed();chime();return;}
+   scene=true;status="playing";
+   if(name.equals("start")){chime();return;}
    if(name.equals("success"))chime();else if(name.matches("note[0-6]"))note(name.charAt(4)-'0');
   }catch(RuntimeException e){failed(e);}
  });}
  boolean ensureFocus(){if(hasFocus)return true;hasFocus=manager.requestAudioFocus(focus)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED;if(!hasFocus)status="focus-denied";return hasFocus;}
- void startBed(){
-  if(!foreground||!enabled||!scene||!hasFocus||closed)return;
-  if(bed==null){short[] pcm=samples(0,true);ambientRms=rms(pcm);bed=track(pcm);bed.setLoopPoints(0,pcm.length,-1);bed.setVolume(.8f);}
-  bed.play();status="playing";poll();
+ // There is deliberately no background track: only finite, decaying touch cues.
+ void updatePlayback(){
+  long frames=completedFrames;for(AudioTrack t:voices)frames+=Integer.toUnsignedLong(t.getPlaybackHeadPosition());
+  renderedFrames=Math.max(renderedFrames,frames);activeVoices=voices.size();
  }
- void poll(){worker.removeCallbacks(tick);worker.postDelayed(tick,100);}
- final Runnable tick=new Runnable(){public void run(){if(closed||!foreground||!enabled||!scene)return;try{if(bed!=null&&bed.getPlayState()==AudioTrack.PLAYSTATE_PLAYING){renderedFrames=Math.max(renderedFrames,Integer.toUnsignedLong(bed.getPlaybackHeadPosition()));}if(bed!=null)worker.postDelayed(this,100);}catch(RuntimeException e){failed(e);}}};
+ void finishVoice(AudioTrack t){completedFrames+=Integer.toUnsignedLong(t.getPlaybackHeadPosition());t.stop();t.release();updatePlayback();}
+ void poll(){worker.removeCallbacks(tick);worker.postDelayed(tick,50);}
+ final Runnable tick=new Runnable(){public void run(){if(closed||!foreground||!enabled||!scene)return;try{updatePlayback();if(!voices.isEmpty())worker.postDelayed(this,50);}catch(RuntimeException e){failed(e);}}};
  void note(int n){
   if(!foreground||!enabled||!scene||!hasFocus||closed)return;
-  while(voices.size()>=2){AudioTrack old=voices.remove(0);old.stop();old.release();}
-  short[] pcm=samples(NOTES[n%7],false);toneRms=rms(pcm);AudioTrack voice=track(pcm);voice.setVolume(.7f);voices.add(voice);voice.play();
-  worker.postDelayed(()->{if(voices.remove(voice)){voice.stop();voice.release();}},1000);
+  while(voices.size()>=2){finishVoice(voices.remove(0));}
+  short[] pcm=samples(NOTES[n%7]);toneRms=rms(pcm);AudioTrack voice=track(pcm);voice.setVolume(.7f);voices.add(voice);voice.play();updatePlayback();poll();
+  worker.postDelayed(()->{if(voices.remove(voice))finishVoice(voice);},1000);
  }
  void chime(){final int g=generation;for(int n=0;n<3;n++){final int note=n*2;worker.postDelayed(()->{if(g==generation){try{note(note);}catch(RuntimeException e){failed(e);}}},n*140);}}
- void silence(String state){generation++;worker.removeCallbacks(tick);if(bed!=null)bed.pause();for(AudioTrack t:voices){t.stop();t.release();}voices.clear();status=state;}
- void enabled(boolean value){worker.post(()->{enabled=value;try{if(!enabled){silence("muted");abandon();}else if(foreground&&scene&&ensureFocus()){startBed();}}catch(RuntimeException e){failed(e);}});}
- void foreground(boolean value){worker.post(()->{foreground=value;try{if(!value){silence("paused");abandon();}else if(enabled&&scene&&ensureFocus())startBed();}catch(RuntimeException e){failed(e);}});}
+ void silence(String state){generation++;worker.removeCallbacks(tick);while(!voices.isEmpty())finishVoice(voices.remove(0));activeVoices=0;status=state;}
+ void enabled(boolean value){worker.post(()->{enabled=value;try{if(!enabled){silence("muted");abandon();}else if(foreground&&scene&&ensureFocus()){status="playing";}}catch(RuntimeException e){failed(e);}});}
+ void foreground(boolean value){worker.post(()->{foreground=value;try{if(!value){silence("paused");abandon();}else if(enabled&&scene&&ensureFocus())status="playing";}catch(RuntimeException e){failed(e);}});}
  void stopScene(){worker.post(()->{scene=false;silence("idle");abandon();});}
  void abandon(){if(hasFocus)manager.abandonAudioFocusRequest(focus);hasFocus=false;}
  void failed(RuntimeException e){error=e.toString();status="error";Log.e("HolodeckAudio","Playback failed",e);}
- void close(){worker.post(()->{closed=true;scene=false;silence("closed");abandon();if(bed!=null){bed.release();bed=null;}thread.quitSafely();});}
+ void close(){worker.post(()->{closed=true;scene=false;silence("closed");abandon();thread.quitSafely();});}
 }

@@ -77,7 +77,12 @@ public class HolodeckTest {
   assertEquals("Native playback error: "+a().audioEngine.error,"playing",a().audioEngine.status);
   assertTrue("Real Android playback head must advance",a().audioEngine.renderedFrames>4000);
   assertTrue("Entrance PCM must be audible",a().audioEngine.toneRms>.08);
-  assertTrue("Ambient PCM must not be near silent",a().audioEngine.ambientRms>.04);
+  assertEquals("No continuous background tone",0.0,a().audioEngine.ambientRms,0.0);
+  long quietDeadline=SystemClock.uptimeMillis()+8000;
+  while(SystemClock.uptimeMillis()<quietDeadline&&a().audioEngine.activeVoices!=0)SystemClock.sleep(50);
+  assertEquals("Chime must finish with no active audio tracks",0,a().audioEngine.activeVoices);
+  long quietFrames=a().audioEngine.renderedFrames;SystemClock.sleep(400);
+  assertEquals("Idle sky must not keep rendering audio",quietFrames,a().audioEngine.renderedFrames);
   assertTrue(a().audioEngine.acceptedCues>0);
   assertEquals(android.media.AudioManager.STREAM_MUSIC,a().getVolumeControlStream());
   js("document.getElementById('mute').click()");SystemClock.sleep(350);
