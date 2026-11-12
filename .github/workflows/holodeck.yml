@@ -123,3 +123,5 @@ jobs:
           gh release view holodeck-v0.2.0 >/dev/null 2>&1 || gh release create holodeck-v0.2.0 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.2.0' --notes 'Phase 2: signed world catalog, native downloads, offline world library, independent experience updates and rollback. Lanternwake downloads separately after the host is installed. Prior Starwell progress retained. Android 16 end-to-end checks passed.'
           zip -qr release/Holodeck_Test_Evidence.zip evidence
           gh release upload holodeck-v0.2.0 release/* --clobber
+
+# Native delivery playthrough includes the final finger-lift position.
