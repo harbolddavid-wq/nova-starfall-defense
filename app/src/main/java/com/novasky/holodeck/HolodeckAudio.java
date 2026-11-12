@@ -37,8 +37,8 @@ final class HolodeckAudio {
  static double rms(short[] pcm){double v=0;for(short s:pcm)v+=(s/32768.0)*(s/32768.0);return Math.sqrt(v/pcm.length);}
  AudioTrack track(short[] pcm){
   AudioTrack t=new AudioTrack.Builder().setAudioAttributes(attributes()).setAudioFormat(new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build()).setTransferMode(AudioTrack.MODE_STATIC).setBufferSizeInBytes(pcm.length*2).build();
-  if(t.getState()!=AudioTrack.STATE_INITIALIZED)throw new IllegalStateException("AudioTrack initialization failed");
-  if(t.write(pcm,0,pcm.length)!=pcm.length){t.release();throw new IllegalStateException("Incomplete audio write");}return t;
+  if(t.getState()==AudioTrack.STATE_UNINITIALIZED){t.release();throw new IllegalStateException("AudioTrack allocation failed");}
+  if(t.write(pcm,0,pcm.length)!=pcm.length||t.getState()!=AudioTrack.STATE_INITIALIZED){t.release();throw new IllegalStateException("Incomplete audio initialization");}return t;
  }
  void cue(String name){if(!closed)worker.post(()->{
   try{
