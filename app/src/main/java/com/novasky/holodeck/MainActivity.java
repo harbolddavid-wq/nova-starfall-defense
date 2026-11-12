@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
  public static final int TEST_SOUND=108, LAUNCH=101, LIBRARY=102, SETTINGS=103, HOME=104, EXIT=105, SOUND=106, MOTION=107;
  static final int BG=0xff080d1b, PANEL=0xff111c30, TEXT=0xffedf4ff, MUTED=0xffa7b7cf, MINT=0xff7df7e5;
  FrameLayout root; LinearLayout shell; android.content.SharedPreferences prefs;
- volatile WebView player; HolodeckAudio audioEngine; String audioSession=""; String tab="home", returnTab="home"; boolean active=true;
+ volatile WebView player; HolodeckAudio audioEngine; String audioSession="";long audioLastSeq=0; String tab="home", returnTab="home"; boolean active=true;
  @Override public void onCreate(Bundle b){
   super.onCreate(b);setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);audioEngine=new HolodeckAudio(this); prefs=getSharedPreferences("holodeck",MODE_PRIVATE);
   root=new FrameLayout(this);root.setBackgroundColor(BG);setContentView(root);
@@ -75,7 +75,7 @@ public class MainActivity extends Activity {
  }
  public WebView getPlayer(){return player;}
  void launch(){
-  disposePlayer();audioSession=UUID.randomUUID().toString();audioEngine.enabled(sound());returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
+  disposePlayer();audioSession=UUID.randomUUID().toString();audioLastSeq=0;audioEngine.enabled(sound());returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
   LinearLayout toolbar=new LinearLayout(this);toolbar.setPadding(dp(12),dp(6),dp(12),dp(6));toolbar.setGravity(Gravity.CENTER_VERTICAL);
   Button back=button("‹  Library",EXIT,false,()->leave());toolbar.addView(back,new LinearLayout.LayoutParams(dp(110),dp(48)));TextView title=text("STARWELL",13,MINT);title.setLetterSpacing(.16f);title.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);toolbar.addView(title,new LinearLayout.LayoutParams(0,-1,1));layout.addView(toolbar);
   player=new WebView(this);player.setBackgroundColor(BG);layout.addView(player,new LinearLayout.LayoutParams(-1,0,1));
@@ -90,10 +90,10 @@ public class MainActivity extends Activity {
   player.loadUrl("https://starwell.holodeck.invalid/index.html?sound="+(sound()?1:0)+"&motion="+(motion()?1:0)+"&audio=native&session="+audioSession);
  }
  WebResourceResponse audioRequest(WebView view,WebResourceRequest request){
-  Uri u=request.getUrl();if(!"/_audio".equals(u.getPath()))return null;String name=u.getQueryParameter("cue");
-  boolean valid="GET".equals(request.getMethod())&&"https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&audioSession.equals(u.getQueryParameter("session"))&&name!=null&&(name.matches("note[0-6]")||Arrays.asList("start","success","on","off").contains(name));
+  Uri u=request.getUrl();if(!"/_audio".equals(u.getPath()))return null;String name=u.getQueryParameter("cue"),sequence=u.getQueryParameter("seq");
+  boolean valid="GET".equals(request.getMethod())&&"https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&audioSession.equals(u.getQueryParameter("session"))&&sequence!=null&&sequence.matches("[1-9][0-9]{0,8}")&&name!=null&&(name.matches("note[0-6]")||Arrays.asList("start","success","on","off").contains(name));
   if(!valid)return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
-  runOnUiThread(()->{if(view!=player||!active)return;if(name.equals("on")||name.equals("off")){boolean value=name.equals("on");prefs.edit().putBoolean("sound",value).apply();audioEngine.enabled(value);}else{audioEngine.cue(name);if(name.equals("start")&&((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC)==0)Toast.makeText(this,"Media sound is muted. Press Volume up.",Toast.LENGTH_LONG).show();}});
+  runOnUiThread(()->{if(view!=player||!active||Long.parseLong(sequence)<=audioLastSeq)return;audioLastSeq=Long.parseLong(sequence);if(name.equals("on")||name.equals("off")){boolean value=name.equals("on");prefs.edit().putBoolean("sound",value).apply();audioEngine.enabled(value);if(value)audioEngine.cue("start");}else{audioEngine.cue(name);if(name.equals("start")&&((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC)==0)Toast.makeText(this,"Media sound is muted. Press Volume up.",Toast.LENGTH_LONG).show();}});
   byte[] pixel=android.util.Base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",0);
   return new WebResourceResponse("image/gif","UTF-8",200,"OK",Collections.singletonMap("Cache-Control","no-store"),new ByteArrayInputStream(pixel));
  }

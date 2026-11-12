@@ -43,9 +43,10 @@ final class HolodeckAudio {
  void cue(String name){if(!closed)worker.post(()->{
   try{
    if(!foreground||!enabled||closed)return;
-   if(name.equals("start")){scene=true;if(!ensureFocus())return;startBed();chime();acceptedCues++;return;}
-   if(!scene||!ensureFocus())return;
    long now=SystemClock.uptimeMillis();if(now-lastCue<45)return;lastCue=now;acceptedCues++;
+   if(!ensureFocus())return;
+   if(!scene){scene=true;startBed();}
+   if(name.equals("start")){startBed();chime();return;}
    if(name.equals("success"))chime();else if(name.matches("note[0-6]"))note(name.charAt(4)-'0');
   }catch(RuntimeException e){failed(e);}
  });}
@@ -55,7 +56,7 @@ final class HolodeckAudio {
   if(bed==null){short[] pcm=samples(0,true);ambientRms=rms(pcm);bed=track(pcm);bed.setLoopPoints(0,pcm.length,-1);bed.setVolume(.8f);}
   bed.play();status="playing";poll();
  }
- void poll(){final int g=generation;worker.removeCallbacks(tick);worker.postDelayed(tick,100);}
+ void poll(){worker.removeCallbacks(tick);worker.postDelayed(tick,100);}
  final Runnable tick=new Runnable(){public void run(){if(closed||!foreground||!enabled||!scene)return;try{if(bed!=null&&bed.getPlayState()==AudioTrack.PLAYSTATE_PLAYING){renderedFrames=Math.max(renderedFrames,Integer.toUnsignedLong(bed.getPlaybackHeadPosition()));}if(bed!=null)worker.postDelayed(this,100);}catch(RuntimeException e){failed(e);}}};
  void note(int n){
   if(!foreground||!enabled||!scene||!hasFocus||closed)return;

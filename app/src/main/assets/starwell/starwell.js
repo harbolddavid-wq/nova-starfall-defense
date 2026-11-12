@@ -2,8 +2,8 @@
 (() => {
 const $=s=>document.getElementById(s), canvas=$('sky'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search),motion=params.get('motion')!=='0',nativeAudio=params.get('audio')==='native';
-const pendingSounds=new Set();let nativeStarted=false;
-function nativeCue(cue){const img=new Image();pendingSounds.add(img);img.onload=img.onerror=()=>pendingSounds.delete(img);img.src='/_audio?session='+encodeURIComponent(params.get('session')||'')+'&cue='+cue+'&seq='+Math.random();}
+const pendingSounds=new Set();let nativeStarted=false,nativeSeq=0;
+function nativeCue(cue){const img=new Image();pendingSounds.add(img);img.onload=img.onerror=()=>pendingSounds.delete(img);img.src='/_audio?session='+encodeURIComponent(params.get('session')||'')+'&cue='+cue+'&seq='+(++nativeSeq);}
 let sound=params.get('sound')!=='0',audio=null,master=null,ambient=null,started=false,paused=false,hidden=false;
 let w=1,h=1,dpr=1,t=0,last=0,raf=0,carry=false,pointer={x:0,y:0},dragStart=null,trail=[],particles=[],guideUntil=0,winFlash=0;
 const key='starwell.save.v1';

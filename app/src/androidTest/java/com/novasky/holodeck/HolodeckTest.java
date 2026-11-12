@@ -76,7 +76,8 @@ public class HolodeckTest {
   assertEquals(android.media.AudioManager.STREAM_MUSIC,a().getVolumeControlStream());
   js("document.getElementById('mute').click()");SystemClock.sleep(350);
   assertEquals("muted",a().audioEngine.status);assertFalse(a().sound());
-  js("document.getElementById('mute').click()");SystemClock.sleep(350);
+  click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();js("document.getElementById('continue').click()");assertFalse(state().getBoolean("sound"));
+  js("document.getElementById('mute').click()");SystemClock.sleep(700);
   assertEquals("playing",a().audioEngine.status);assertTrue(a().sound());
   String report="Native AudioTrack frames="+a().audioEngine.renderedFrames+"; tone RMS="+a().audioEngine.toneRms+"; ambient RMS="+a().audioEngine.ambientRms+"; cues="+a().audioEngine.acceptedCues+"; error="+a().audioEngine.error;
   try(FileWriter f=new FileWriter(new File(a().getExternalFilesDir(null),"audio-output.txt"))){f.write(report);}
