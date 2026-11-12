@@ -8,10 +8,15 @@ adb shell wm size > evidence/display.txt
 adb shell wm density >> evidence/display.txt
 adb shell cat /proc/meminfo > evidence/memory.txt
 adb logcat -c
-curl -fsSL https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.1/Nova_Pocket_Holodeck_v0.1.1.apk -o /tmp/holodeck-original.apk
+curl -fsSL https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.2/Nova_Pocket_Holodeck_v0.1.2.apk -o /tmp/holodeck-original.apk
 adb install -r /tmp/holodeck-original.apk
+python3 tools/seed_upgrade.py
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+# Publish the second world only AFTER the new host APK is already installed.
+python3 tools/publish_worlds.py --upload
+adb shell am instrument -w -r -e class com.novasky.holodeck.UpgradeTest com.novasky.holodeck.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/upgrade-test.txt
+python3 -c "from pathlib import Path; assert 'OK (1 test)' in Path('evidence/upgrade-test.txt').read_text()"
 adb shell am start -W -n com.novasky.holodeck/.MainActivity
 adb shell screenrecord --time-limit 120 /sdcard/holodeck-playtest.mp4 &
 record_pid=$!
@@ -29,12 +34,12 @@ cleanup() {
   adb shell dumpsys package com.novasky.holodeck > evidence/package.txt
 }
 trap cleanup EXIT
-timeout 240s adb shell am instrument -w -r com.novasky.holodeck.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/instrumentation.txt
+timeout 600s adb shell am instrument -w -r -e notClass com.novasky.holodeck.UpgradeTest com.novasky.holodeck.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/instrumentation.txt
 python3 - <<'PY'
 from pathlib import Path
 s=Path('evidence/instrumentation.txt').read_text()
-assert 'OK (6 tests)' in s, s
+assert 'OK (8 tests)' in s, s
 assert 'FAILURES' not in s and 'INSTRUMENTATION_FAILED' not in s
 assert Path('evidence/api.txt').read_text().strip()=='36'
-Path('evidence/VERIFIED.txt').write_text('API 36 emulator: six device tests passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Native Android finite cue playback, zero active tracks and no rendered audio after the tail, mute and lifecycle tested. Physical speaker loudness still requires BLU confirmation.\n')
+Path('evidence/VERIFIED.txt').write_text('API 36 emulator: eight full-suite tests plus the prior-APK save migration test passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Native Android finite cue playback, zero active tracks and no rendered audio after the tail, mute and lifecycle tested. Live signed catalog download, non-bundled Lanternwake install after host installation, actual offline playthrough, preserved saves, data-only package update and rollback, signature and unsafe-ZIP rejection passed. Physical BLU testing remains David’s part.\n')
 PY

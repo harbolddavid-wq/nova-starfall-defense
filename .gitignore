@@ -10,3 +10,6 @@ evidence/
 node_modules/
 
 .signing/
+
+app/src/androidTest/assets/delivery/
+__pycache__/

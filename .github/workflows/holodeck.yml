@@ -2,6 +2,16 @@ name: Pocket Holodeck — build, playtest, release
 on:
   push:
     branches: [work/pocket-holodeck]
+    paths:
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/holodeck.yml'
+      - 'tools/device-test.sh'
+      - 'tools/seed_upgrade.py'
+      - 'tools/browser-test.cjs'
+      - 'tools/lanternwake-test.cjs' 
   workflow_dispatch:
 permissions:
   contents: write
@@ -11,7 +21,7 @@ concurrency:
 jobs:
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -53,6 +63,10 @@ jobs:
           npx playwright install --with-deps chromium
           python3 -m http.server 8765 --directory app/src/main/assets/starwell > /tmp/holodeck-http.log 2>&1 &
           node tools/browser-test.cjs
+          python3 -m http.server 8766 --directory experiences/lanternwake > /tmp/lanternwake-http.log 2>&1 &
+          node tools/lanternwake-test.cjs
+      - name: Prepare signed package test fixtures
+        run: python3 tools/publish_worlds.py --fixtures
       - name: Build host and device tests
         run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Preserve candidate signer
@@ -74,6 +88,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Playtest on Android 16
+        env:
+          GH_TOKEN: ${{ github.token }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -101,9 +117,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/app-debug.apk release/Nova_Pocket_Holodeck_v0.1.2.apk
+          cp app/build/outputs/apk/debug/app-debug.apk release/Nova_Pocket_Holodeck_v0.2.0.apk
           sha256sum release/*.apk > release/SHA256SUMS.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose release/*.apk
-          gh release view holodeck-v0.1.2 >/dev/null 2>&1 || gh release create holodeck-v0.1.2 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.1.2' --notes 'Remove the continuous background hum. Entrance chimes and touch sounds retained. No active audio tracks while idle; Android 16 tests passed. Same app, signer and saved sky.'
+          gh release view holodeck-v0.2.0 >/dev/null 2>&1 || gh release create holodeck-v0.2.0 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.2.0' --notes 'Phase 2: signed world catalog, native downloads, offline world library, independent experience updates and rollback. Lanternwake downloads separately after the host is installed. Prior Starwell progress retained. Android 16 end-to-end checks passed.'
           zip -qr release/Holodeck_Test_Evidence.zip evidence
-          gh release upload holodeck-v0.1.2 release/* --clobber
+          gh release upload holodeck-v0.2.0 release/* --clobber

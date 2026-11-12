@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:443,height:840},deviceScaleFactor:1.625});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8766/index.html?sound=1&motion=1');await page.locator('#continue').click();
+const state=()=>page.evaluate(()=>Lanternwake.snapshot());
+async function move(x,y){let s=await state(),r=s.canvas;await page.mouse.move(r.x+s.boat.x*r.width,r.y+s.boat.y*r.height);await page.mouse.down();await page.mouse.move(r.x+x*r.width,r.y+y*r.height,{steps:12});await page.mouse.up();await page.waitForFunction(({x,y})=>{let s=Lanternwake.snapshot();return s.modal||Math.hypot(s.boat.x-x,s.boat.y-y)<.04;},{x,y},{timeout:7000});}
+for(let stage=0;stage<3;stage++){
+ assert.equal((await state()).stage,stage);await move(.5,.36);await move(.5,.25);
+ while(!(await state()).modal){let s=await state(),l=s.lights.find(x=>!x.lit);if(!l)break;let before=s.total;await move(l.x,l.y);await page.waitForFunction(n=>Lanternwake.snapshot().total>n,before,{timeout:7000});}
+ await page.screenshot({path:`evidence/lanternwake-stage-${stage}.png`});await page.locator('#continue').click();
+}
+assert.equal((await state()).completed,true);assert.equal((await state()).total,9);await page.reload();assert.equal((await state()).completed,true);await page.locator('#continue').click();await page.locator('#sound').click();await page.evaluate(()=>holodeckPause());assert.equal((await state()).paused,true);await page.evaluate(()=>holodeckResume());assert.equal((await state()).paused,false);await page.setViewportSize({width:840,height:340});await page.waitForTimeout(100);await page.screenshot({path:'evidence/lanternwake-landscape.png'});assert.deepEqual(errors,[]);console.log('PASS: Lanternwake real pointer steering, nine rescues, three passages, ending, saved voyage, mute, pause/resume, landscape; no JS errors.');await browser.close();})().catch(e=>{console.error(e);process.exit(1)});
