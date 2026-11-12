@@ -101,9 +101,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/app-debug.apk release/Nova_Pocket_Holodeck_v0.1.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk release/Nova_Pocket_Holodeck_v0.1.1.apk
           sha256sum release/*.apk > release/SHA256SUMS.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose release/*.apk
-          gh release view holodeck-v0.1.0 >/dev/null 2>&1 || gh release create holodeck-v0.1.0 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.1.0' --notes 'Native offline Android host + Starwell. API 36 emulator playtests passed. First-install test candidate; physical BLU touch/audio evaluation still needed.'
+          gh release view holodeck-v0.1.1 >/dev/null 2>&1 || gh release create holodeck-v0.1.1 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.1.1' --notes 'Sound repair: native Android media playback, entrance chime, audible harmonics and media volume keys. Same app/signature and saved progress. API 36 tests passed; physical BLU sound confirmation still required.'
           zip -qr release/Holodeck_Test_Evidence.zip evidence
-          gh release upload holodeck-v0.1.0 release/* --clobber
+          gh release upload holodeck-v0.1.1 release/* --clobber

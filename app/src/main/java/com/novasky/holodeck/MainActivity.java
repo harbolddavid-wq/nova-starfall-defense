@@ -14,12 +14,12 @@ import java.io.*;
 import java.util.*;
 
 public class MainActivity extends Activity {
- public static final int LAUNCH=101, LIBRARY=102, SETTINGS=103, HOME=104, EXIT=105, SOUND=106, MOTION=107;
+ public static final int TEST_SOUND=108, LAUNCH=101, LIBRARY=102, SETTINGS=103, HOME=104, EXIT=105, SOUND=106, MOTION=107;
  static final int BG=0xff080d1b, PANEL=0xff111c30, TEXT=0xffedf4ff, MUTED=0xffa7b7cf, MINT=0xff7df7e5;
  FrameLayout root; LinearLayout shell; android.content.SharedPreferences prefs;
- WebView player; String tab="home", returnTab="home"; boolean active=true;
+ volatile WebView player; HolodeckAudio audioEngine; String audioSession=""; String tab="home", returnTab="home"; boolean active=true;
  @Override public void onCreate(Bundle b){
-  super.onCreate(b); prefs=getSharedPreferences("holodeck",MODE_PRIVATE);
+  super.onCreate(b);setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);audioEngine=new HolodeckAudio(this); prefs=getSharedPreferences("holodeck",MODE_PRIVATE);
   root=new FrameLayout(this);root.setBackgroundColor(BG);setContentView(root);
   root.setOnApplyWindowInsetsListener((v,i)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets s=i.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());v.setPadding(s.left,s.top,s.right,s.bottom);}else{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());}return i;});
   getWindow().getDecorView().setSystemUiVisibility(0);
@@ -64,9 +64,10 @@ public class MainActivity extends Activity {
  }
  void settings(LinearLayout b){
   b.addView(text("Make it yours",32,TEXT));b.addView(text("A little control over your universe.",15,MUTED));space(b,20);
-  setting(b,"Soundscape","Musical starlight and gentle ambient tones",SOUND,sound(),v->prefs.edit().putBoolean("sound",v).apply());
+  setting(b,"Soundscape","Musical starlight and gentle ambient tones",SOUND,sound(),v->{prefs.edit().putBoolean("sound",v).apply();audioEngine.enabled(v);});
   setting(b,"Living motion","Portal orbits, drifting stars and touch trails",MOTION,motion(),v->{prefs.edit().putBoolean("motion",v).apply();show("settings");});
-  space(b,22);b.addView(text("PRIVATE BY DESIGN",11,MINT));b.addView(text("This first edition works entirely offline. No accounts, ads, tracking, or phone permissions.",15,MUTED));space(b,20);b.addView(text("Nova Pocket Holodeck 0.1.0\nBuilt for small adventures and big imaginations.",13,MUTED));
+  b.addView(button("Hear a test chime",TEST_SOUND,false,()->{prefs.edit().putBoolean("sound",true).apply();audioEngine.enabled(true);audioEngine.cue("start");Switch toggle=findViewById(SOUND);if(toggle!=null)toggle.setChecked(true);new Handler().postDelayed(()->{if(player==null)audioEngine.stopScene();},1600);Toast.makeText(this,"Use the phone’s volume buttons for media sound",Toast.LENGTH_SHORT).show();}));
+  space(b,22);b.addView(text("PRIVATE BY DESIGN",11,MINT));b.addView(text("This first edition works entirely offline. No accounts, ads, tracking, or phone permissions.",15,MUTED));space(b,20);b.addView(text("Nova Pocket Holodeck 0.1.1\nBuilt for small adventures and big imaginations.",13,MUTED));
  }
  interface Changed{void value(boolean v);}
  void setting(LinearLayout b,String label,String subtitle,int id,boolean checked,Changed changed){
@@ -74,7 +75,7 @@ public class MainActivity extends Activity {
  }
  public WebView getPlayer(){return player;}
  void launch(){
-  disposePlayer();returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
+  disposePlayer();audioSession=UUID.randomUUID().toString();audioEngine.enabled(sound());returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
   LinearLayout toolbar=new LinearLayout(this);toolbar.setPadding(dp(12),dp(6),dp(12),dp(6));toolbar.setGravity(Gravity.CENTER_VERTICAL);
   Button back=button("‹  Library",EXIT,false,()->leave());toolbar.addView(back,new LinearLayout.LayoutParams(dp(110),dp(48)));TextView title=text("STARWELL",13,MINT);title.setLetterSpacing(.16f);title.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);toolbar.addView(title,new LinearLayout.LayoutParams(0,-1,1));layout.addView(toolbar);
   player=new WebView(this);player.setBackgroundColor(BG);layout.addView(player,new LinearLayout.LayoutParams(-1,0,1));
@@ -82,24 +83,32 @@ public class MainActivity extends Activity {
   CookieManager.getInstance().setAcceptThirdPartyCookies(player,false);player.setWebChromeClient(new WebChromeClient(){@Override public void onPermissionRequest(PermissionRequest r){r.deny();}@Override public void onGeolocationPermissionsShowPrompt(String o,GeolocationPermissions.Callback c){c.invoke(o,false,false);}});
   player.setWebViewClient(new WebViewClient(){
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
-   @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){return asset(r.getUrl());}
+   @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){WebResourceResponse cue=audioRequest(v,r);return cue!=null?cue:asset(r.getUrl());}
    @Override public void onReceivedSslError(WebView v,android.webkit.SslErrorHandler h,android.net.http.SslError e){h.cancel();}
    @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail d){if(player!=v||isFinishing()||isDestroyed())return true;runOnUiThread(()->{leave();new AlertDialog.Builder(MainActivity.this).setTitle("The portal rested").setMessage("Your saved starlight is safe. Open Starwell to continue.").setPositiveButton("Okay",null).show();});return true;}
   });
-  player.loadUrl("https://starwell.holodeck.invalid/index.html?sound="+(sound()?1:0)+"&motion="+(motion()?1:0));
+  player.loadUrl("https://starwell.holodeck.invalid/index.html?sound="+(sound()?1:0)+"&motion="+(motion()?1:0)+"&audio=native&session="+audioSession);
+ }
+ WebResourceResponse audioRequest(WebView view,WebResourceRequest request){
+  Uri u=request.getUrl();if(!"/_audio".equals(u.getPath()))return null;String name=u.getQueryParameter("cue");
+  boolean valid="GET".equals(request.getMethod())&&"https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&audioSession.equals(u.getQueryParameter("session"))&&name!=null&&(name.matches("note[0-6]")||Arrays.asList("start","success","on","off").contains(name));
+  if(!valid)return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
+  runOnUiThread(()->{if(view!=player||!active)return;if(name.equals("on")||name.equals("off")){boolean value=name.equals("on");prefs.edit().putBoolean("sound",value).apply();audioEngine.enabled(value);}else{audioEngine.cue(name);if(name.equals("start")&&((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC)==0)Toast.makeText(this,"Media sound is muted. Press Volume up.",Toast.LENGTH_LONG).show();}});
+  byte[] pixel=android.util.Base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",0);
+  return new WebResourceResponse("image/gif","UTF-8",200,"OK",Collections.singletonMap("Cache-Control","no-store"),new ByteArrayInputStream(pixel));
  }
  WebResourceResponse asset(Uri u){
   String path=u.getPath();boolean allowed="https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&Arrays.asList("/index.html","/starwell.js","/style.css").contains(path);
   if(!allowed)return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
   try{String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":"text/html";Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("X-Content-Type-Options","nosniff");headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");return new WebResourceResponse(type,"UTF-8",200,"OK",headers,getAssets().open("starwell"+path));}catch(IOException e){return new WebResourceResponse("text/plain","UTF-8",404,"Missing",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));}
  }
- void disposePlayer(){WebView old=player;player=null;if(old!=null){old.stopLoading();if(old.getParent() instanceof ViewGroup)((ViewGroup)old.getParent()).removeView(old);old.destroy();}}
+ void disposePlayer(){if(audioEngine!=null)audioEngine.stopScene();WebView old=player;player=null;if(old!=null){old.stopLoading();if(old.getParent() instanceof ViewGroup)((ViewGroup)old.getParent()).removeView(old);old.destroy();}}
  void leave(){disposePlayer();show("library");}
  void goBack(){if(player!=null)leave();else if(!tab.equals("home"))show("home");else new AlertDialog.Builder(this).setTitle("Close Holodeck?").setMessage("Your worlds will be here when you return.").setNegativeButton("Stay",null).setPositiveButton("Close",(d,w)->finish()).show();}
  @Override public void onBackPressed(){goBack();}
- @Override protected void onPause(){active=false;if(player!=null){player.evaluateJavascript("window.holodeckPause && window.holodeckPause()",null);player.onPause();}super.onPause();}
- @Override protected void onResume(){super.onResume();active=true;if(player!=null){player.onResume();player.evaluateJavascript("window.holodeckResume && window.holodeckResume()",null);}}
- @Override protected void onDestroy(){disposePlayer();super.onDestroy();}
+ @Override protected void onPause(){active=false;if(audioEngine!=null)audioEngine.foreground(false);if(player!=null){player.evaluateJavascript("window.holodeckPause && window.holodeckPause()",null);player.onPause();}super.onPause();}
+ @Override protected void onResume(){super.onResume();active=true;if(audioEngine!=null)audioEngine.foreground(true);if(player!=null){player.onResume();player.evaluateJavascript("window.holodeckResume && window.holodeckResume()",null);}}
+ @Override protected void onDestroy(){disposePlayer();if(audioEngine!=null)audioEngine.close();super.onDestroy();}
  class PortalView extends View {
   Paint p=new Paint(3);long begin=System.nanoTime();boolean galaxy;float bend=0;
   PortalView(Context c,boolean g){super(c);galaxy=g;setLayerType(View.LAYER_TYPE_HARDWARE,null);setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){bend=1;performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);invalidate();}return true;});}

@@ -39,7 +39,7 @@ public class HolodeckTest {
   shot("01-home");click(MainActivity.LIBRARY);shot("02-library");startFresh();shot("03-starwell-start");
   for(int chapter=0;chapter<3;chapter++){
    assertEquals(chapter,state().getInt("chapter"));
-   for(int n=0;n<5;n++){dragNext();assertEquals("Drag must light a star",n+1,state().getInt("lit"));if(n==0&&chapter==0)assertEquals("running",state().getString("audio"));if(n==2&&chapter==0){shot("04-during-play");shot("04-motion-next");}}
+   for(int n=0;n<5;n++){dragNext();assertEquals("Drag must light a star",n+1,state().getInt("lit"));if(n==0&&chapter==0)assertEquals("native",state().getString("audio"));if(n==2&&chapter==0){shot("04-during-play");shot("04-motion-next");}}
    shot("05-chapter-"+chapter);js("document.getElementById('continue').click()");
   }
   assertTrue(state().getBoolean("ending"));
@@ -59,9 +59,28 @@ public class HolodeckTest {
   });assertEquals("\"undefined\"",js("typeof Android"));assertEquals("\"https://starwell.holodeck.invalid\"",js("location.origin"));
  }
  @Test public void partialSaveAndPauseResume()throws Exception{
-  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->inst().callActivityOnPause(a()));SystemClock.sleep(150);assertTrue(state().getBoolean("paused"));assertEquals("suspended",state().getString("audio"));ui(()->inst().callActivityOnResume(a()));SystemClock.sleep(150);assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
+  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->inst().callActivityOnPause(a()));SystemClock.sleep(150);assertTrue(state().getBoolean("paused"));assertEquals("paused",a().audioEngine.status);ui(()->inst().callActivityOnResume(a()));SystemClock.sleep(150);assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
  }
  @Test public void rotationAndTapAlternative()throws Exception{
   startFresh();js("(()=>{let s=Starwell.snapshot(),c=document.getElementById('sky'),r=c.getBoundingClientRect(); for(let p of [s.well,s.target]){c.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));c.dispatchEvent(new PointerEvent('pointerup',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));}})()");assertEquals(1,state().getInt("lit"));ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));SystemClock.sleep(1200);assertEquals(1,state().getInt("lit"));assertTrue(state().getDouble("width")>state().getDouble("height"));shot("09-landscape");ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
  }
+ @Test public void nativeAudioRendersAndMuteStopsIt()throws Exception{
+  startFresh();
+  long end=SystemClock.uptimeMillis()+8000;
+  while(SystemClock.uptimeMillis()<end&&a().audioEngine.renderedFrames<4000)SystemClock.sleep(100);
+  assertEquals("Native playback error: "+a().audioEngine.error,"playing",a().audioEngine.status);
+  assertTrue("Real Android playback head must advance",a().audioEngine.renderedFrames>4000);
+  assertTrue("Entrance PCM must be audible",a().audioEngine.toneRms>.08);
+  assertTrue("Ambient PCM must not be near silent",a().audioEngine.ambientRms>.04);
+  assertTrue(a().audioEngine.acceptedCues>0);
+  assertEquals(android.media.AudioManager.STREAM_MUSIC,a().getVolumeControlStream());
+  js("document.getElementById('mute').click()");SystemClock.sleep(350);
+  assertEquals("muted",a().audioEngine.status);assertFalse(a().sound());
+  js("document.getElementById('mute').click()");SystemClock.sleep(350);
+  assertEquals("playing",a().audioEngine.status);assertTrue(a().sound());
+  String report="Native AudioTrack frames="+a().audioEngine.renderedFrames+"; tone RMS="+a().audioEngine.toneRms+"; ambient RMS="+a().audioEngine.ambientRms+"; cues="+a().audioEngine.acceptedCues+"; error="+a().audioEngine.error;
+  try(FileWriter f=new FileWriter(new File(a().getExternalFilesDir(null),"audio-output.txt"))){f.write(report);}
+  click(MainActivity.EXIT);SystemClock.sleep(300);assertEquals("idle",a().audioEngine.status);
+ }
+
 }

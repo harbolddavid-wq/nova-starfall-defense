@@ -8,6 +8,8 @@ adb shell wm size > evidence/display.txt
 adb shell wm density >> evidence/display.txt
 adb shell cat /proc/meminfo > evidence/memory.txt
 adb logcat -c
+curl -fsSL https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.0/Nova_Pocket_Holodeck_v0.1.0.apk -o /tmp/holodeck-original.apk
+adb install -r /tmp/holodeck-original.apk
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am start -W -n com.novasky.holodeck/.MainActivity
@@ -31,8 +33,8 @@ timeout 240s adb shell am instrument -w -r com.novasky.holodeck.test/androidx.te
 python3 - <<'PY'
 from pathlib import Path
 s=Path('evidence/instrumentation.txt').read_text()
-assert 'OK (5 tests)' in s, s
+assert 'OK (6 tests)' in s, s
 assert 'FAILURES' not in s and 'INSTRUMENTATION_FAILED' not in s
 assert Path('evidence/api.txt').read_text().strip()=='36'
-Path('evidence/VERIFIED.txt').write_text('API 36 emulator: five device tests passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Audio generation states checked in browser; acoustic output and hardware touch feel require physical testing.\n')
+Path('evidence/VERIFIED.txt').write_text('API 36 emulator: six device tests passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Native Android AudioTrack playback-head movement, non-silent PCM, mute and lifecycle tested. Physical speaker loudness still requires BLU confirmation.\n')
 PY
