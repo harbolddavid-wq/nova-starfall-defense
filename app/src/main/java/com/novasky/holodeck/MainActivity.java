@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
   tab=target;player=null;root.removeAllViews();shell=column();root.addView(shell,new FrameLayout.LayoutParams(-1,-1));
   LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(24),dp(12),dp(24),dp(8));
   TextView mark=text("✧  NOVA",15,MINT);mark.setLetterSpacing(.18f);top.addView(mark,new LinearLayout.LayoutParams(0,-2,1));top.addView(text("POCKET HOLODECK",10,MUTED));shell.addView(top);
-  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setClipToPadding(false);shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  ScrollView scroll=new ScrollView(this);scroll.setDefaultFocusHighlightEnabled(false);scroll.setFillViewport(true);scroll.setClipToPadding(false);shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
   LinearLayout body=column();body.setPadding(dp(24),dp(8),dp(24),dp(20));scroll.addView(body);
   if(target.equals("settings"))settings(body);else if(target.equals("library"))library(body);else home(body);
   LinearLayout nav=new LinearLayout(this);nav.setPadding(dp(16),dp(8),dp(16),dp(12));
@@ -74,7 +74,7 @@ public class MainActivity extends Activity {
  }
  public WebView getPlayer(){return player;}
  void launch(){
-  returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
+  disposePlayer();returnTab=tab;prefs.edit().putBoolean("visited",true).apply();root.removeAllViews();LinearLayout layout=column();root.addView(layout,new FrameLayout.LayoutParams(-1,-1));
   LinearLayout toolbar=new LinearLayout(this);toolbar.setPadding(dp(12),dp(6),dp(12),dp(6));toolbar.setGravity(Gravity.CENTER_VERTICAL);
   Button back=button("‹  Library",EXIT,false,()->leave());toolbar.addView(back,new LinearLayout.LayoutParams(dp(110),dp(48)));TextView title=text("STARWELL",13,MINT);title.setLetterSpacing(.16f);title.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);toolbar.addView(title,new LinearLayout.LayoutParams(0,-1,1));layout.addView(toolbar);
   player=new WebView(this);player.setBackgroundColor(BG);layout.addView(player,new LinearLayout.LayoutParams(-1,0,1));
@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
    @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){return asset(r.getUrl());}
    @Override public void onReceivedSslError(WebView v,android.webkit.SslErrorHandler h,android.net.http.SslError e){h.cancel();}
-   @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail d){runOnUiThread(()->{leave();new AlertDialog.Builder(MainActivity.this).setTitle("The portal rested").setMessage("Your saved starlight is safe. Open Starwell to continue.").setPositiveButton("Okay",null).show();});return true;}
+   @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail d){if(player!=v||isFinishing()||isDestroyed())return true;runOnUiThread(()->{leave();new AlertDialog.Builder(MainActivity.this).setTitle("The portal rested").setMessage("Your saved starlight is safe. Open Starwell to continue.").setPositiveButton("Okay",null).show();});return true;}
   });
   player.loadUrl("https://starwell.holodeck.invalid/index.html?sound="+(sound()?1:0)+"&motion="+(motion()?1:0));
  }
@@ -93,12 +93,13 @@ public class MainActivity extends Activity {
   if(!allowed)return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
   try{String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":"text/html";Map<String,String> headers=new HashMap<>();headers.put("Cache-Control","no-store");headers.put("X-Content-Type-Options","nosniff");headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");return new WebResourceResponse(type,"UTF-8",200,"OK",headers,getAssets().open("starwell"+path));}catch(IOException e){return new WebResourceResponse("text/plain","UTF-8",404,"Missing",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));}
  }
- void leave(){if(player!=null){player.loadUrl("about:blank");player.stopLoading();player.destroy();player=null;}show("library");}
+ void disposePlayer(){WebView old=player;player=null;if(old!=null){old.stopLoading();if(old.getParent() instanceof ViewGroup)((ViewGroup)old.getParent()).removeView(old);old.destroy();}}
+ void leave(){disposePlayer();show("library");}
  void goBack(){if(player!=null)leave();else if(!tab.equals("home"))show("home");else new AlertDialog.Builder(this).setTitle("Close Holodeck?").setMessage("Your worlds will be here when you return.").setNegativeButton("Stay",null).setPositiveButton("Close",(d,w)->finish()).show();}
  @Override public void onBackPressed(){goBack();}
  @Override protected void onPause(){active=false;if(player!=null){player.evaluateJavascript("window.holodeckPause && window.holodeckPause()",null);player.onPause();}super.onPause();}
  @Override protected void onResume(){super.onResume();active=true;if(player!=null){player.onResume();player.evaluateJavascript("window.holodeckResume && window.holodeckResume()",null);}}
- @Override protected void onDestroy(){if(player!=null)player.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){disposePlayer();super.onDestroy();}
  class PortalView extends View {
   Paint p=new Paint(3);long begin=System.nanoTime();boolean galaxy;float bend=0;
   PortalView(Context c,boolean g){super(c);galaxy=g;setLayerType(View.LAYER_TYPE_HARDWARE,null);setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){bend=1;performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);invalidate();}return true;});}

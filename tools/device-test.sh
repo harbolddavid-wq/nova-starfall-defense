@@ -19,6 +19,10 @@ cleanup() {
   adb pull /sdcard/holodeck-playtest.mp4 evidence/ || true
   adb pull /sdcard/Android/data/com.novasky.holodeck/files evidence/screens || true
   adb logcat -d > evidence/logcat.txt
+  adb shell am start -W -n com.novasky.holodeck/.MainActivity > evidence/relaunch.txt
+  sleep 3
+  adb exec-out screencap -p > evidence/final-home.png
+  adb shell dumpsys meminfo com.novasky.holodeck > evidence/app-memory.txt
   adb shell dumpsys gfxinfo com.novasky.holodeck > evidence/frame-stats.txt
   adb shell dumpsys package com.novasky.holodeck > evidence/package.txt
 }
