@@ -67,3 +67,9 @@ Tested source commit `8d3d03e0bf1c93cc2a389d1cc163d68f1c7f480b`. Browser playthr
 - Main remained `2e6f0e3fee0e5a36f54429eada53e3d5fa01655d`; unrelated projects/store were untouched.
 
 These results are emulator/automated verification, not physical BLU testing of 0.2.0. David confirmed the preceding quiet-background 0.1.2 game works well. The emulator cannot establish physical speaker output, battery use or smoothness on the BLU.
+
+### Independent content publishing proof
+
+Run https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43259889595 passed the Lanternwake browser playthrough, verified unchanged immutable package bytes and published a newly signed catalog. It was the only workflow run for the content-publishing commit; no APK build ran. Public Lanternwake 1.0.2 package: 8,329 bytes, SHA-256 `c73de410667807829f3a18a966fc5a439f5f243390d0b06c57aef266bd763a62`. Its catalog signature was independently verified against the original APK certificate, and package hash/ZIP CRC passed.
+
+Final API 36 logs: zero FATAL EXCEPTION entries, zero app ANRs and zero destroyed-WebView warnings. Discover, downloaded Library, live voyage, airplane-mode ending and restored-save screenshots were inspected. Evidence is included in the 0.2.0 release. No physical BLU performance or audio claims are inferred from those screenshots or emulator results.
