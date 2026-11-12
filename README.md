@@ -1,5 +1,5 @@
 # Nova Pocket Holodeck
-Native Android home for portable interactive experiences. Phase 1, 0.1.1.
+Native Android home for portable interactive experiences. Phase 1, 0.1.2.
 
 This isolated branch contains only Pocket Holodeck; main and other projects are untouched.
 
@@ -30,10 +30,14 @@ Original procedural portal/galaxy art and synthesized Web Audio score/cues creat
 
 Phase 1 build and five Android 16 device tests passed on November 12, 2026. See [VERIFIED.md](VERIFIED.md).
 
-[Download APK](https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.1/Nova_Pocket_Holodeck_v0.1.1.apk) · [Build and test run](https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43238180620)
+[Download APK](https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.2/Nova_Pocket_Holodeck_v0.1.2.apk) · [Build and test run](https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43238180620)
 
 ## 0.1.1 sound repair
 
 David reported complete silence on the physical BLU. Original engine-state tests did not establish audible output. Android now plays original synthesized PCM with a native AudioTrack media/game pipeline, clear entrance chime, brighter harmonics and a more audible ambient mix. Phone volume keys explicitly adjust media. Settings includes a test chime. Browser previews retain Web Audio.
 
 The player can request only a fixed list of musical cues and mute/on through a same-origin, per-session authenticated virtual image endpoint. Requests never leave the device. No JavaScript interface or unrestricted Android APIs are exposed. Cue playback is bounded, respects audio focus, stops on pause/exit, and synchronizes the in-world mute with the native saved setting. Audio tests now require non-silent PCM and advancement of the Android playback head. This is still not an acoustic test of David’s speaker.
+
+## 0.1.2 — quiet background
+
+David confirmed 0.1.1 sound works on the BLU, but heard a steady hum/buzz. Removed the continuous synthesized tone layer from both Android and browser playback. Kept finite entrance, touch and success cues. Audio tracks now release after each tail, and idle playback does not advance audio frames. Same signer, package, experience origin and saved sky. Six API 36 device tests passed, including the new quiet-background assertions.

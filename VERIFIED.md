@@ -41,3 +41,11 @@ Native output report: 142,942 consumed frames; tone PCM RMS 0.09921568; ambient 
 Public release APK independently downloaded and CRC/checksum verified: `Nova_Pocket_Holodeck_v0.1.1.apk`, 38,795 bytes; SHA-256 `05fe0bdc044a0595c4ca3b87a076e0556ed29c20463e0e9709550a3bf39cf72e`. APK v2 signature verification passed.
 
 No unrestricted JavaScript-to-Android interface: only a fixed cue/mute list through a same-origin virtual image endpoint, per-player session token, monotonically ordered messages, fixed waveforms, bounded voice count/cue rate, and foreground checks. External requests and file/content APIs remain blocked.
+
+## 0.1.2 — remove background hum
+
+Physical feedback: David confirmed 0.1.1 sound works on the real BLU, with an unwanted steady hum/buzz. Removed the continuous oscillator bed entirely, while preserving the native cue path that worked on his phone. Browser preview also has no continuous tone. Android closes finite cue tracks after their tails and performs no continuing audio rendering while idle.
+
+Source commit `25ce7cc95ad627546800592fecf1ccd105f21a98`; successful run https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43247759037. All six API 36 tests passed, including real cue playback, zero active tracks after the chime, stable rendered-frame count during subsequent idle, mute/reopen/unmute, pause/resume, complete game playthrough, navigation, saves and rotation. Installed as an update over 0.1.1 using the same signer. APK v2 signature verification passed. Physical 0.1.2 listening confirmation remains David’s next test.
+
+Public download independently CRC/checksum verified: `Nova_Pocket_Holodeck_v0.1.2.apk`, 38,563 bytes, SHA-256 `90981f13d12c347f7c6d8531c0573b4b0c0f6403259e4d7fe87610e29458f525`.
