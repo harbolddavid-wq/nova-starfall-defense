@@ -21,6 +21,12 @@ public class HolodeckTest {
  Instrumentation inst(){return InstrumentationRegistry.getInstrumentation();}
  MainActivity a(){return rule.getActivity();}
  void ui(Runnable r){inst().runOnMainSync(r);}
+ void waitAudio(String expected)throws Exception{
+  long begin=SystemClock.uptimeMillis(),end=begin+8000;
+  while(SystemClock.uptimeMillis()<end&&!expected.equals(a().audioEngine.status)&&a().audioEngine.error.isEmpty())SystemClock.sleep(50);
+  System.out.println("Audio transition "+expected+" settled in "+(SystemClock.uptimeMillis()-begin)+" ms; error="+a().audioEngine.error);
+  assertEquals("Native audio transition; error="+a().audioEngine.error,expected,a().audioEngine.status);
+ }
  void click(int id){ui(()->{View v=a().findViewById(id);assertNotNull(v);v.performClick();});}
  String js(String code)throws Exception{CountDownLatch done=new CountDownLatch(1);String[] result={null};ui(()->a().getPlayer().evaluateJavascript(code,v->{result[0]=v;done.countDown();}));assertTrue("JS callback",done.await(10,TimeUnit.SECONDS));return result[0];}
  JSONObject state()throws Exception{return new JSONObject(new JSONArray("["+js("JSON.stringify(Starwell.snapshot())")+"]").getString(0));}
@@ -59,7 +65,7 @@ public class HolodeckTest {
   });assertEquals("\"undefined\"",js("typeof Android"));assertEquals("\"https://starwell.holodeck.invalid\"",js("location.origin"));
  }
  @Test public void partialSaveAndPauseResume()throws Exception{
-  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->inst().callActivityOnPause(a()));SystemClock.sleep(150);assertTrue(state().getBoolean("paused"));assertEquals("paused",a().audioEngine.status);ui(()->inst().callActivityOnResume(a()));SystemClock.sleep(150);assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
+  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->inst().callActivityOnPause(a()));SystemClock.sleep(150);assertTrue(state().getBoolean("paused"));waitAudio("paused");ui(()->inst().callActivityOnResume(a()));SystemClock.sleep(150);assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
  }
  @Test public void rotationAndTapAlternative()throws Exception{
   startFresh();js("(()=>{let s=Starwell.snapshot(),c=document.getElementById('sky'),r=c.getBoundingClientRect(); for(let p of [s.well,s.target]){c.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));c.dispatchEvent(new PointerEvent('pointerup',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));}})()");assertEquals(1,state().getInt("lit"));ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));SystemClock.sleep(1200);assertEquals(1,state().getInt("lit"));assertTrue(state().getDouble("width")>state().getDouble("height"));shot("09-landscape");ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
@@ -75,13 +81,13 @@ public class HolodeckTest {
   assertTrue(a().audioEngine.acceptedCues>0);
   assertEquals(android.media.AudioManager.STREAM_MUSIC,a().getVolumeControlStream());
   js("document.getElementById('mute').click()");SystemClock.sleep(350);
-  assertEquals("muted",a().audioEngine.status);assertFalse(a().sound());
+  waitAudio("muted");assertFalse(a().sound());
   click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();js("document.getElementById('continue').click()");assertFalse(state().getBoolean("sound"));
   js("document.getElementById('mute').click()");SystemClock.sleep(700);
-  assertEquals("playing",a().audioEngine.status);assertTrue(a().sound());
+  waitAudio("playing");assertTrue(a().sound());
   String report="Native AudioTrack frames="+a().audioEngine.renderedFrames+"; tone RMS="+a().audioEngine.toneRms+"; ambient RMS="+a().audioEngine.ambientRms+"; cues="+a().audioEngine.acceptedCues+"; error="+a().audioEngine.error;
   try(FileWriter f=new FileWriter(new File(a().getExternalFilesDir(null),"audio-output.txt"))){f.write(report);}
-  click(MainActivity.EXIT);SystemClock.sleep(300);assertEquals("idle",a().audioEngine.status);
+  click(MainActivity.EXIT);SystemClock.sleep(300);waitAudio("idle");
  }
 
 }
