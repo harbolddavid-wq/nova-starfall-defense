@@ -1,0 +1,15 @@
+{
+  "id": "door-thirteen",
+  "title": "Door Thirteen",
+  "subtitle": "The House That Remembers",
+  "description": "Three rooms ask you to do three impossible things. Lift falling rain, turn the stolen hour, wipe a mirror clean—and reveal a fourth door that was never there.",
+  "entry": "index.html",
+  "runtime": 1,
+  "versionCode": 1,
+  "version": "1.0.0",
+  "files": [
+    "game.js",
+    "index.html",
+    "style.css"
+  ]
+}
