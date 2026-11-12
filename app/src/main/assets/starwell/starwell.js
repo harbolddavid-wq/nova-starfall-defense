@@ -3,7 +3,7 @@
 const $=s=>document.getElementById(s), canvas=$('sky'),ctx=canvas.getContext('2d');
 const params=new URLSearchParams(location.search),motion=params.get('motion')!=='0',nativeAudio=params.get('audio')==='native';
 const pendingSounds=new Set();let nativeStarted=false,nativeSeq=0;
-function nativeCue(cue){const img=new Image();pendingSounds.add(img);img.onload=img.onerror=()=>pendingSounds.delete(img);img.src='/_audio?session='+encodeURIComponent(params.get('session')||'')+'&cue='+cue+'&seq='+(++nativeSeq);}
+function nativeCue(cue){const img=new Image();pendingSounds.add(img);img.onload=img.onerror=()=>pendingSounds.delete(img);img.src='/_audio?session='+encodeURIComponent(params.get('session')||'')+'&cue='+cue+'&enabled='+(sound?1:0)+'&seq='+(++nativeSeq);}
 let sound=params.get('sound')!=='0',audio=null,master=null,ambient=null,started=false,paused=false,hidden=false;
 let w=1,h=1,dpr=1,t=0,last=0,raf=0,carry=false,pointer={x:0,y:0},dragStart=null,trail=[],particles=[],guideUntil=0,winFlash=0;
 const key='starwell.save.v1';
@@ -47,7 +47,7 @@ canvas.addEventListener('pointermove',e=>{if(!dragStart)return;pointer=coords(e)
 canvas.addEventListener('pointerup',e=>{pointer=coords(e);if(carry&&dragStart&&Math.hypot(pointer.x-dragStart.x,pointer.y-dragStart.y)>12){if(!deposit(pointer.x,pointer.y)){carry=false;$('hint').textContent='The light returned to the well. Try the glowing star.';}}dragStart=null;});
 canvas.addEventListener('pointercancel',()=>{dragStart=null;carry=false;});
 $('guide').onclick=()=>{guideUntil=t+5;$('hint').textContent=save.ending?'Tap the sky to add a star. Your constellation stays here.':'Touch the bright well below, then the numbered glowing star.';tone(1);};
-$('mute').onclick=()=>{sound=!sound;try{localStorage.setItem('starwell.sound',String(sound));}catch(e){}if(nativeAudio)nativeCue(sound?'on':'off');audioStart();if(master)master.gain.setTargetAtTime(sound?.65:0,audio.currentTime,.08);update();};
+$('mute').onclick=()=>{sound=!sound;try{localStorage.setItem('starwell.sound',String(sound));}catch(e){}if(nativeAudio){nativeCue(sound?'on':'off');nativeStarted=sound;}else audioStart();if(master)master.gain.setTargetAtTime(sound?.65:0,audio.currentTime,.08);update();};
 // Host preference wins when changed; an in-world mute survives player re-entry until then.
 try{let lastHost=localStorage.getItem('starwell.hostSound'),current=params.get('sound')!=='0'?'true':'false';if(!nativeAudio&&lastHost===current&&localStorage.getItem('starwell.sound')!==null)sound=localStorage.getItem('starwell.sound')==='true';else localStorage.removeItem('starwell.sound');localStorage.setItem('starwell.hostSound',current);}catch(e){}
 let resetConfirm=false,resetTimer;

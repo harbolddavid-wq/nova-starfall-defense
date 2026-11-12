@@ -90,10 +90,16 @@ public class MainActivity extends Activity {
   player.loadUrl("https://starwell.holodeck.invalid/index.html?sound="+(sound()?1:0)+"&motion="+(motion()?1:0)+"&audio=native&session="+audioSession);
  }
  WebResourceResponse audioRequest(WebView view,WebResourceRequest request){
-  Uri u=request.getUrl();if(!"/_audio".equals(u.getPath()))return null;String name=u.getQueryParameter("cue"),sequence=u.getQueryParameter("seq");
-  boolean valid="GET".equals(request.getMethod())&&"https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&audioSession.equals(u.getQueryParameter("session"))&&sequence!=null&&sequence.matches("[1-9][0-9]{0,8}")&&name!=null&&(name.matches("note[0-6]")||Arrays.asList("start","success","on","off").contains(name));
+  Uri u=request.getUrl();if(!"/_audio".equals(u.getPath()))return null;String name=u.getQueryParameter("cue"),sequence=u.getQueryParameter("seq"),requestedSound=u.getQueryParameter("enabled");
+  boolean valid="GET".equals(request.getMethod())&&"https".equals(u.getScheme())&&"starwell.holodeck.invalid".equals(u.getHost())&&u.getPort()==-1&&audioSession.equals(u.getQueryParameter("session"))&&("0".equals(requestedSound)||"1".equals(requestedSound))&&sequence!=null&&sequence.matches("[1-9][0-9]{0,8}")&&name!=null&&(name.matches("note[0-6]")||Arrays.asList("start","success","on","off").contains(name));
   if(!valid)return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
-  runOnUiThread(()->{if(view!=player||!active||Long.parseLong(sequence)<=audioLastSeq)return;audioLastSeq=Long.parseLong(sequence);if(name.equals("on")||name.equals("off")){boolean value=name.equals("on");prefs.edit().putBoolean("sound",value).apply();audioEngine.enabled(value);if(value)audioEngine.cue("start");}else{audioEngine.cue(name);if(name.equals("start")&&((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC)==0)Toast.makeText(this,"Media sound is muted. Press Volume up.",Toast.LENGTH_LONG).show();}});
+  runOnUiThread(()->{
+   if(view!=player||!active||Long.parseLong(sequence)<=audioLastSeq)return;
+   audioLastSeq=Long.parseLong(sequence);boolean value="1".equals(requestedSound);
+   if(sound()!=value){prefs.edit().putBoolean("sound",value).apply();audioEngine.enabled(value);}
+   if(value&&!name.equals("off")){audioEngine.cue(name.equals("on")?"start":name);
+    if((name.equals("start")||name.equals("on"))&&((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC)==0)Toast.makeText(this,"Media sound is muted. Press Volume up.",Toast.LENGTH_LONG).show();}
+  });
   byte[] pixel=android.util.Base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",0);
   return new WebResourceResponse("image/gif","UTF-8",200,"OK",Collections.singletonMap("Cache-Control","no-store"),new ByteArrayInputStream(pixel));
  }

@@ -45,7 +45,7 @@ final class HolodeckAudio {
    if(!foreground||!enabled||closed)return;
    long now=SystemClock.uptimeMillis();if(now-lastCue<45)return;lastCue=now;acceptedCues++;
    if(!ensureFocus())return;
-   if(!scene){scene=true;startBed();}
+   scene=true;if(bed==null||bed.getPlayState()!=AudioTrack.PLAYSTATE_PLAYING)startBed();
    if(name.equals("start")){startBed();chime();return;}
    if(name.equals("success"))chime();else if(name.matches("note[0-6]"))note(name.charAt(4)-'0');
   }catch(RuntimeException e){failed(e);}
@@ -66,7 +66,7 @@ final class HolodeckAudio {
  }
  void chime(){final int g=generation;for(int n=0;n<3;n++){final int note=n*2;worker.postDelayed(()->{if(g==generation){try{note(note);}catch(RuntimeException e){failed(e);}}},n*140);}}
  void silence(String state){generation++;worker.removeCallbacks(tick);if(bed!=null)bed.pause();for(AudioTrack t:voices){t.stop();t.release();}voices.clear();status=state;}
- void enabled(boolean value){worker.post(()->{enabled=value;try{if(!enabled){silence("muted");abandon();}else if(foreground&&scene&&ensureFocus()){startBed();chime();}}catch(RuntimeException e){failed(e);}});}
+ void enabled(boolean value){worker.post(()->{enabled=value;try{if(!enabled){silence("muted");abandon();}else if(foreground&&scene&&ensureFocus()){startBed();}}catch(RuntimeException e){failed(e);}});}
  void foreground(boolean value){worker.post(()->{foreground=value;try{if(!value){silence("paused");abandon();}else if(enabled&&scene&&ensureFocus())startBed();}catch(RuntimeException e){failed(e);}});}
  void stopScene(){worker.post(()->{scene=false;silence("idle");abandon();});}
  void abandon(){if(hasFocus)manager.abandonAudioFocusRequest(focus);hasFocus=false;}
