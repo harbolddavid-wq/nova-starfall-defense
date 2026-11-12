@@ -48,3 +48,9 @@ The player can request only a fixed list of musical cues and mute/on through a s
 ## 0.1.2 — quiet background
 
 David confirmed 0.1.1 sound works on the BLU, but heard a steady hum/buzz. Removed the continuous synthesized tone layer from both Android and browser playback. Kept finite entrance, touch and success cues. Audio tracks now release after each tail, and idle playback does not advance audio frames. Same signer, package, experience origin and saved sky. Six API 36 device tests passed, including the new quiet-background assertions.
+
+## Private publishing plugin
+
+[Nova Holodeck Publisher](https://chatgpt.com/plugins/plugin_asdk_app_sites_a2126bf27c188191b3f49e0e827588cd) is installed, version 1.0.2. The six-tool private service and publishing instructions are preserved in its existing Site/App identity. The current authoring chat did not load its newly provisioned tools; check their native invocation in a fresh chat with the publisher selected before calling that part verified.
+
+Portal Bloom 1.0.0 is the live publishing proof: 30 original portal frames, held-touch stones, spark dragging, ending, replay and origin-scoped saves. The publisher staged it, prepared its exact source, and verified its signed downloadable bytes against the draft. Its browser playthrough and API 36 native Discover/download/offline game/save tests passed on the unchanged public 0.2.0 host. Find it in Discover → Refresh worlds. Native launch-transition integration remains future work; this world uses the new artwork with the existing finite native chimes.
