@@ -25,8 +25,8 @@ public class HolodeckTest {
  String js(String code)throws Exception{CountDownLatch done=new CountDownLatch(1);String[] result={null};ui(()->a().getPlayer().evaluateJavascript(code,v->{result[0]=v;done.countDown();}));assertTrue("JS callback",done.await(10,TimeUnit.SECONDS));return result[0];}
  JSONObject state()throws Exception{return new JSONObject(new JSONArray("["+js("JSON.stringify(Starwell.snapshot())")+"]").getString(0));}
  void ready()throws Exception{long end=SystemClock.uptimeMillis()+20000;while(SystemClock.uptimeMillis()<end){if("true".equals(js("!!window.Starwell")))return;SystemClock.sleep(150);}fail("Experience failed to load");}
- void startFresh()throws Exception{ui(()->{a().getSharedPreferences("holodeck",0).edit().clear().commit();a().launch();});ready();js("localStorage.removeItem('starwell.save.v1'); location.reload();");SystemClock.sleep(400);ready();js("document.getElementById('continue').click()");assertTrue(state().getBoolean("started"));}
- void shot(String name)throws Exception{File out=new File(a().getExternalFilesDir(null),name+".png");Bitmap b=inst().getUiAutomation().takeScreenshot();try(FileOutputStream s=new FileOutputStream(out)){b.compress(Bitmap.CompressFormat.PNG,100,s);}b.recycle();}
+ void startFresh()throws Exception{ui(()->{a().getSharedPreferences("holodeck",0).edit().clear().commit();a().launch();});ready();js("document.getElementById('reset').click();document.getElementById('reset').click();document.getElementById('continue').click()");assertTrue(state().getBoolean("started"));assertEquals("Fresh UI reset",0,state().getInt("lit"));}
+ void shot(String name)throws Exception{SystemClock.sleep(400);File out=new File(a().getExternalFilesDir(null),name+".png");Bitmap b=inst().getUiAutomation().takeScreenshot();try(FileOutputStream s=new FileOutputStream(out)){b.compress(Bitmap.CompressFormat.PNG,100,s);}b.recycle();}
  void dragNext()throws Exception{
   JSONObject s=state(),p=s.getJSONObject("well"),q=s.getJSONObject("target"),rect=s.getJSONObject("canvas");
   float scale=a().getPlayer().getWidth()/(float)Double.parseDouble(js("window.innerWidth"));
@@ -39,7 +39,7 @@ public class HolodeckTest {
   shot("01-home");click(MainActivity.LIBRARY);shot("02-library");startFresh();shot("03-starwell-start");
   for(int chapter=0;chapter<3;chapter++){
    assertEquals(chapter,state().getInt("chapter"));
-   for(int n=0;n<5;n++){dragNext();assertEquals("Drag must light a star",n+1,state().getInt("lit"));if(n==2&&chapter==0)shot("04-during-play");}
+   for(int n=0;n<5;n++){dragNext();assertEquals("Drag must light a star",n+1,state().getInt("lit"));if(n==0&&chapter==0)assertEquals("running",state().getString("audio"));if(n==2&&chapter==0){shot("04-during-play");shot("04-motion-next");}}
    shot("05-chapter-"+chapter);js("document.getElementById('continue').click()");
   }
   assertTrue(state().getBoolean("ending"));
@@ -59,7 +59,7 @@ public class HolodeckTest {
   });assertEquals("\"undefined\"",js("typeof Android"));assertEquals("\"https://starwell.holodeck.invalid\"",js("location.origin"));
  }
  @Test public void partialSaveAndPauseResume()throws Exception{
-  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->a().getPlayer().evaluateJavascript("holodeckPause()",null));assertTrue(state().getBoolean("paused"));ui(()->a().getPlayer().evaluateJavascript("holodeckResume()",null));assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
+  startFresh();dragNext();assertEquals(1,state().getInt("lit"));ui(()->inst().callActivityOnPause(a()));SystemClock.sleep(150);assertTrue(state().getBoolean("paused"));assertEquals("suspended",state().getString("audio"));ui(()->inst().callActivityOnResume(a()));SystemClock.sleep(150);assertFalse(state().getBoolean("paused"));click(MainActivity.EXIT);click(MainActivity.LAUNCH);ready();assertEquals(1,state().getInt("lit"));
  }
  @Test public void rotationAndTapAlternative()throws Exception{
   startFresh();js("(()=>{let s=Starwell.snapshot(),c=document.getElementById('sky'),r=c.getBoundingClientRect(); for(let p of [s.well,s.target]){c.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));c.dispatchEvent(new PointerEvent('pointerup',{clientX:r.x+p.x,clientY:r.y+p.y,pointerId:1,bubbles:true}));}})()");assertEquals(1,state().getInt("lit"));ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));SystemClock.sleep(1200);assertEquals(1,state().getInt("lit"));assertTrue(state().getDouble("width")>state().getDouble("height"));shot("09-landscape");ui(()->a().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));

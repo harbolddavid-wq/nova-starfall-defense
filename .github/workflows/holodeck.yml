@@ -39,6 +39,13 @@ jobs:
             echo 'Existing APK found but original candidate signer unavailable; refusing a mismatched update.'
             exit 1
           fi
+      - name: Browser playthrough and sound engine
+        run: |
+          mkdir -p evidence
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --directory app/src/main/assets/starwell > /tmp/holodeck-http.log 2>&1 &
+          node tools/browser-test.cjs
       - name: Build host and device tests
         run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Preserve candidate signer
@@ -92,4 +99,5 @@ jobs:
           sha256sum release/*.apk > release/SHA256SUMS.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose release/*.apk
           gh release view holodeck-v0.1.0 >/dev/null 2>&1 || gh release create holodeck-v0.1.0 --target "$GITHUB_SHA" --title 'Nova Pocket Holodeck 0.1.0' --notes 'Native offline Android host + Starwell. API 36 emulator playtests passed. First-install test candidate; physical BLU touch/audio evaluation still needed.'
+          zip -qr release/Holodeck_Test_Evidence.zip evidence
           gh release upload holodeck-v0.1.0 release/* --clobber

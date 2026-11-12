@@ -6,3 +6,5 @@ local.properties
 *.keystore
 release/
 evidence/
+
+node_modules/
