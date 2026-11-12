@@ -1,5 +1,5 @@
 # Nova Pocket Holodeck
-Native Android home for portable interactive experiences. Phase 1, 0.1.0.
+Native Android home for portable interactive experiences. Phase 1, 0.1.1.
 
 This isolated branch contains only Pocket Holodeck; main and other projects are untouched.
 
@@ -30,7 +30,7 @@ Original procedural portal/galaxy art and synthesized Web Audio score/cues creat
 
 Phase 1 build and five Android 16 device tests passed on November 12, 2026. See [VERIFIED.md](VERIFIED.md).
 
-[Download APK](https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.0/Nova_Pocket_Holodeck_v0.1.0.apk) · [Build and test run](https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43238180620)
+[Download APK](https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/holodeck-v0.1.1/Nova_Pocket_Holodeck_v0.1.1.apk) · [Build and test run](https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43238180620)
 
 ## 0.1.1 sound repair
 

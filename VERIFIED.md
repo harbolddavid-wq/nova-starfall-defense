@@ -27,3 +27,17 @@ SHA-256: `fce4c7a721dace42511f9fab6f5f8322f141935c678c9a21b7135631f2c3008b`
 Next milestone: a versioned experience registry, signed package/catalog delivery, bounded atomic downloads, per-experience origins, offline installation/cache and rollback, followed by a connected publishing plugin. Phase 1 has one bundled world and no live backend. Future compatible experience updates should not require host reinstalls.
 
 Keep this isolated project branch separate from main; do not merge its standalone tree over the unrelated root projects.
+
+## 0.1.1 — physical-phone silence report and repair
+
+David reported no audible game sound on the BLU. The original running-AudioContext check did not prove audible output; the ambient mix was also far too quiet for phone speakers. Android now uses original PCM through native AudioTrack with an entrance chime, brighter harmonics, an audible ambient mix, audio focus and media-volume key control. The game mute and native setting now share their saved state. Settings includes a test chime. Saves retain the same package, origin and storage key.
+
+Successful run: https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43244839090
+
+Tested commit: `87d008cf80752d50877d2f0d08e82b2966a95388`. Six API 36 tests passed, including real native playback-head advancement and non-silent PCM, mute/off-player-reopen/on, Activity pause/resume, all prior game/navigation/save/rotation tests, and same-signer installation over 0.1.0. Audio transitions are asynchronous; tests await completed transitions with bounded timeouts instead of assuming 150–350 ms under emulator load.
+
+Native output report: 142,942 consumed frames; tone PCM RMS 0.09921568; ambient PCM RMS 0.04949583; no playback errors. Final logs contain zero fatal exceptions and zero app ANRs. This proves playback through Android’s virtual audio system, not acoustic BLU speaker output. David’s physical confirmation remains required.
+
+Public release APK independently downloaded and CRC/checksum verified: `Nova_Pocket_Holodeck_v0.1.1.apk`, 38,795 bytes; SHA-256 `05fe0bdc044a0595c4ca3b87a076e0556ed29c20463e0e9709550a3bf39cf72e`. APK v2 signature verification passed.
+
+No unrestricted JavaScript-to-Android interface: only a fixed cue/mute list through a same-origin virtual image endpoint, per-player session token, monotonically ordered messages, fixed waveforms, bounded voice count/cue rate, and foreground checks. External requests and file/content APIs remain blocked.
