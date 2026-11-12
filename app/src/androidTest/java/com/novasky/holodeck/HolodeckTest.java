@@ -20,11 +20,11 @@ public class HolodeckTest {
  @Rule public ActivityTestRule<MainActivity> rule=new ActivityTestRule<>(MainActivity.class);
  Instrumentation inst(){return InstrumentationRegistry.getInstrumentation();}
  MainActivity a(){return rule.getActivity();}
- void ui(Runnable r){inst().runOnMainSync(r);inst().waitForIdleSync();}
+ void ui(Runnable r){inst().runOnMainSync(r);}
  void click(int id){ui(()->{View v=a().findViewById(id);assertNotNull(v);v.performClick();});}
  String js(String code)throws Exception{CountDownLatch done=new CountDownLatch(1);String[] result={null};ui(()->a().getPlayer().evaluateJavascript(code,v->{result[0]=v;done.countDown();}));assertTrue("JS callback",done.await(10,TimeUnit.SECONDS));return result[0];}
  JSONObject state()throws Exception{return new JSONObject(new JSONArray("["+js("JSON.stringify(Starwell.snapshot())")+"]").getString(0));}
- void ready()throws Exception{long end=SystemClock.uptimeMillis()+20000;while(SystemClock.uptimeMillis()<end){if("true".equals(js("!!window.Starwell")))return;SystemClock.sleep(150);}fail("Experience failed to load");}
+ void ready()throws Exception{long end=SystemClock.uptimeMillis()+20000;while(SystemClock.uptimeMillis()<end){if("true".equals(js("!!window.Starwell && Starwell.snapshot().width>100 && Starwell.snapshot().height>100")))return;SystemClock.sleep(150);}fail("Experience failed to load");}
  void startFresh()throws Exception{ui(()->{a().getSharedPreferences("holodeck",0).edit().clear().commit();a().launch();});ready();js("document.getElementById('reset').click();document.getElementById('reset').click();document.getElementById('continue').click()");assertTrue(state().getBoolean("started"));assertEquals("Fresh UI reset",0,state().getInt("lit"));}
  void shot(String name)throws Exception{SystemClock.sleep(400);File out=new File(a().getExternalFilesDir(null),name+".png");Bitmap b=inst().getUiAutomation().takeScreenshot();try(FileOutputStream s=new FileOutputStream(out)){b.compress(Bitmap.CompressFormat.PNG,100,s);}b.recycle();}
  void dragNext()throws Exception{

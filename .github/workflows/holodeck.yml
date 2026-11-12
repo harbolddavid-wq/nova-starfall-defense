@@ -61,6 +61,13 @@ jobs:
         with:
           path: .signing/candidate.keystore
           key: pocket-holodeck-candidate-signer-v2
+      - name: Save compiled APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nova-Pocket-Holodeck-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+          if-no-files-found: warn
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -89,14 +96,6 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           retention-days: 14
-      - name: Save compiled APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Nova-Pocket-Holodeck-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
-          if-no-files-found: warn
       - name: Publish verified install candidate
         env:
           GH_TOKEN: ${{ github.token }}

@@ -27,7 +27,7 @@ cleanup() {
   adb shell dumpsys package com.novasky.holodeck > evidence/package.txt
 }
 trap cleanup EXIT
-adb shell am instrument -w -r com.novasky.holodeck.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/instrumentation.txt
+timeout 240s adb shell am instrument -w -r com.novasky.holodeck.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/instrumentation.txt
 python3 - <<'PY'
 from pathlib import Path
 s=Path('evidence/instrumentation.txt').read_text()
