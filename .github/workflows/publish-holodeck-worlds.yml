@@ -31,6 +31,20 @@ jobs:
           path: .signing/candidate.keystore
           key: pocket-holodeck-candidate-signer-v2
           fail-on-cache-miss: true
+      - name: Play downloadable experience before publishing
+        run: |
+          mkdir -p evidence
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8766 --directory experiences/lanternwake > /tmp/lanternwake-http.log 2>&1 &
+          node tools/lanternwake-test.cjs
+      - name: Save world playthrough evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: World-Publish-Playthrough
+          path: evidence/
+          retention-days: 14
       - name: Publish versioned world packages and signed catalog
         env:
           GH_TOKEN: ${{ github.token }}

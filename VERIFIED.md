@@ -49,3 +49,21 @@ Physical feedback: David confirmed 0.1.1 sound works on the real BLU, with an un
 Source commit `25ce7cc95ad627546800592fecf1ccd105f21a98`; successful run https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43247759037. All six API 36 tests passed, including real cue playback, zero active tracks after the chime, stable rendered-frame count during subsequent idle, mute/reopen/unmute, pause/resume, complete game playthrough, navigation, saves and rotation. Installed as an update over 0.1.1 using the same signer. APK v2 signature verification passed. Physical 0.1.2 listening confirmation remains David’s next test.
 
 Public download independently CRC/checksum verified: `Nova_Pocket_Holodeck_v0.1.2.apk`, 38,563 bytes, SHA-256 `90981f13d12c347f7c6d8531c0573b4b0c0f6403259e4d7fe87610e29458f525`.
+
+## 0.2.0 — worlds arrive without reinstalling the host
+
+Successful build/test/release run: https://github.com/harbolddavid-wq/nova-starfall-defense/actions/runs/43258163758
+
+Tested source commit `8d3d03e0bf1c93cc2a389d1cc163d68f1c7f480b`. Browser playthroughs passed for Starwell and Lanternwake. API 36 emulator checks: one prior-APK migration test and eight full-suite tests, all passing.
+
+- Installed 0.1.2, played and saved a real first star, then installed 0.2.0 with the same signer. Saved Starwell progress survived.
+- Installed the host before publishing Lanternwake. The native Discover screen fetched the actual signed GitHub catalog and downloaded/installed the real separate package. Lanternwake is absent from host assets.
+- Native touch steering collected all nine lanterns across three passages and reached the ending. After initial online download, airplane mode was enabled and Wi-Fi/data disabled for the remaining voyage, exit/re-entry, world update and rollback. Local saves survived both data-only version changes; the APK lastUpdateTime did not change.
+- Separate per-world virtual HTTPS origins, absent unrestricted Android JS bridge, rejected tampered catalog signature, traversal ZIP and corrupt package hash. Failed package attempts left installed content intact.
+- All six previous host/Starwell tests still pass: real touch completion, navigation, saves, settings, rotation/tap alternative, pause/resume, sandbox restrictions and finite native audio with idle silence.
+- Android exposed a real drag-release issue: the final finger-up coordinate was missed when no final move event arrived. Lanternwake 1.0.2 applies that coordinate. The same native playthrough now passes. Frame-time catch-up uses short collision-safe substeps.
+- Original signer recovery was actually exercised locally and through an encrypted GitHub Actions exchange. Cloud restore run 43256388458 succeeded and validated the original certificate fingerprint. Private recovery material remains in the owner’s private recovery kit; public source/assets contain encrypted data and public certificates only.
+- APK v2 signature verification passed. Public APK independently downloaded, ZIP CRC checked, hash matched GitHub’s published asset digest. APK: `Nova_Pocket_Holodeck_v0.2.0.apk`, 56,999 bytes, SHA-256 `75b3a0a042c2a66117f57ebc0ac76c920e27b51815e18e04782ba29186f41970`.
+- Main remained `2e6f0e3fee0e5a36f54429eada53e3d5fa01655d`; unrelated projects/store were untouched.
+
+These results are emulator/automated verification, not physical BLU testing of 0.2.0. David confirmed the preceding quiet-background 0.1.2 game works well. The emulator cannot establish physical speaker output, battery use or smoothness on the BLU.
