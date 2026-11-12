@@ -1,0 +1,16 @@
+# Pocket Holodeck Publisher — current continuation
+
+November 12, 2026. David installed host 0.2.0 and Lanternwake on his physical BLU, then authorized finishing the plugin and publishing one test world.
+
+- Private Site: appgprj_6af5ec0eeebc8191a0128f29753a1d70, https://nova-holodeck-publisher.milkcrate.chatgpt.site
+- Deployed backend source: d34d8dc278a63f9cee6f5b8ba889e1f51e81a5c9 in that Site’s own private Git source. Deployment appgdep_6af61a40bc3881919893d59dbba6b80e succeeded. Eight meaningful validation/package/MCP tests passed.
+- Canonical installed private plugin: plugin_asdk_app_sites_a2126bf27c188191b3f49e0e827588cd, version 1.0.2, current release pluginrel_6af61a43e6388191bd9066ab6a6aae10. https://chatgpt.com/plugins/plugin_asdk_app_sites_a2126bf27c188191b3f49e0e827588cd . Skill and App binding read back successfully. No duplicate plugin.
+- Six tools: holodeck_status, stage_world, list_world_drafts, prepare_world_publish, read_world_draft_files, confirm_world_publish. Authoring instructions are in the plugin’s publish-holodeck skill. The already-open authoring chat did not receive the new native tool names; their actual ChatGPT invocation remains to be checked in a fresh chat with this plugin selected. Installed does not prove that invocation.
+- Live protected service verification used the same JSON-RPC handler at /api/publisher with Sites owner-service authentication. The native /mcp route retains its separate ChatGPT OAuth gate. Never put access tokens in source or messages.
+- The server’s unauthenticated GitHub API reads returned 403. Fixed by taking exact source/workflow evidence from the existing connected GitHub tools. The publisher independently verifies the catalog RSA signature, downloaded ZIP hash, each expanded file and manifest against the private saved draft. It holds neither GitHub credentials nor the app’s private signing key.
+- Portal Bloom 1.0.0 is published: source commit 9ca415330281259a7f918adb0f50bad5f400e7bf, content-only run 43295966320 passed both existing Lanternwake and the new full Portal Bloom browser playthrough. Signed catalog and actual ZIP verified by the live publisher, persisted receipt state published.
+- Final draft id: 77e9cd1fab4b4be8d8c264884959e7aaa55ed42ac1d67e1f66e6be614b18c95a. Earlier draft ef369da7857d0cd11c4d77591aea760f38c4b7d7af0e7b14e236db0fa08346b8 is superseded/unpublished.
+- Native device proof run 43296206829 checks Discover → native download → actual held touches → spark drag → completion → offline save/re-entry on the unchanged public 0.2.0 host. Status was running when this checkpoint was saved; check the actual run before claiming success. Do not rebuild the host.
+- Art: original Portal Launch v1 Library libfile_dbe360bd632c8191a07c90fa2f25d789. All 37 ZIP entries/36 manifest hashes verified. The world uses all 30 PNG frames with bounded current/next image references and keeps the known-working finite native chimes. Native Android launch-transition/WAV integration is still separate future work.
+
+Preserve owner-only Site access, original app signer, work/pocket-holodeck isolation and existing saves. No paid services. Main/unrelated family projects untouched. Next: collect the actual Android proof result/evidence, then verify the plugin’s tools load and respond in a fresh chat. David’s part must stay one simple phone action at a time.
