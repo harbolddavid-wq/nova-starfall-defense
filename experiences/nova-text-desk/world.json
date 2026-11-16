@@ -1,0 +1,15 @@
+{
+  "id": "nova-text-desk",
+  "title": "Nova's Text Desk",
+  "subtitle": "Write, Save & Return",
+  "description": "A cozy offline writing studio inside Holodeck. Draft named text documents, keep them in a local shelf, reopen, edit and copy your words; try .txt export where the Android host permits.",
+  "entry": "index.html",
+  "runtime": 1,
+  "versionCode": 1,
+  "version": "1.0.0",
+  "files": [
+    "desk.js",
+    "index.html",
+    "style.css"
+  ]
+}
