@@ -21,6 +21,66 @@ public class MainActivity extends Activity {
  ExperienceStore store;volatile ExperienceStore.World playing;final ExecutorService downloads=Executors.newSingleThreadExecutor();boolean busy=false;String deliveryStatus="";TextView deliveryText;ProgressBar deliveryProgress;
  FrameLayout root; LinearLayout shell; android.content.SharedPreferences prefs;
  volatile WebView player; HolodeckAudio audioEngine; String audioSession="";long audioLastSeq=0; String tab="home", returnTab="home"; boolean active=true;
+ // Explicit, user-selected Android document export. No storage permission or file-read bridge.
+ static final int TEXT_EXPORT_REQUEST=701;
+ String pendingTextExport=null; boolean exportPickerOpen=false; long lastTextExportAt=0;
+ final class TextExportBridge {
+  final String launchSession;
+  TextExportBridge(String session){launchSession=session;}
+  @JavascriptInterface public void saveText(String suggestedName,String contents){
+   if(contents==null||contents.length()>200000)return;
+   runOnUiThread(()->{
+    if(!active||player==null||playing==null||!"nova-text-desk".equals(playing.id)||!launchSession.equals(audioSession))return;
+    String url=player.getUrl();
+    if(url==null||!url.startsWith("https://nova-text-desk.holodeck.invalid/"))return;
+    requestTextExport(suggestedName,contents);
+   });
+  }
+ }
+ String cleanExportName(String input){
+  String value=input==null?"":input.trim();StringBuilder safe=new StringBuilder();
+  for(int i=0;i<value.length()&&safe.length()<80;i++){
+   char c=value.charAt(i);
+   if(c<32||c=='/'||c==92||c==':'||c=='*'||c=='?'||c=='"'||c=='<'||c=='>'||c=='|')c='_';
+   safe.append(c);
+  }
+  String name=safe.toString().trim();
+  if(name.isEmpty())name="Untitled";
+  return name.toLowerCase(Locale.ROOT).endsWith(".txt")?name:name+".txt";
+ }
+ void requestTextExport(String suggestedName,String contents){
+  long now=SystemClock.elapsedRealtime();
+  if(exportPickerOpen||now-lastTextExportAt<900)return;
+  Intent save=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+  save.addCategory(Intent.CATEGORY_OPENABLE);
+  save.setType("text/plain");
+  save.putExtra(Intent.EXTRA_TITLE,cleanExportName(suggestedName));
+  exportPickerOpen=true;lastTextExportAt=now;pendingTextExport=contents;
+  try{startActivityForResult(save,TEXT_EXPORT_REQUEST);}
+  catch(android.content.ActivityNotFoundException e){
+   pendingTextExport=null;exportPickerOpen=false;
+   Toast.makeText(this,"No Android file picker available.",Toast.LENGTH_LONG).show();
+  }
+ }
+ void writeTextExport(Uri target,String contents)throws IOException{
+  byte[] bytes=contents.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  if(bytes.length>900000)throw new IOException("Text too large");
+  try(OutputStream out=getContentResolver().openOutputStream(target,"w")){
+   if(out==null)throw new IOException("Document provider denied write");
+   out.write(bytes);out.flush();
+  }
+ }
+ @Override protected void onActivityResult(int request,int result,Intent data){
+  super.onActivityResult(request,result,data);
+  if(request!=TEXT_EXPORT_REQUEST)return;
+  String text=pendingTextExport;pendingTextExport=null;exportPickerOpen=false;
+  if(result!=RESULT_OK||data==null||data.getData()==null||text==null)return;
+  Uri target=data.getData();
+  new Thread(()->{
+   try{writeTextExport(target,text);runOnUiThread(()->{if(!isDestroyed())Toast.makeText(this,"Saved real .txt file to your phone",Toast.LENGTH_LONG).show();});}
+   catch(Exception e){android.util.Log.w("HolodeckExport","Text save failed: "+e.getClass().getSimpleName());runOnUiThread(()->{if(!isDestroyed())Toast.makeText(this,"Could not save .txt file. Your Holodeck draft is still here.",Toast.LENGTH_LONG).show();});}
+  },"HolodeckTextExport").start();
+ }
  @Override public void onCreate(Bundle b){
   super.onCreate(b);setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);audioEngine=new HolodeckAudio(this); prefs=getSharedPreferences("holodeck",MODE_PRIVATE);store=new ExperienceStore(this);
   root=new FrameLayout(this);root.setBackgroundColor(BG);setContentView(root);
@@ -115,6 +175,8 @@ public class MainActivity extends Activity {
   Button back=button("‹  Library",EXIT,false,()->leave());toolbar.addView(back,new LinearLayout.LayoutParams(dp(110),dp(48)));TextView title=text(world.title.toUpperCase(Locale.ROOT),13,MINT);title.setLetterSpacing(.16f);title.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);toolbar.addView(title,new LinearLayout.LayoutParams(0,-1,1));layout.addView(toolbar);
   player=new WebView(this);player.setBackgroundColor(BG);layout.addView(player,new LinearLayout.LayoutParams(-1,0,1));
   WebSettings s=player.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setBlockNetworkLoads(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setSupportMultipleWindows(false);s.setJavaScriptCanOpenWindowsAutomatically(false);s.setMediaPlaybackRequiresUserGesture(true);s.setSafeBrowsingEnabled(true);s.setTextZoom(100);
+  // One narrowly scoped write-only bridge for the Text Desk. Other worlds get no bridge.
+  if("nova-text-desk".equals(world.id))player.addJavascriptInterface(new TextExportBridge(audioSession),"NovaTextFiles");
   CookieManager.getInstance().setAcceptThirdPartyCookies(player,false);player.setWebChromeClient(new WebChromeClient(){@Override public void onPermissionRequest(PermissionRequest r){r.deny();}@Override public void onGeolocationPermissionsShowPrompt(String o,GeolocationPermissions.Callback c){c.invoke(o,false,false);}});
   player.setWebViewClient(new WebViewClient(){
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
