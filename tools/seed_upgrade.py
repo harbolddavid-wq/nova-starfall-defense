@@ -4,8 +4,21 @@ import pathlib,re,subprocess,time,xml.etree.ElementTree as ET
 
 def adb(*args):return subprocess.check_output(['adb',*args],text=True)
 def tree():
- adb('shell','uiautomator','dump','/sdcard/holodeck-window.xml')
- data=adb('shell','cat','/sdcard/holodeck-window.xml');pathlib.Path('evidence/upgrade-before.xml').write_text(data);return ET.fromstring(data)
+ # Android 16's transient uiautomator helper can be killed with exit 137 just after boot.
+ # Retry the *same real UI inspection*, never seed fabricated progress.
+ last=None
+ for attempt in range(6):
+  try:
+   adb('shell','uiautomator','dump','/sdcard/holodeck-window.xml')
+   data=adb('shell','cat','/sdcard/holodeck-window.xml')
+   root=ET.fromstring(data)
+   pathlib.Path('evidence/upgrade-before.xml').write_text(data)
+   return root
+  except (subprocess.CalledProcessError,ET.ParseError) as exc:
+   last=exc
+   print(f'UI dump attempt {attempt+1}/6 failed; retrying after Android settles: {exc}',flush=True)
+   time.sleep(3)
+ raise RuntimeError('Could not inspect the prior app UI after retries') from last
 def find(fragment,clickable=False):
  for _ in range(6):
   root=tree()
