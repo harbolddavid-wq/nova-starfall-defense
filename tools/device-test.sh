@@ -38,8 +38,8 @@ timeout 600s adb shell am instrument -w -r -e notClass com.novasky.holodeck.Upgr
 python3 - <<'PY'
 from pathlib import Path
 s=Path('evidence/instrumentation.txt').read_text()
-assert 'OK (8 tests)' in s, s
+assert 'OK (9 tests)' in s, s
 assert 'FAILURES' not in s and 'INSTRUMENTATION_FAILED' not in s
 assert Path('evidence/api.txt').read_text().strip()=='36'
-Path('evidence/VERIFIED.txt').write_text('API 36 emulator: eight full-suite tests plus the prior-APK save migration test passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Native Android finite cue playback, zero active tracks and no rendered audio after the tail, mute and lifecycle tested. Live signed catalog download, non-bundled Lanternwake install after host installation, actual offline playthrough, preserved saves, data-only package update and rollback, signature and unsafe-ZIP rejection passed. Physical BLU testing remains David’s part.\n')
+Path('evidence/VERIFIED.txt').write_text('API 36 emulator: nine full-suite tests plus the prior-APK save migration test passed. Complete 15-star real-touch playthrough; ending; save/reopen; native navigation; settings; pause; rotation; tap alternative; runtime allowlist. Generic emulator, not physical BLU. Native Android finite cue playback, zero active tracks and no rendered audio after the tail, mute and lifecycle tested. Live signed catalog download, non-bundled Lanternwake install after host installation, actual offline playthrough, preserved saves, data-only package update and rollback, signature and unsafe-ZIP rejection passed. Physical BLU testing remains David’s part.\n')
 PY
