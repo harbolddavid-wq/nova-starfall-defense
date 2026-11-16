@@ -95,4 +95,24 @@ public class HolodeckTest {
   click(MainActivity.EXIT);SystemClock.sleep(300);waitAudio("idle");
  }
 
+
+ @Test public void nativeTextExportCreatesRealUtf8DocumentAndIsScoped()throws Exception{
+  ui(()->a().launch());ready();
+  assertEquals("Only Nova Text Desk may receive a storage bridge","\"undefined\"",js("typeof NovaTextFiles"));
+  assertEquals("My _ unsafe.txt",a().cleanExportName("My / unsafe.txt"));
+  String written="Hello from Holodeck! ✨\\nA real UTF-8 text file.";
+  android.content.ContentValues values=new android.content.ContentValues();
+  values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME,"holodeck-text-export-verified.txt");
+  values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE,"text/plain");
+  Uri document=a().getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);
+  assertNotNull("MediaStore created a phone document",document);
+  try{
+   a().writeTextExport(document,written);
+   try(InputStream in=a().getContentResolver().openInputStream(document)){
+    assertNotNull(in);
+    assertEquals("Real provider bytes equal requested text",written,new String(ExperienceStore.bytes(in,1024*1024),java.nio.charset.StandardCharsets.UTF_8));
+   }
+  }finally{a().getContentResolver().delete(document,null,null);}
+ }
+
 }
