@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#181323"><meta name="color-scheme" content="dark"><title>Nova's Text Desk</title><link rel="stylesheet" href="style.css"><script defer src="desk.js"></script></head>
+<body><main class="app">
+<header class="top"><div class="mark" aria-hidden="true">✦</div><div><div class="eyebrow">POCKET HOLODECK · WRITING STUDIO</div><h1>Nova's Text Desk</h1><p class="sub">Your words, kept right here.</p></div></header>
+<div class="tabs" role="tablist" aria-label="View"><button id="writeTab" class="tab active" aria-selected="true">✎ Write</button><button id="shelfTab" class="tab" aria-selected="false">▦ My texts <span id="shelfCount">0</span></button></div>
+<section id="editor" class="pane">
+<div class="paper"><div class="paperTop"><label for="docTitle">TITLE / FILE NAME</label><span id="savedStatus" aria-live="polite">Ready</span></div>
+<input id="docTitle" type="text" spellcheck="true" autocomplete="off" maxlength="80" placeholder="Untitled" aria-label="Document title">
+<div class="rule"></div>
+<label class="sr-only" for="docBody">Write your text</label><textarea id="docBody" rows="14" spellcheck="true" placeholder="Once upon a time…&#10;&#10;Or just write whatever is on your mind." aria-label="Document text"></textarea>
+<div class="stats"><span id="counts">0 words · 0 characters</span><span id="updated">New document</span></div></div>
+<div class="mainActions"><button id="saveBtn" class="primary">✦ Save in Holodeck</button><button id="newBtn">＋ New text</button></div>
+<div class="sideActions"><button id="copyBtn">Copy text</button><button id="downloadBtn">Try .txt export</button></div>
+<div id="copyPanel" hidden><div class="hint"><strong>Copy fallback</strong> — hold or select the text below, then tap Copy. Paste it into any text app to save a real .txt file.</div><textarea id="copyArea" readonly aria-label="Selectable export text"></textarea></div>
+<p class="hint">Saved texts live offline inside this Holodeck world. <strong>Save</strong> stores them here; a phone <strong>.txt download</strong> depends on what your Holodeck allows. Use Copy for a reliable portable text backup.</p></section>
+<section id="shelf" class="pane" hidden><div class="shelfHead"><div><h2>My little library</h2><p>Tap a title to continue writing.</p></div><button id="shelfNew">＋ New</button></div><div id="documents" class="documents"></div><div id="empty" class="empty" hidden><div class="emptyIcon">✧</div><strong>Blank pages are full of possibilities.</strong><p>Write something, save it, and it will live here.</p><button id="emptyNew">Start writing</button></div>
+<p class="hint">Documents are private to this world on this device. Clearing app data or removing its storage can erase them—copy important writing somewhere else too.</p></section>
+<div id="notice" role="status" aria-live="polite" class="notice" hidden></div>
+<footer>✦ The words are yours. The worlds are waiting. ✦</footer>
+</main></body></html>
