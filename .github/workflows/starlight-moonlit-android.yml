@@ -1,4 +1,4 @@
-name: Starlight Collector Moonlit Studio Android smoke test
+name: Starlight Collector Seven Rooms Android smoke test
 on:
   push:
     branches: [work/starlight-moonlit-android-2026-11-21]
@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Download and verify the signed APK
         run: |
-          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvOThjMDlhNzZcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC41LjAtTW9vbmxpdC1TdHVkaW8uYXBrIn0.f2694528196fd00b6c6120f0a477b48339baba9a823c43e8bc2b9dfadbf11e49' -o starlight-release.apk
-          printf '%s  %s\n' '98c09a76826404091b2d775e4d6c1ffd423571ed6274ca298669ab15977375cc' starlight-release.apk | sha256sum --check
+          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvMGNkNDcxNzRcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC42LjAtU2V2ZW4tUm9vbXMuYXBrIn0.e8821b4ebd6ca5ce461ff8cef218571e27e3177dc33fd1335457b6628538d65b' -o starlight-release.apk
+          printf '%s  %s\n' '0cd47174c8778b07b85aa207289b2b5c6f7805da830b81ef4dfd6ff82c51f5ff' starlight-release.apk | sha256sum --check
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -30,7 +30,7 @@ jobs:
           adb shell wm density 200
           adb shell settings put secure immersive_mode_confirmations confirmed
           adb install starlight-release.apk
-          adb shell dumpsys package "$package" | grep 'versionName=0.5.0'
+          adb shell dumpsys package "$package" | grep 'versionName=0.6.0'
           adb logcat -c
           adb shell am start -W -n "$package/.StudioActivity"
           sleep 8
@@ -59,6 +59,13 @@ jobs:
           tap 982 39
           sleep 5
           capture album
+          tap 1203 42
+          tap 892 39
+          sleep 4
+          capture rooms
+          tap 190 375
+          sleep 6
+          capture tide
           python3 - <<'PY'
           from PIL import Image, ImageChops, ImageStat
           def load(name):
@@ -73,7 +80,9 @@ jobs:
           assert change('held','inspect',(115,70,545,228))>15,'Examine panel did not appear'
           assert change('room','shelved',(459,73,490,104))>7,'Xav did not reach the shelf'
           assert change('shelved','album',(115,70,545,228))>15,'Album did not open'
-          print('Verified Android render: room, walk-up pickup, inspect, shelf placement, album')
+          assert change('shelved','rooms',(115,70,545,228))>15,'Room map did not open'
+          assert colorful(load('tide'))>1200 and change('room','tide',(115,70,545,228))>15,'Tide Gallery did not render'
+          print('Verified Android render: room, walk-up pickup, inspect, shelf placement, album, room map and Tide Gallery')
           PY
           adb logcat -d -b crash > evidence/crash.log
           test ! -s evidence/crash.log
