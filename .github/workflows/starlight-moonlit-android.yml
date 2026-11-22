@@ -1,0 +1,81 @@
+name: Starlight Collector Moonlit Studio Android smoke test
+on:
+  push:
+    branches: [work/starlight-moonlit-android-2026-11-21]
+    paths: ['.github/workflows/starlight-moonlit-android.yml']
+permissions:
+  contents: read
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - name: Download and verify the signed APK
+        run: |
+          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvU3RhcmxpZ2h0LUNvbGxlY3Rvci0wLjUuMC1Nb29ubGl0LVN0dWRpby5hcGsifQ.b1ce7bb7d6539907e16baa3b7aca0249b21d8cbc277c82073a8c41a22893afd3' -o starlight-release.apk
+          printf '%s  %s\n' '7520a96244b16fd4ca85ade75cb06fa600ac7893c169d1c340d365998632675c' starlight-release.apk | sha256sum --check
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Prepare smoke-test script
+        run: |
+          cat > smoke.sh <<'SH'
+          set -euo pipefail
+          package=family.nova.starlightcollector.studio
+          adb shell wm size 720x1600
+          adb shell wm density 260
+          adb install starlight-release.apk
+          adb shell dumpsys package "$package" | grep 'versionName=0.5.0'
+          adb logcat -c
+          adb shell am start -W -n "$package/.StudioActivity"
+          target="$package/.StudioActivity"
+          sleep 3
+          adb shell dumpsys activity activities | grep -m1 "$target"
+          adb exec-out screencap -p > room.png
+          read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("room.png","rb").read(24)[16:24]))')
+          test "$w" -gt "$h"
+          tap(){ adb shell input tap "$(($1*w/1280))" "$(($2*h/576))"; }
+          wait_label(){
+            for attempt in 1 2 3; do
+              adb shell uiautomator dump /sdcard/starlight.xml >/dev/null 2>&1 || true
+              adb exec-out cat /sdcard/starlight.xml > starlight.xml || true
+              if grep -Fq "$1" starlight.xml; then echo "Verified Android UI: $1"; return; fi
+              sleep 1
+            done
+            echo "UI label not found: $1"
+            cat starlight.xml
+            return 1
+          }
+          wait_label 'Moonlit Studio'
+          tap 694 455
+          sleep 2
+          tap 1212 503
+          sleep 2
+          wait_label 'Place'
+          tap 1125 503
+          wait_label 'Xav plush'
+          tap 1203 42
+          tap 950 180
+          tap 1212 503
+          sleep 4
+          wait_label '1 of 10 displayed'
+          tap 1015 42
+          wait_label 'Sticker album'
+          adb logcat -d -b crash > crash.log
+          test ! -s crash.log
+          echo "ANDROID_SMOKE_PASS"
+          SH
+      - name: Android 16 install, launch, pickup and shelving
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 4096M
+          emulator-boot-timeout: 540
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash smoke.sh
