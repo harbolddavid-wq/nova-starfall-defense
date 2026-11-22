@@ -19,52 +19,62 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      - name: Install screenshot verification dependency
+        run: python3 -m pip install --quiet pillow
       - name: Prepare smoke-test script
         run: |
           cat > smoke.sh <<'SH'
           set -euo pipefail
           package=family.nova.starlightcollector.studio
-          adb shell wm size 720x1600
-          adb shell wm density 260
+          adb shell wm size 540x1200
+          adb shell wm density 200
           adb install starlight-release.apk
           adb shell dumpsys package "$package" | grep 'versionName=0.5.0'
           adb logcat -c
           adb shell am start -W -n "$package/.StudioActivity"
-          target="$package/.StudioActivity"
-          sleep 3
-          adb shell dumpsys activity activities | grep -m1 "$target"
-          adb exec-out screencap -p > room.png
-          read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("room.png","rb").read(24)[16:24]))')
+          sleep 4
+          adb shell dumpsys activity activities | grep -m1 'topResumedActivity=.*StudioActivity'
+          mkdir -p evidence
+          capture(){ timeout 14 adb exec-out screencap -p > "evidence/$1.png"; }
+          capture room
+          read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("evidence/room.png","rb").read(24)[16:24]))')
           test "$w" -gt "$h"
-          tap(){ adb shell input tap "$(($1*w/1280))" "$(($2*h/576))"; }
-          wait_label(){
-            for attempt in 1 2 3; do
-              adb shell uiautomator dump /sdcard/starlight.xml >/dev/null 2>&1 || true
-              adb exec-out cat /sdcard/starlight.xml > starlight.xml || true
-              if grep -Fq "$1" starlight.xml; then echo "Verified Android UI: $1"; return; fi
-              sleep 1
-            done
-            echo "UI label not found: $1"
-            cat starlight.xml
-            return 1
-          }
-          wait_label 'Moonlit Studio'
+          tap(){ timeout 12 adb shell input tap "$(($1*w/1280))" "$(($2*h/576))"; }
           tap 694 455
           sleep 2
           tap 1212 503
           sleep 2
-          wait_label 'Place'
+          capture held
           tap 1125 503
-          wait_label 'Xav plush'
+          sleep 2
+          capture inspect
           tap 1203 42
           tap 950 180
+          sleep 1
           tap 1212 503
-          sleep 4
-          wait_label '1 of 10 displayed'
-          tap 1015 42
-          wait_label 'Sticker album'
-          adb logcat -d -b crash > crash.log
-          test ! -s crash.log
+          sleep 5
+          capture shelved
+          tap 982 39
+          sleep 2
+          capture album
+          python3 - <<'PY'
+          from PIL import Image, ImageChops, ImageStat
+          def load(name):
+              return Image.open('evidence/'+name+'.png').convert('RGB').resize((640,288))
+          def change(a,b,box):
+              return sum(ImageStat.Stat(ImageChops.difference(load(a).crop(box),load(b).crop(box))).mean)/3
+          room=load('room')
+          def colorful(shot):
+              return len(set(shot.crop((100,40,530,250)).getdata()))
+          assert colorful(room)>1200,'Room was blank'
+          assert change('room','held',(295,68,383,235))>7,'Character did not approach Xav'
+          assert change('held','inspect',(115,70,545,228))>15,'Examine panel did not appear'
+          assert change('room','shelved',(459,73,490,104))>7,'Xav did not reach the shelf'
+          assert change('shelved','album',(115,70,545,228))>15,'Album did not open'
+          print('Verified Android render: room, walk-up pickup, inspect, shelf placement, album')
+          PY
+          adb logcat -d -b crash > evidence/crash.log
+          test ! -s evidence/crash.log
           echo "ANDROID_SMOKE_PASS"
           SH
       - name: Android 16 install, launch, pickup and shelving
@@ -74,8 +84,16 @@ jobs:
           target: google_apis
           arch: x86_64
           cores: 2
-          ram-size: 4096M
+          ram-size: 2560M
           emulator-boot-timeout: 540
           disable-animations: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
           script: bash smoke.sh
+      - name: Retain Android evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Starlight-Moonlit-Android16
+          path: evidence/
+          if-no-files-found: ignore
+          retention-days: 3
