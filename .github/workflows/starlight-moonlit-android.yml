@@ -28,11 +28,12 @@ jobs:
           package=family.nova.starlightcollector.studio
           adb shell wm size 540x1200
           adb shell wm density 200
+          adb shell settings put secure immersive_mode_confirmations confirmed
           adb install starlight-release.apk
           adb shell dumpsys package "$package" | grep 'versionName=0.5.0'
           adb logcat -c
           adb shell am start -W -n "$package/.StudioActivity"
-          sleep 4
+          sleep 8
           adb shell dumpsys activity activities | grep -m1 'topResumedActivity=.*StudioActivity'
           mkdir -p evidence
           trap 'timeout 8 adb logcat -d -s MoonlitStudio chromium > evidence/webview.log || true' EXIT
@@ -42,21 +43,21 @@ jobs:
           test "$w" -gt "$h"
           tap(){ timeout 12 adb shell input tap "$(($1*w/1280))" "$(($2*h/576))"; }
           tap 694 455
-          sleep 2
+          sleep 5
           tap 1212 503
-          sleep 2
+          sleep 5
           capture held
           tap 1125 503
-          sleep 2
+          sleep 5
           capture inspect
           tap 1203 42
           tap 950 180
           sleep 1
           tap 1212 503
-          sleep 5
+          sleep 7
           capture shelved
           tap 982 39
-          sleep 2
+          sleep 5
           capture album
           python3 - <<'PY'
           from PIL import Image, ImageChops, ImageStat
