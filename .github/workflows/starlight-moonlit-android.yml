@@ -1,4 +1,4 @@
-name: Starlight Collector Moonbound Book Android smoke test
+name: Starlight Collector Moonbound Book 0.7.1 Android smoke test
 on:
   push:
     branches: [work/starlight-moonlit-android-2026-11-21]
@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Download and verify the signed APK
         run: |
-          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvOTJkZDUwMmJcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC43LjAtTW9vbmJvdW5kLUJvb2suYXBrIn0.ae3be2ad8b6e7cadc3f25e8681f7874dccc61749217651dc8d82d20e9e825e1e' -o starlight-release.apk
-          printf '%s  %s\n' '92dd502b84cf0f10f941b1e589ea4dc558f91734d89bab8b26e80e5e3f470dec' starlight-release.apk | sha256sum --check
+          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvMWY4MWM2MzFcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC43LjEtTW9vbmJvdW5kLUJvb2suYXBrIn0.182a6c4e9a42f8f79572730672dd90bb15fd063db6e4c89f5b1f01f86f347d5e' -o starlight-release.apk
+          printf '%s  %s\n' '1f81c631df58c334d81483fa1a59de44ae2ed16fc3f15e127343b25907f30931' starlight-release.apk | sha256sum --check
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -30,7 +30,7 @@ jobs:
           adb shell wm density 200
           adb shell settings put secure immersive_mode_confirmations confirmed
           adb install starlight-release.apk
-          adb shell dumpsys package "$package" | grep 'versionName=0.7.0'
+          adb shell dumpsys package "$package" | grep 'versionName=0.7.1'
           adb logcat -c
           adb shell am start -W -n "$package/.StudioActivity"
           sleep 8
@@ -76,6 +76,13 @@ jobs:
           tap 190 375
           sleep 6
           capture tide
+          tap 300 427
+          tap 1212 503
+          sleep 5
+          capture tide-carry
+          adb shell input swipe "$((117*w/1280))" "$((458*h/576))" "$((189*w/1280))" "$((428*h/576))" 900
+          sleep 1
+          capture tide-turn
           python3 - <<'PY'
           from PIL import Image, ImageChops, ImageStat
           def load(name):
@@ -93,7 +100,9 @@ jobs:
           assert change('low-shelf','book',(105,65,550,245))>15,'Tabletop sticker book did not open'
           assert change('shelved','rooms',(115,70,545,228))>15,'Room map did not open'
           assert colorful(load('tide'))>1200 and change('room','tide',(115,70,545,228))>15,'Tide Gallery did not render'
-          print('Verified Android render: room, walk-up pickup, inspect, upper shelf, crouch placement, tabletop book, room map and Tide Gallery')
+          assert change('tide','tide-carry',(108,137,174,238))>5,'Tide pickup did not approach the plush'
+          assert change('tide-carry','tide-turn',(120,137,265,240))>3,'Joystick did not move during Tide carry'
+          print('Verified Android render: room, walk-up pickup, inspect, upper shelf, crouch placement, tabletop book, room map and a joystick turn while carrying in Tide Gallery')
           PY
           adb logcat -d -b crash > evidence/crash.log
           test ! -s evidence/crash.log
