@@ -94,8 +94,9 @@ jobs:
           adb shell input swipe "$((695*w/1280))" "$((338*h/576))" "$((380*w/1280))" "$((338*h/576))" 420
           sleep 1
           capture next-page
-          tap 1203 42
-          tap 886 39
+          adb shell input keyevent 4
+          sleep 2
+          tap 897 35
           sleep 4
           capture rooms
           tap 1066 374
