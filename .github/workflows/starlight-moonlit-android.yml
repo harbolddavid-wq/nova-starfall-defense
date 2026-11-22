@@ -1,10 +1,10 @@
-name: Starlight Collector Moonbound Book 0.7.1 Android smoke test
+name: Starlight Collector Haunted Lullaby 0.8.0 Android smoke test
 on:
   push:
     branches: [work/starlight-moonlit-android-2026-11-21]
     paths: ['.github/workflows/starlight-moonlit-android.yml']
 permissions:
-  contents: read
+  contents: write
 jobs:
   play:
     runs-on: ubuntu-latest
@@ -12,8 +12,30 @@ jobs:
     steps:
       - name: Download and verify the signed APK
         run: |
-          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvMWY4MWM2MzFcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC43LjEtTW9vbmJvdW5kLUJvb2suYXBrIn0.182a6c4e9a42f8f79572730672dd90bb15fd063db6e4c89f5b1f01f86f347d5e' -o starlight-release.apk
-          printf '%s  %s\n' '1f81c631df58c334d81483fa1a59de44ae2ed16fc3f15e127343b25907f30931' starlight-release.apk | sha256sum --check
+          urls=(
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzAifQ.265b88f3c6ab4351aa6da1bb45d1c535b21713bd815a0147b441f9305bec327c'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzEifQ.fd394e348f05cbd1701892c7d62ff23fce2be2367114f2972094e373004ebdd3'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzIifQ.d5722a8a85a882ef0b7c4695d1c65eb434436c2c9f3c08ba31379d768f0666e1'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzMifQ.e15362260938d266edf34fb12b19fcbd7484cf30c8f6af1f252f0cc75fb22e91'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzQifQ.217ecd302388bd1a3ad2017b0e7a4d85e492bfef90599b8068f5554f18a86762'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzUifQ.df41bf19fd1f1535eff2561ea3bee8059ac2d582f7b78f8a443b8ba02628d262'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzYifQ.bf3860bc1766e780a5ca6ab3b7e39737febdae8d74ecf30d0aa4e3c328d4ae88'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzcifQ.69c6ad9ae3d428af7cae39985850f6f1e69276c4ccf6dcab197e41504a147673'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzgifQ.fa64f7d9fe1a7b7747904c28be9a1af2cbaf337dd58c056573bfc91a1989afe9'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzkifQ.10c9c16b042f5e3fea290f241273a663f8f24e911abe86ade7be099d921b0ddc'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzEwIn0.a7ea671161f211469e5e4eb4045a0dfade2aad536e37c8cb04fe25b2c2d2cfc1'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzExIn0.f20b8645708e6ebdf61ae3d8ccee6f8ec50d2bc59d363e790dc7d003fdcbdf7b'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzEyIn0.1fb1bb8d2b3199424a4cd5fd85a491dda1328b52047b7d8b9522243ed9cfd05c'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzEzIn0.592df10a0fe3659a03932484dd6414aac52b205f281c9867d00bd5ec5f4bcc32'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL2x1bGxhYnktYjg3MTJkNWNcLzE0In0.98e119783a2630314b95e9a6e3a94f3f6d6fe99cfa19a1a60ec5eb6d4ab49ad1'
+          )
+          : > starlight-release.apk
+          for url in "${urls[@]}"; do
+            curl --fail --silent --show-error --location --retry 2 --max-time 40 "$url" -o current-part.bin
+            cat current-part.bin >> starlight-release.apk
+          done
+          rm current-part.bin
+          printf '%s  %s\n' 'b8712d5cb03978b26ce5f8e0ff539773d267bc387eefae243e905c5075467047' starlight-release.apk | sha256sum --check
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -30,7 +52,7 @@ jobs:
           adb shell wm density 200
           adb shell settings put secure immersive_mode_confirmations confirmed
           adb install starlight-release.apk
-          adb shell dumpsys package "$package" | grep 'versionName=0.7.1'
+          adb shell dumpsys package "$package" | grep 'versionName=0.8.0'
           adb logcat -c
           adb shell am start -W -n "$package/.StudioActivity"
           sleep 8
@@ -69,20 +91,20 @@ jobs:
           tap 1125 503
           sleep 4
           capture book
+          adb shell input swipe "$((695*w/1280))" "$((338*h/576))" "$((380*w/1280))" "$((338*h/576))" 420
+          sleep 1
+          capture next-page
           tap 1203 42
           tap 886 39
           sleep 4
           capture rooms
-          tap 190 375
-          sleep 6
-          capture tide
-          tap 300 427
+          tap 1066 374
+          sleep 5
+          capture lullaby
+          tap 443 442
           tap 1212 503
           sleep 5
-          capture tide-carry
-          adb shell input swipe "$((117*w/1280))" "$((458*h/576))" "$((189*w/1280))" "$((428*h/576))" 900
-          sleep 1
-          capture tide-turn
+          capture lullaby-carry
           python3 - <<'PY'
           from PIL import Image, ImageChops, ImageStat
           def load(name):
@@ -99,10 +121,10 @@ jobs:
           assert change('shelved','low-shelf',(455,115,497,142))>6,'Crouch and Place did not reach the lower shelf'
           assert change('low-shelf','book',(105,65,550,245))>15,'Tabletop sticker book did not open'
           assert change('shelved','rooms',(115,70,545,228))>15,'Room map did not open'
-          assert colorful(load('tide'))>1200 and change('room','tide',(115,70,545,228))>15,'Tide Gallery did not render'
-          assert change('tide','tide-carry',(108,137,174,238))>5,'Tide pickup did not approach the plush'
-          assert change('tide-carry','tide-turn',(120,137,265,240))>3,'Joystick did not move during Tide carry'
-          print('Verified Android render: room, walk-up pickup, inspect, upper shelf, crouch placement, tabletop book, room map and a joystick turn while carrying in Tide Gallery')
+          assert change('book','next-page',(60,100,420,228))>14,'Finger swipe did not turn the book page'
+          assert colorful(load('lullaby'))>1200 and change('room','lullaby',(115,70,545,228))>15,'Noa Haunted Lullaby did not render'
+          assert change('lullaby','lullaby-carry',(171,130,252,243))>3,'The Lullaby music box could not be picked up'
+          print('Verified Android render: studio, pickup, crouch placement, finger page turn, and Noa Haunted Lullaby')
           PY
           adb logcat -d -b crash > evidence/crash.log
           test ! -s evidence/crash.log
@@ -128,3 +150,19 @@ jobs:
           path: evidence/
           if-no-files-found: ignore
           retention-days: 3
+
+      - name: Publish the verified Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=starlight-collector-v0.8.0
+          file=Starlight-Collector-0.8.0-Haunted-Lullaby.apk
+          mv starlight-release.apk "$file"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$file" --output published.apk
+            cmp "$file" published.apk
+          else
+            gh release create "$tag" "$file" --target "${{ github.sha }}" --title "Starlight Collector 0.8.0 — Haunted Lullaby" --notes "Eight rooms, 50 new lore stickers, finger-swiped pages, and one sealed pack per shelf."
+          fi
