@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Download and verify the signed APK
         run: |
-          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvU3RhcmxpZ2h0LUNvbGxlY3Rvci0wLjUuMC1Nb29ubGl0LVN0dWRpby5hcGsifQ.b1ce7bb7d6539907e16baa3b7aca0249b21d8cbc277c82073a8c41a22893afd3' -o starlight-release.apk
-          printf '%s  %s\n' '7520a96244b16fd4ca85ade75cb06fa600ac7893c169d1c340d365998632675c' starlight-release.apk | sha256sum --check
+          curl --fail --silent --show-error --location --max-time 90 'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJzdGFybGlnaHRcL2Rvd25sb2Fkc1wvOThjMDlhNzZcL1N0YXJsaWdodC1Db2xsZWN0b3ItMC41LjAtTW9vbmxpdC1TdHVkaW8uYXBrIn0.f2694528196fd00b6c6120f0a477b48339baba9a823c43e8bc2b9dfadbf11e49' -o starlight-release.apk
+          printf '%s  %s\n' '98c09a76826404091b2d775e4d6c1ffd423571ed6274ca298669ab15977375cc' starlight-release.apk | sha256sum --check
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -24,7 +24,7 @@ jobs:
       - name: Prepare smoke-test script
         run: |
           cat > smoke.sh <<'SH'
-          set -euo pipefail
+          set -euxo pipefail
           package=family.nova.starlightcollector.studio
           adb shell wm size 540x1200
           adb shell wm density 200
@@ -35,6 +35,7 @@ jobs:
           sleep 4
           adb shell dumpsys activity activities | grep -m1 'topResumedActivity=.*StudioActivity'
           mkdir -p evidence
+          trap 'timeout 8 adb logcat -d -s MoonlitStudio chromium > evidence/webview.log || true' EXIT
           capture(){ timeout 14 adb exec-out screencap -p > "evidence/$1.png"; }
           capture room
           read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("evidence/room.png","rb").read(24)[16:24]))')
