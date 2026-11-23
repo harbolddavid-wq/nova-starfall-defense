@@ -1,0 +1,54 @@
+name: Publish Starlight Collection HD 0.2.1
+on:
+  push:
+    branches: [work/starlight-collection-hd-0.2.1-release]
+    paths: ['.github/workflows/publish-starlight-collection-hd-0-2-1.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify and publish the signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='Starlight-Collection-HD-0.2.1-Remake.apk'
+          tag='starlight-collection-hd-v0.2.1'
+          urls=(
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMCJ9.fe57569327ba69e4a574d7cf1d04231748794f5ac2b847ea6ecac54476557a17'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMSJ9.ed3428a4ef288f56a80b07ed01c99a45d29f7f7bbe9bebf304501fe25cf783e0'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMiJ9.ed949de39640bbe922b1aaf33ad76d19ae198db390ee37b54ce42cf05e3f99c4'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMyJ9.c9afa4086b9976a6074effe60fb18d49d72e8db5bc0e5e12a6e1423e86ebaf1c'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvNCJ9.570f894bbccc687497ba0eb5ddd5ef1b4c75a0bf3f393def5351c5a420d56468'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvNSJ9.bc08697c0b388f6764eb73360fd6db3665b9ca6985e5b1da9718e54225a9dfd5'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvNiJ9.75d76b26eac93cd5e3b4a958907acd085cd3d41bb2c5e32ad2e9c90bd34ddfa9'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvNyJ9.6d5cb006891d19240ffab1e0fe8600214191bb38401a6c658a218924045a3874'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvOCJ9.c2fcb99cf309ffa5934fb05c5af644c267fc7a3a9f8ef686e2d7b674fc48d140'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvOSJ9.e50c279302f91ca5fdef856078f7099ac61ecbd524d8c8e322d9f3361044845d'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMTAifQ.4b0cd7a7c96915d6eec6c9af9dd2c8a5a2eba83d00e517ef889251c7d1e68188'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMTEifQ.59ab9ea5defb9df4fd4eb99679686d614f012cf4b61419d37eee5199efbc69e5'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMTIifQ.19c5cdc5a91e8750020df955faa62b0c58d4b0f4b32469fcf3821756bcaa54f2'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMTMifQ.b5a0628796881ced06841eb5527929930fb37a9d0bd6366f64aa47c19e4a4d3d'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC0zYWM5N2E0M1wvMTQifQ.5568cc0bdb8b5f8f0f6754db5621f6e673dd927776eba19989ceadecae16c759'
+          )
+          : > "$file"
+          for url in "${urls[@]}"; do
+            curl --fail --silent --show-error --location --retry 2 --max-time 30 "$url" --output part.bin
+            cat part.bin >> "$file"
+          done
+          test "$(wc -c < "$file")" -eq 42840949
+          printf '%s  %s\n' '3ac97a43816b4865758c897c94bce2e68b5f3126a7c48dc2788bf7d51d456dc0' "$file" | sha256sum --check
+          unzip -tq "$file"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$file" --output existing.apk
+            cmp "$file" existing.apk
+          else
+            gh release create "$tag" "$file" --target "${{ github.sha }}" \
+              --title 'Starlight Collection HD 0.2.1' \
+              --notes 'Completes pickups when movement input is still held and softens footsteps and landing. Updates the existing HD installation and uses the same save.'
+          fi
