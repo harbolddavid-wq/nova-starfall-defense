@@ -1,0 +1,52 @@
+name: Publish Starlight Collection HD 0.2.3
+on:
+  push:
+    branches: [work/starlight-hd-023-release]
+    paths: ['.github/workflows/publish-starlight-hd-023.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify and publish the signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=Starlight-Collection-HD-0.2.3-Remake.apk
+          tag=starlight-collection-hd-v0.2.3
+          urls=(
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMCJ9.f6fd69e371aaf27369bf2ea2f18e9f41adca5b5a7ba2eb40ec0864e4bebe2bb5'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMSJ9.12b9856ab7ec151001f904dd615e8e289eaa50df3888bbfaae1dfa6b47e3f1ab'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMiJ9.8cce687063595112defb7f82adfd1d6a3f25dc881b7dbec88bfd275733c08469'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMyJ9.b9b523bfc4fef4a4eccd113ddfc84f7d6ed4691b9696e16430a8267d7da330cf'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvNCJ9.1dd90fd21fbf8d156b24a7defe71fa0ae658368258e7219a9e773884381c719f'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvNSJ9.6e7d9e883e4a7697fd09bbca99b55d87831ac5cd3404464f993232a318f70a58'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvNiJ9.0605b6098584aa441cc11667e45cf1986acfef78f8533fdcbb80d6dbd1385d9d'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvNyJ9.7bd8a3ebbafe05f02aac8e9273b6cc6ec3cf125f7dab1486ed6940da26f81d7b'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvOCJ9.5115eaa93e4011b415916d170d38aa1981e959b578bc12ffbfbe3eb35e5db125'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvOSJ9.9c7ca270caa057aefd10f368f6b0f2bbff127e41d722817961db71595a9b0cd2'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMTAifQ.71bec1c1c278fce986c32818ed850d6601d4c3f99bea7a26ec51d43c18586e47'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMTEifQ.dba576255279f422f05a30fff307a85b8ce228712f437cee4f2b272bcf08b996'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMTIifQ.fc5175769c0e7a97cdcc2406ebc74dd2db11feb98198e1b5f95f13552e5ba132'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMTMifQ.6ca78e8e8e57b6ec431f20eabffaa65c8a533314ad7458c8f7cae6d565dfc998'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1hM2Y2MjNkZFwvMTQifQ.db010246fee85afb8cc7404221fcebfe84457e8d80016ed1dfa9556d56210ab1'
+          )
+          : > "$file"
+          for url in "${urls[@]}"; do
+            curl -fsSL --retry 2 --max-time 30 "$url" -o part.bin
+            cat part.bin >> "$file"
+          done
+          test "$(wc -c < "$file")" -eq 42840949
+          printf '%s  %s\n' 'a3f623dde495dcd93164e2032761d8562144b0cd355dfe0a1bb16edcf4f1a899' "$file" | sha256sum --check
+          unzip -tq "$file"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$file" --output existing.apk
+            cmp "$file" existing.apk
+          else
+            gh release create "$tag" "$file" --target "${{ github.sha }}" --title 'Starlight Collection HD 0.2.3' --notes 'Improves recovery when walking input or rendering is interrupted and fixes Next sealed pack navigation. The HD update uses the existing local save.'
+          fi
