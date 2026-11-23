@@ -1,0 +1,96 @@
+name: Starlight HD 0.2.1 Android freeze investigation
+on:
+  push:
+    branches: [work/starlight-hd-021-android-check]
+    paths: ['.github/workflows/test-starlight-hd-021-android.yml']
+permissions:
+  contents: read
+jobs:
+  android:
+    timeout-minutes: 12
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the exact signed APK from the Family Store release
+        run: |
+          curl -fsSL --retry 3 'https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/starlight-collection-hd-v0.2.1/Starlight-Collection-HD-0.2.1-Remake.apk' -o hd.apk
+          printf '%s  %s\n' '3ac97a43816b4865758c897c94bce2e68b5f3126a7c48dc2788bf7d51d456dc0' hd.apk | sha256sum -c
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Prepare repeatable device playthrough
+        run: |
+          mkdir -p evidence
+          cat > play.sh <<'SH'
+          set -eu
+          package=family.nova.starlightcollectionhd
+          trap 'adb logcat -d -v brief > evidence/logcat.txt; adb shell dumpsys activity exit-info "$package" > evidence/exits.txt' EXIT
+          adb shell wm size 720x1600
+          adb shell wm density 280
+          adb shell settings put secure immersive_mode_confirmations confirmed
+          adb logcat -c
+          adb install hd.apk
+          adb shell dumpsys package "$package" | grep 'versionName=0.2.1'
+          adb shell am start -W -n "$package/.StudioActivity"
+          sleep 7
+          cap(){ timeout 16 adb exec-out screencap -p > "evidence/$1.png"; }
+          cap boot
+          read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("evidence/boot.png","rb").read(24)[16:24]))')
+          test "$w" -gt "$h"
+          tap(){ timeout 12 adb shell input tap "$(($1*w/1280))" "$(($2*h/576))"; }
+          swipe(){ timeout 12 adb shell input swipe "$(($1*w/1280))" "$(($2*h/576))" "$(($3*w/1280))" "$(($4*h/576))" "$5"; }
+          swipe 117 458 153 458 460
+          cap walk
+          tap 720 400; sleep .35; tap 1215 502; sleep 4
+          cap pickup
+          tap 970 182; sleep .5; tap 1215 502; sleep 5
+          cap shelf
+          tap 228 236; sleep .35; tap 1124 502; sleep 5
+          cap book
+          swipe 860 320 470 320 420; sleep 1
+          cap page
+          adb shell input keyevent 4; sleep 2
+          for attempt in 1 2 3; do
+            adb shell input keyevent 3; sleep 2
+            adb shell am start -W -n "$package/.StudioActivity"
+            sleep 2
+            swipe 117 458 151 440 370
+          done
+          cap resumed
+          adb shell dumpsys meminfo "$package" > evidence/memory.txt
+          adb shell dumpsys activity activities | grep -m1 'topResumedActivity=.*StudioActivity'
+          adb logcat -d -b crash > evidence/crash.txt
+          test ! -s evidence/crash.txt
+          python3 - <<'PY'
+          from PIL import Image, ImageChops, ImageStat
+          def img(name): return Image.open('evidence/'+name+'.png').convert('RGB').resize((640,288))
+          def delta(a,b,box): return sum(ImageStat.Stat(ImageChops.difference(img(a).crop(box),img(b).crop(box))).mean)/3
+          assert len(set(img('boot').crop((65,52,550,238)).getdata()))>3000, 'Opening room failed to render'
+          assert delta('boot','pickup',(240,90,400,215))>4, 'Pickup screen stayed static'
+          assert delta('pickup','shelf',(410,58,535,135))>2, 'Shelf placement screen stayed static'
+          assert delta('book','page',(215,106,505,218))>8, 'Book page did not respond to a swipe'
+          assert len(set(img('resumed').crop((65,52,550,238)).getdata()))>3000, 'Room failed to render after resume'
+          print('PASS exact Android APK boot, movement, pickup, shelf, page swipe, and three resumes')
+          PY
+          SH
+      - name: Install screenshot check dependency
+        run: python3 -m pip install --break-system-packages --quiet Pillow
+      - name: Exercise the downloaded build on Android 16
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 2560M
+          emulator-boot-timeout: 360
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          script: bash play.sh
+      - name: Retain freeze investigation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Starlight-HD-0.2.1-Android-Freeze-Check
+          path: evidence/
+          retention-days: 3
+          if-no-files-found: ignore
