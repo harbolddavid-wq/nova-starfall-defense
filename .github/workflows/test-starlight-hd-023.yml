@@ -1,0 +1,70 @@
+name: Native Android test for HD 0.2.3
+on:
+  push:
+    branches: [work/starlight-hd-023-release]
+    paths: ['.github/workflows/test-starlight-hd-023.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare exact APK and emulator checks
+        run: |
+          curl -fsSL --retry 2 'https://github.com/harbolddavid-wq/nova-starfall-defense/releases/download/starlight-collection-hd-v0.2.3/Starlight-Collection-HD-0.2.3-Remake.apk' -o hd.apk
+          printf '%s  %s\n' 'a3f623dde495dcd93164e2032761d8562144b0cd355dfe0a1bb16edcf4f1a899' hd.apk | sha256sum -c
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          python3 -m pip install --quiet Pillow
+          mkdir evidence
+          cat > test.sh <<'SH'
+          set -euxo pipefail
+          package=family.nova.starlightcollectionhd
+          trap 'timeout 7 adb logcat -d -s StarlightHD MoonlitStudio chromium > evidence/logcat.txt || true' EXIT
+          timeout 12 adb shell wm size 540x1200
+          timeout 12 adb shell wm density 200
+          timeout 12 adb shell settings put secure immersive_mode_confirmations confirmed
+          timeout 25 adb install hd.apk
+          timeout 10 adb shell dumpsys package "$package" | grep versionName
+          timeout 25 adb shell am start -W -n "$package/.StudioActivity"
+          sleep 9
+          timeout 15 adb exec-out screencap -p > evidence/start.png
+          read -r w h < <(python3 -c 'import struct; print(*struct.unpack(">II",open("evidence/start.png","rb").read(24)[16:24]))')
+          test "$w" -gt "$h"
+          swipe(){ timeout 8 adb shell input swipe "$((117*w/1280))" "$((458*h/576))" "$(( $1*w/1280 ))" "$((458*h/576))" 480; }
+          swipe 159
+          timeout 15 adb exec-out screencap -p > evidence/right.png
+          swipe 75
+          timeout 15 adb exec-out screencap -p > evidence/left.png
+          python3 - <<'PY'
+          from PIL import Image, ImageChops, ImageStat
+          def frame(name): return Image.open('evidence/'+name+'.png').convert('RGB').resize((640,288)).crop((255,115,392,260))
+          start,right,left=map(frame,('start','right','left'))
+          assert len(set(start.getdata()))>900,'Room is black or unrendered'
+          assert sum(ImageStat.Stat(ImageChops.difference(right,left)).mean)>5,'Starlight is not moving on reversal'
+          assert sum(ImageStat.Stat(ImageChops.difference(start,right)).mean)>4,'No first movement'
+          print('PASS Android 16 rendered the room and responded to both joystick directions')
+          PY
+          SH
+      - name: Boot Android and test the released APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          cores: 2
+          ram-size: 3000M
+          emulator-boot-timeout: 150
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          script: bash test.sh
+      - name: Archive Android observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HD-0.2.3-Android-evidence
+          path: evidence/
+          retention-days: 3
+          if-no-files-found: ignore
