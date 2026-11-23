@@ -1,0 +1,55 @@
+name: Publish Starlight Collection HD 0.2.0
+on:
+  push:
+    branches: [work/starlight-collection-hd-0.2.0-release]
+    paths: ['.github/workflows/publish-starlight-collection-hd-0-2-0.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify and publish the approved signed Android build
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='Starlight-Collection-HD-0.2.0-Remake.apk'
+          tag='starlight-collection-hd-v0.2.0'
+          expected='e5fd28614e524c8939858add2c392159171826c807dde4dbaf70d6f185c44b67'
+          urls=(
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMCJ9.5c388e8eecf2f2117060da95ee55749683ded1a46914f577557ad03ef0ac2767'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMSJ9.7ac551bc8d136dbaef525b73e7cc9ec9b1563197e330f95dd0bc1751f92bf459'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMiJ9.c675cec4ec750c88247bb26960a5f09fea8e635244ca1722727056deab102966'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMyJ9.7dd8c4017a4d799038acb38163f8a5b3591209d8b2d8c6e8ebbb3e7cf1daf7d4'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvNCJ9.a5e73fe4acce1ae3c9858391f2aafc90bc2c4cdee00568cf42e906a0e6a4e23b'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvNSJ9.d80c59062fbbf6aa2881c62e6144b622b2d70a8072f39581b35b2a811018c81b'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvNiJ9.2b47ba29174c29adc278b7cbdef0a8f2f63aeb144359018c9279cd92e590952d'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvNyJ9.079655dd6332664353185705571edea49b1f0b8dfe80da7199a52e9cd31040dc'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvOCJ9.6a56e6fab2e3a103b5054e13b1b535bd6c06a79ea4975de15910db7b540549d3'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvOSJ9.9d97f92779a6b96e9eacee04c62eb379a96255057497a5e0c401473583f092a8'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMTAifQ.c9057ff5386138a0455181f6885811476b74af87d8e32ba9499179131c09f00d'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMTEifQ.ad1bf7d6dfb122fa0b3bd177a0b69d6bdd1f725b5aca3a646764dc08a5069963'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMTIifQ.33aef84b5d9bff8ad207e6df37b34ab9bba0d436b822d411d3dc09f5c5a08335'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMTMifQ.5b43c4c4f02ee327d3064b3ca0acbf10431f70d4050fa7fe4970beec3dabc030'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC1lNWZkMjg2MVwvMTQifQ.8408f3636b29b6fae2ba883a3d8cc4d8d2ab27b063f1210c657ee7ae105bcd3d'
+          )
+          : > "$file"
+          for url in "${urls[@]}"; do
+            curl --fail --silent --show-error --location --retry 2 --max-time 30 "$url" --output part.bin
+            cat part.bin >> "$file"
+          done
+          test "$(wc -c < "$file")" -eq 42840949
+          printf '%s  %s\n' "$expected" "$file" | sha256sum --check
+          unzip -tq "$file"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$file" --output existing.apk
+            cmp "$file" existing.apk
+          else
+            gh release create "$tag" "$file" --target "${{ github.sha }}" \
+              --title 'Starlight Collection HD 0.2.0' \
+              --notes 'The HD remake features newly illustrated movement, pickup, carry, and shelf animations across eight rooms. The HD preview can update in place with its existing save.'
+          fi
