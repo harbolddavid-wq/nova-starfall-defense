@@ -1,0 +1,52 @@
+name: Publish Starlight Collection HD 0.2.2
+on:
+  push:
+    branches: [work/starlight-hd-022-android-release]
+    paths: ['.github/workflows/publish-starlight-hd-022.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify and publish the signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=Starlight-Collection-HD-0.2.2-Remake.apk
+          tag=starlight-collection-hd-v0.2.2
+          urls=(
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMCJ9.3627deb84108aadd08168f9c186663cee2891b5ec07828c5d8adf6f080412a39'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMSJ9.7ff344d229ae59b1b771f49ec7aa6ec16c2ebd2ed822f167bbddcf308f3be276'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMiJ9.9ee4756028c39f6ec56a8e809e3abeb60fd2028a70cd4bffcbababfc9be3d30a'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMyJ9.d76c3cdf89e76332ec12e894c18e46d97180fb8dff574edf7a11f3d957aeb219'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvNCJ9.270d66585afd732f814828dac8767197b188a9747c6a9df1318de8c4da6ca0cd'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvNSJ9.07206235306fa7756fd5190f98bdca5b58964aef30e6d26054e3506f0ca74417'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvNiJ9.b640bb299f75236c17986a055dadaf7115724786b9df78b9a7a16210873e2a34'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvNyJ9.6b080a191a9bb6c58db05a69316c230251e1baba4ee72a99dba0ddd32b78cce4'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvOCJ9.c4d923886fd2e4722e7969c017d4b91790a1909b8c069b7c27f6f42011a80739'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvOSJ9.8090238f96049e28728d4b86e0b34704fe449e5b44a1e7c10cdf132cd7c02b22'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMTAifQ.2da94add5b78a6bd29dc4aa445370b1011c9945ec809b25bfc1c6078df4b8fe6'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMTEifQ.62ae2a23c9ce38ec7d76d155dd6d569e44a56ce48c6dfd401487bb86a4ecc01f'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMTIifQ.e7466c279e3ba9edf635007b6d7c8134e2b96931943cd3e0ae829fff2e94ddb4'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMTMifQ.cab6503af3e6be0840de8add252a52e850e76b37b934fc425bcf37d2a3794b14'
+            'https://hatchable.com/s/eyJwIjoxMjc3OTIsImsiOiJ0bXBcL3N0YXJsaWdodC1oZC04NzFiMDFiOVwvMTQifQ.cc6797e6b82b2c71ed5f4534373b2f928695558d59a7ad53e6d23a9e5304fe1f'
+          )
+          : > "$file"
+          for url in "${urls[@]}"; do
+            curl -fsSL --retry 2 --max-time 30 "$url" -o part.bin
+            cat part.bin >> "$file"
+          done
+          test "$(wc -c < "$file")" -eq 42840949
+          printf '%s  %s\n' '871b01b905b6b02c546d7bfce1e6b5a134df4bb89c3a87b8c09a883f93041e89' "$file" | sha256sum --check
+          unzip -tq "$file"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$file" --output existing.apk
+            cmp "$file" existing.apk
+          else
+            gh release create "$tag" "$file" --target "${{ github.sha }}" --title 'Starlight Collection HD 0.2.2' --notes 'Improved joystick recovery and a lighter Android render path. The HD update keeps the same local save.'
+          fi
